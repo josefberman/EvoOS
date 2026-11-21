@@ -139,8 +139,8 @@ The OS is AOT-compiled supervisor bytecode running in **ring 0**. Firmware is bo
 
 ```bash
 pip install -e ".[dev]"
-make iso                          # AOT of never-HALT RR-live (default)
-make iso LIVE_SUPERVISOR=evolved  # gadgets elite s42 (HALTs after one wave)
+make iso                          # AOT of evolved open-arrival elite (default)
+make iso LIVE_SUPERVISOR=rr_live  # handwritten never-HALT round-robin only
 ```
 
 Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t evoos . && docker run --rm evoos make iso test-qemu`.
@@ -173,7 +173,7 @@ qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -serial mon:stdio \
   -device isa-debug-exit,iobase=0xf4,iosize=0x04
 ```
 
-**Live supervisor.** Default ISO AOT-compiles `rr_live` (`JMP main`, no HALT) so open arrivals work without a human HALT→JMP patch of the gadgets elite. A 6-gen gadgets search did not beat `rr_live` (already R=1.0, never-HALT, 4/4 train + open-arrival). The gadgets elite still 4/4 on the Python VM (`isolation_ok`, completed=4) and is selectable with `LIVE_SUPERVISOR=evolved`. HITL: `python -m evoos.evaluator.hitl --supervisor rr_live`.
+**Live supervisor.** Default ISO AOT-compiles `evolved_open`: gadgets elite **s99** (no HALT). Open-arrival scoring treats supervisor HALT before the horizon as failure. s99 is `other` on held-out / train_medium and `round-robin-like` on train_small. A search mutant labeled batched/priority-like matched on Python 4/4 but failed the live `#PF` keyboard test (never RUNCTX'd the new guest); it is kept in the QD set, not the ISO. `LIVE_SUPERVISOR=rr_live` is the human baseline only. One-shot s42 remains `--supervisor evolved` for `make test-diff`. HITL: `python -m evoos.evaluator.hitl --supervisor evolved_open --boot`. Search: `python -m evoos.experiments.scheduling.search_open_live`.
 
 **Still simulated:** PIT counts vs instruction retirement; QEMU; firmware framebuffer/keyboard; no disk/SMP; `int $0x80` as the only guest trap. See `docs/isa.md` hardware profile.
 
@@ -197,7 +197,7 @@ make test-diff
 pytest tests/test_codec.py tests/test_differential.py tests/test_open_arrival.py tests/test_aot.py
 ```
 
-**Select supervisor at pack time:** `--supervisor evolved` / `evolved_live` / `rr` / `rr_live`. `--live` raises max_steps so firmware can slice indefinitely.
+**Select supervisor at pack time:** `--supervisor evolved_open` (default ISO) / `evolved` (oneshot s42) / `evolved_live` (human HALT→JMP, not the ISO) / `rr` / `rr_live`.
 
 ## Layout
 
@@ -222,7 +222,8 @@ train.py
 | 1 | Discover multiplexing + isolation for four competing guests | done (search) |
 | boot-1 | Frozen ISA + C interpreter + one-shot Limine ISO | `native/`, `docs/isa.md` |
 | boot-2 | Live ISO: open arrivals, PS/2+serial events, framebuffer dashboard | done |
-| boot-3 | AOT ring-0 supervisor, MMU ADDPROT, ring-3 RUNCTX, HITL | this milestone |
+| boot-3 | AOT ring-0 supervisor, MMU ADDPROT, ring-3 RUNCTX, HITL | done |
+| boot-3b | Evolved never-HALT ISO (open-arrival elite, not rr_live) | this milestone |
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
 | 3 | Persistence / a block device, not a VFS opcode | `evoos/placeholders/persistence.py` |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |

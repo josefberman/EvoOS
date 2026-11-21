@@ -17,6 +17,7 @@ from evoos.boot.aot import emit_c
 from evoos.boot.pack import select_supervisor
 from evoos.evaluator.open_arrival import evaluate_open_arrival
 from evoos.evaluator.workloads import training_workloads
+from evoos.vm.instruction_set import Instr
 from evoos.vm.machine import MachineConfig
 from evoos.vm.sandbox import Sandbox
 
@@ -39,11 +40,16 @@ def python_score(kind: str) -> dict:
     }
 
 
-def hitl_boot(kind: str, timeout: float = 8.0) -> dict:
-    """Rebuild the ISO with this supervisor and boot BIOS QEMU until quit or timeout."""
-    instrs, origin = select_supervisor(kind)
-    (NATIVE / "supervisor_aot.c").write_text(emit_c(instrs, origin=origin, note="hitl"))
-    subprocess.run(["make", "-C", str(NATIVE), "iso", f"LIVE_SUPERVISOR={kind}"], check=True)
+def hitl_boot_instrs(
+    instrs: tuple[Instr, ...] | list[Instr],
+    origin: str,
+    timeout: float = 8.0,
+) -> dict:
+    """AOT `instrs`, rebuild the ISO, boot BIOS QEMU, parse serial."""
+    aot = NATIVE / "supervisor_aot.c"
+    aot.write_text(emit_c(instrs, origin=origin, note="hitl"))
+    # File is newer than pack.py so the Makefile generate rule is skipped.
+    subprocess.run(["make", "-C", str(NATIVE), "iso", "SKIP_AOT=1"], check=True)
     iso = BUILD / "evoos.iso"
     serial = BUILD / "hitl-serial.log"
     serial.unlink(missing_ok=True)
@@ -92,7 +98,12 @@ def hitl_boot(kind: str, timeout: float = 8.0) -> dict:
     halted = text.count(" halted ")
     pf = "#PF" in text or "vector=14" in text
     preempt = "preempt vector=32" in text
-    isolation_ok = "isolation_n=0" in text or "isolation_n=" not in text
+    isolation_ok = "isolation_n=0" in text or (
+        "isolation_n=" not in text and "isolation_n=1" not in text
+    )
+    if "isolation_n=" in text:
+        isolation_ok = "isolation_n=0" in text and "isolation_n=1" not in text
+    returned = "supervisor returned" in text
     return {
         "origin": origin,
         "serial": text,
@@ -100,8 +111,15 @@ def hitl_boot(kind: str, timeout: float = 8.0) -> dict:
         "pf": pf,
         "preempt": preempt,
         "isolation_ok": isolation_ok,
+        "returned": returned,
         "qemu_status": proc.returncode,
     }
+
+
+def hitl_boot(kind: str, timeout: float = 8.0) -> dict:
+    """Rebuild the ISO with a named supervisor and boot BIOS QEMU."""
+    instrs, origin = select_supervisor(kind)
+    return hitl_boot_instrs(instrs, origin, timeout=timeout)
 
 
 def compare(kind: str) -> dict:
@@ -113,7 +131,7 @@ def compare(kind: str) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--supervisor", default="rr_live")
+    p.add_argument("--supervisor", default="evolved_open")
     p.add_argument("--boot", action="store_true")
     args = p.parse_args(argv)
     py = python_score(args.supervisor)

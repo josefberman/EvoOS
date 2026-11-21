@@ -184,10 +184,20 @@ def emit_c(instrs: tuple[Instr, ...] | list[Instr], origin: str = "", note: str 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="AOT-compile a supervisor to native C")
-    p.add_argument("--supervisor", default="rr_live")
+    p.add_argument("--supervisor", default="evolved_open")
+    p.add_argument("--from-file", default="", help="disassembly file instead of a named supervisor")
+    p.add_argument("--origin", default="")
     p.add_argument("-o", "--output", required=True)
     args = p.parse_args(argv)
-    instrs, origin = select_supervisor(args.supervisor)
+    if args.from_file:
+        from evoos.vm.instruction_set import parse_disassembly
+
+        instrs = parse_disassembly(Path(args.from_file).read_text())
+        origin = args.origin or Path(args.from_file).stem
+    else:
+        instrs, origin = select_supervisor(args.supervisor)
+        if args.origin:
+            origin = args.origin
     note = "aot-native-ring0"
     Path(args.output).write_text(emit_c(instrs, origin=origin, note=note))
     print(f"wrote {args.output} origin={origin} n={len(instrs)}")

@@ -16,6 +16,10 @@ ELITE_PATH = (
     Path(__file__).resolve().parents[2]
     / "experiments/scheduling/results/examples/correctness_gadgets_s42_round-robin-like.txt"
 )
+OPEN_ELITE_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "experiments/scheduling/results/examples/open_arrival_gadgets_elite.txt"
+)
 
 
 def parse_elite(path: Path | None = None) -> tuple[Instr, ...]:
@@ -46,11 +50,22 @@ def select_supervisor(kind: str) -> tuple[tuple[Instr, ...], str]:
     if k in ("rr_live", "round_robin_live", "live_rr"):
         cand = round_robin_live(16)
         return cand.instrs, cand.origin
-    if k in ("evolved", "elite", "gadgets"):
+    if k in ("evolved", "elite", "gadgets", "evolved_oneshot"):
         return parse_elite(), "evolved_gadgets_s42"
-    if k in ("evolved_live", "elite_live", "live"):
+    if k in ("evolved_live", "elite_live"):
         return live_elite(), "evolved_gadgets_s42_live"
-    raise ValueError(f"unknown supervisor {kind!r} (use evolved|evolved_live|rr|rr_live)")
+    if k in ("evolved_open", "open", "live"):
+        if not OPEN_ELITE_PATH.exists():
+            raise FileNotFoundError(
+                f"missing {OPEN_ELITE_PATH}; run python -m evoos.experiments.scheduling.search_open_live"
+            )
+        instrs = parse_disassembly(OPEN_ELITE_PATH.read_text())
+        header = OPEN_ELITE_PATH.read_text().splitlines()[0].lstrip("# ").split()
+        origin = header[0] if header else "evolved_open_arrival_gadgets"
+        return instrs, origin
+    raise ValueError(
+        f"unknown supervisor {kind!r} (use evolved_open|evolved|evolved_live|rr|rr_live)"
+    )
 
 
 def pack_workload(

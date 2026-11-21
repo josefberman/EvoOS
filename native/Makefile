@@ -3,7 +3,7 @@
 ROOT := $(abspath ..)
 PYTHON ?= python3
 SUPERVISOR ?= evolved
-LIVE_SUPERVISOR ?= rr_live
+LIVE_SUPERVISOR ?= evolved_open
 WORKLOAD ?= train_small
 BUILD := $(ROOT)/build
 LIMINE := third_party/limine
@@ -53,8 +53,10 @@ host: $(BUILD)/evoos_host
 $(BUILD)/evoos_host: evoos_vm.c evoos_host.c evoos_vm.h | $(BUILD)
 	$(HOST_CC) $(HOST_CFLAGS) -o $@ evoos_vm.c evoos_host.c
 
+ifndef SKIP_AOT
 supervisor_aot.c: ../evoos/boot/aot.py ../evoos/boot/pack.py
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.aot --supervisor $(LIVE_SUPERVISOR) -o native/supervisor_aot.c
+endif
 
 $(BUILD)/kernel.elf: evoos_boot.c hw.c hw.h hw_entry.S guests.S supervisor_aot.c linker.ld limine.h | $(BUILD)
 	$(CC) $(KERN_CFLAGS) -I. -c evoos_boot.c -o $(BUILD)/evoos_boot.o

@@ -221,6 +221,18 @@ def main() -> int:
     print(text)
     if "EvoOS live" not in text:
         return 1
+    if "baseline_rr" in text:
+        print("default ISO must not boot handwritten rr_live", file=sys.stderr)
+        return 1
+    if "supervisor=evolved" not in text and "open_arrival" not in text:
+        print("default ISO must boot an evolved supervisor", file=sys.stderr)
+        return 1
+    if "supervisor returned" in text:
+        print("evolved supervisor halted before keyboard/spawns", file=sys.stderr)
+        return 1
+    if text.count(" halted ") < 3:
+        print("expected three completing guests", file=sys.stderr)
+        return 1
     if "#PF" not in text:
         print("missing #PF", file=sys.stderr)
         return 1
@@ -231,7 +243,8 @@ def main() -> int:
         return 1
     if "loader:" not in text:
         return 1
-    if "inspect isolation_n=" not in text:
+    if "inspect isolation_n=0" not in text:
+        print("missing inspect isolation_n=0", file=sys.stderr)
         return 1
     if "EvoOS quit" not in text:
         return 1
