@@ -1,0 +1,18 @@
+EvoOS firmware starting
+EvoOS firmware (not a kernel)
+ISA: 5-word instr op,a,b,c,imm
+supervisor: evolved_gadgets_s42  workload: train_small
+contexts=5 mem=2048 max_steps=8000
+running supervisor...
+  guest 1 sum_8 halted cycles=63 ran=63
+  guest 2 fill_5 halted cycles=55 ran=55
+  guest 4 copyinc_4 halted cycles=53 ran=5
+  guest 3 xor_5 halted cycles=57 ran=9
+[halt]
+  guest 1 sum_8 halted=1 fault=0 cycles=63 expected=OK
+  guest 2 fill_5 halted=1 fault=0 cycles=55 expected=OK
+  guest 3 xor_5 halted=1 fault=0 cycles=57 expected=OK
+  guest 4 copyinc_4 halted=1 fault=0 cycles=53 expected=OK
+completed 4/4 isolation=ok switches=1087 cycles=8000
+supervisor_fault=0 halted=1
+EvoOS done.

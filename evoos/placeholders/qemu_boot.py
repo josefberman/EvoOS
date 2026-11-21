@@ -1,14 +1,9 @@
-"""Stage 5: bootable x86_64 ISO whose runtime is the evolved bytecode.
+"""Stage 5 is implemented on the boot track: see native/ and docs/isa.md.
 
-The stub is firmware, not a kernel: a C/Rust interpreter or JIT of the
-frozen ISA, plus a Limine or Multiboot2 shim (BIOS first, UEFI next).
-No Linux, no process table, no VFS in the stub. Guest STORE windows map
-to serial/VGA. Test ladder: host interpreter vs Python VM golden traces,
-then `qemu-system-x86_64 -cdrom evoos.iso`, then VirtualBox.
-
-See experiments/scheduling/results/round3/summary.md (Path to a bootable ISO).
-Not used in milestone 1.
+The stub is firmware, not a kernel. `make iso` builds evoos.iso with Limine
+(BIOS + UEFI) around a C interpreter of the frozen 5-word ISA.
 """
 
 STAGE = 5
-STATUS = "placeholder"
+STATUS = "boot-track"
+ISO = "artifacts/evoos.iso"

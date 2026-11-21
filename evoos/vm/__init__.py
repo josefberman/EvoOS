@@ -6,6 +6,9 @@ from evoos.vm.instruction_set import (
     Perm,
     assemble,
     disassemble,
+    dumps_program,
+    loads_program,
+    parse_disassembly,
     privileged_ops,
 )
 from evoos.vm.machine import Machine, MachineConfig, Snapshot, lenient_config
@@ -26,6 +29,9 @@ __all__ = [
     "VerifyError",
     "assemble",
     "disassemble",
+    "dumps_program",
+    "loads_program",
+    "parse_disassembly",
     "privileged_ops",
     "verify_guest",
     "verify_supervisor",

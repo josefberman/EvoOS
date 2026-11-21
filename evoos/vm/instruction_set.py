@@ -17,13 +17,18 @@ in ordinary bytecode.
 
 Encoding
 --------
-Each instruction is an `Instr` record (opcode + 3 register fields + immediate).
-This is the typed bytecode the verifier checks. Programs are Harvard-style:
-each context has its own instruction list; data lives in a shared word memory.
+Each instruction is five integer words ``(op, a, b, c, imm)``. No Python
+objects are required at rest or at runtime. The frozen on-disk form is
+little-endian signed 32-bit words; see ``docs/isa.md`` and `dumps_program`.
+`encode_word` packs into 32 bits with a 12-bit immediate and is **lossy**
+(dumps only). Programs are Harvard-style: each context has its own
+instruction list; data lives in a shared word memory.
 """
 
 from __future__ import annotations
 
+import re
+import struct
 from enum import IntEnum
 from typing import Iterable, NamedTuple, Sequence
 
@@ -305,3 +310,66 @@ def instrs_to_jsonable(instrs: Sequence[Instr]) -> list[list[int]]:
 
 def instrs_from_jsonable(rows: Sequence[Sequence[int]]) -> tuple[Instr, ...]:
     return tuple(Instr(*row) for row in rows)
+
+
+# Frozen program blob: little-endian u32 header then 5×i32 per instruction.
+# Layout: magic=MAGIC, version=1, n_instrs, reserved, then n_instrs*(op,a,b,c,imm).
+PROG_VERSION = 1
+_PROG_HDR = struct.Struct("<IIII")
+_INSTR_LE = struct.Struct("<iiiii")
+INSTR_WORDS = 5  # op, a, b, c, imm
+
+
+def dumps_program(instrs: Sequence[Instr]) -> bytes:
+    """Serialize a program as integer words. Inverse of `loads_program`."""
+    body = b"".join(_INSTR_LE.pack(ins.op, ins.a, ins.b, ins.c, ins.imm) for ins in instrs)
+    return _PROG_HDR.pack(MAGIC, PROG_VERSION, len(instrs), 0) + body
+
+
+def loads_program(data: bytes) -> tuple[Instr, ...]:
+    """Deserialize a `dumps_program` blob. Raises ValueError on a bad header."""
+    if len(data) < _PROG_HDR.size:
+        raise ValueError("program blob too short")
+    magic, version, n, _res = _PROG_HDR.unpack_from(data, 0)
+    if magic != MAGIC:
+        raise ValueError(f"bad program magic {magic:#x}")
+    if version != PROG_VERSION:
+        raise ValueError(f"unsupported program version {version}")
+    need = _PROG_HDR.size + n * _INSTR_LE.size
+    if len(data) < need:
+        raise ValueError("program blob truncated")
+    out: list[Instr] = []
+    off = _PROG_HDR.size
+    for _ in range(n):
+        out.append(Instr(*_INSTR_LE.unpack_from(data, off)))
+        off += _INSTR_LE.size
+    return tuple(out)
+
+
+_DISASM_LINE = re.compile(
+    r"^\s*\d+:\s+(\S+)\s+a=(-?\d+)\s+b=(-?\d+)\s+c=(-?\d+)\s+imm=(-?\d+)"
+)
+
+
+def parse_disassembly(text: str) -> tuple[Instr, ...]:
+    """Parse `disassemble()` / elite example text back into instructions."""
+    out: list[Instr] = []
+    for line in text.splitlines():
+        m = _DISASM_LINE.match(line)
+        if not m:
+            continue
+        name = m.group(1).upper()
+        if name not in _OP_ALIASES:
+            raise ValueError(f"unknown opcode in disassembly: {name}")
+        out.append(
+            Instr(
+                int(_OP_ALIASES[name]),
+                int(m.group(2)),
+                int(m.group(3)),
+                int(m.group(4)),
+                int(m.group(5)),
+            )
+        )
+    if not out:
+        raise ValueError("no instructions in disassembly")
+    return tuple(out)

@@ -18,3 +18,5 @@ htmlcov/
 .tensorboard/
 .python-version
 .DS_Store
+native/boot.img
+native/*.o

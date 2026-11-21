@@ -129,16 +129,76 @@ Round 2 said bare is 0/12 at 400×40 with gadgets off. Round 3 shows a **single*
 
 ## Path to a bootable x86_64 ISO
 
-The evolved supervisor *is* the OS. A tiny host stub (C or Rust interpreter/JIT of the frozen word encoding) plus Limine or a Multiboot2 `boot.asm` (BIOS first, UEFI next) is firmware, not a kernel. Embed `supervisor.bin` in the ISO; map serial/VGA as a STORE window. Test in QEMU (`qemu-system-x86_64 -cdrom evoos.iso -nographic -serial mon:stdio`) before VirtualBox. Do not grow a Unix process table, page allocator, or POSIX VFS in the stub — aim for a **single address-space capability machine** whose multiplexing is whatever bytecode search found. Details: the ISO section of the round-3 summary.
+The evolved supervisor *is* the OS. A tiny host stub (C interpreter of the frozen word encoding) plus Limine (BIOS + UEFI) is firmware, not a kernel. See **Booting EvoOS** below.
+
+## Booting EvoOS
+
+The OS is the evolved bytecode blob. Firmware in `native/` interprets the frozen 5-word ISA (`docs/isa.md`). It does not contain a scheduler, heap, or VFS.
+
+**Build the ISO** (needs `gcc`, `xorriso`, Python 3.11+):
+
+```bash
+pip install -e ".[dev]"
+make iso                          # evolved gadgets elite (round 2 seed 42)
+make iso SUPERVISOR=rr            # hand-written round-robin fallback
+```
+
+Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t evoos . && docker run --rm evoos make iso test-qemu`.
+
+**QEMU (BIOS, serial captured — this is the CI check):**
+
+```bash
+make test-qemu
+# or:
+qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -display none \
+  -serial file:build/serial.log \
+  -device isa-debug-exit,iobase=0xf4,iosize=0x04 -no-reboot
+```
+
+Success: serial contains `completed 4/4`, `isolation=ok`, `EvoOS done.` QEMU debug-exit 0 → process status 1.
+
+**QEMU UEFI** (OVMF):
+
+```bash
+qemu-system-x86_64 -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+  -drive if=pflash,format=raw,file=/tmp/OVMF_VARS.fd \
+  -cdrom artifacts/evoos.iso -m 128M -serial stdio -display none
+```
+
+Copy `OVMF_VARS_4M.fd` to a writable `/tmp/OVMF_VARS.fd` first.
+
+**VirtualBox**
+
+1. New VM → **Other** → **Other/Unknown (64-bit)** (or BSD 64-bit if Other is hidden).
+2. RAM **128 MB** minimum, **256 MB** comfortable. 1 CPU is enough. Chipset PIIX3 or ICH9. Enable I/O APIC.
+3. Storage: add the ISO as an optical drive (IDE or SATA). Do not attach a virtual HDD; this firmware does not install.
+4. System → Boot order: **Optical** first. Uncheck Floppy.
+5. For BIOS: System → uncheck Enable EFI. For UEFI: check Enable EFI (the ISO is a hybrid Limine image).
+6. Ports → Serial Ports → Port 1: enable, port mode **Raw file**, path `evoos-serial.log` if you want the same log as QEMU.
+7. Display: 16 MB VRAM, VMSVGA or VBoxVGA. Limine hands the firmware a framebuffer (not BIOS text at 0xB8000 — that MMIO is unmapped). You should see block-letter **EVOOS**, four guest status squares, and the serial log as glyphs.
+8. Start. Guests should all complete; isolation OK.
+
+**Differential tests** (Python VM vs hosted C interpreter, same image):
+
+```bash
+make test-diff
+pytest tests/test_codec.py tests/test_differential.py
+```
+
+**Select supervisor at pack time:** `--supervisor evolved` embeds `experiments/scheduling/results/examples/correctness_gadgets_s42_round-robin-like.txt`. `--supervisor rr` embeds the human round-robin baseline (`q=16`). STORE to words `[1920,1984)` is echoed to serial/VGA; the word still lands in memory (ISA unchanged).
 
 ## Layout
 
 ```
-evoos/vm/           instruction_set, machine, sandbox, verifier
+evoos/vm/           instruction_set, codec (frozen 5-word encoding), machine, sandbox, verifier
 evoos/evaluator/    workloads, correctness, reward, novelty
 evoos/agent/        mutations (packs), policy, MAP-Elites, search
 evoos/experiments/scheduling/  baselines, Condition B, sweep, results/
-evoos/placeholders/ stages 2–5 stubs
+evoos/boot/         pack EVS0 images, Python vs C traces
+evoos/placeholders/ stages 2–4 stubs
+native/             freestanding C interpreter, Limine firmware, ISO recipe
+docs/isa.md         frozen binary ISA
+artifacts/evoos.iso bootable hybrid BIOS+UEFI image
 train.py
 ```
 
@@ -150,6 +210,6 @@ train.py
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
 | 3 | Persistence / a block device, not a VFS opcode | `evoos/placeholders/persistence.py` |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |
-| 5 | Bootable x86_64 ISO in QEMU then VirtualBox (BIOS, then UEFI); stub interprets evolved bytecode | `evoos/placeholders/qemu_boot.py`, `fuzzing.py` |
+| 5 | Bootable x86_64 ISO in QEMU then VirtualBox (BIOS, then UEFI); stub interprets evolved bytecode | `native/` (Limine ISO, C interpreter); placeholder `evoos/placeholders/qemu_boot.py` |
 
-Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral); a C/Rust interpreter with golden traces against this Python VM; Limine ISO.
+Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral). Boot track: ISO + differential harness in this tree.
