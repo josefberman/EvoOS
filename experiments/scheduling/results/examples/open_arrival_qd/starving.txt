@@ -1,0 +1,64 @@
+# qd cell=starving R=0.715 survived=True
+   0:  MOVI     a=3 b=0 c=0 imm=2
+   1:  CTXGET   a=6 b=3 c=0 imm=4
+   2:  CTXGET   a=2 b=3 c=0 imm=5
+   3:  ADDPROT  a=3 b=6 c=2 imm=0
+   4:  MOVI     a=6 b=0 c=0 imm=3
+   5:  CTXGET   a=5 b=6 c=0 imm=4
+   6:  CTXGET   a=3 b=6 c=0 imm=5
+   7:  ADDPROT  a=6 b=5 c=3 imm=0
+   8:  MOVI     a=3 b=0 c=0 imm=1
+   9:  MOVI     a=7 b=0 c=0 imm=1
+  10:  CTXGET   a=1 b=7 c=0 imm=4
+  11:  CTXGET   a=5 b=7 c=0 imm=5
+  12:  ADDPROT  a=7 b=1 c=5 imm=0
+  13:  RDTIME   a=3 b=4 c=6 imm=0
+  14:  RUNCTXI  a=3 b=0 c=0 imm=256
+  15:  RUNCTXI  a=6 b=3 c=2 imm=13
+  16:  MOVI     a=6 b=0 c=0 imm=4
+  17:  CTXGET   a=3 b=6 c=0 imm=4
+  18:  CTXGET   a=5 b=6 c=0 imm=5
+  19:  ADDPROT  a=6 b=3 c=5 imm=0
+  20:  MOVI     a=7 b=6 c=6 imm=-3
+  21:  ADDPROT  a=6 b=4 c=1 imm=15
+  22:  LOAD     a=2 b=1 c=4 imm=26
+  23:  MOVI     a=4 b=0 c=0 imm=4
+  24:  RUNCTXI  a=4 b=0 c=0 imm=128
+  25:  AND      a=6 b=5 c=3 imm=30
+  26:  MOVI     a=5 b=0 c=0 imm=2
+  27:  RUNCTXI  a=5 b=0 c=0 imm=8
+  28:  BGE      a=4 b=6 c=2 imm=19  # -> 48
+  29:  MOVI     a=5 b=0 c=0 imm=3
+  30:  RUNCTXI  a=5 b=0 c=0 imm=32
+  31:  XOR      a=2 b=4 c=0 imm=640
+  32:  JMP      a=2 b=3 c=6 imm=14  # -> 47
+  33:  CTXGET   a=4 b=6 c=6 imm=4
+  34:  BNE      a=0 b=7 c=3 imm=-13  # -> 22
+  35:  CTXGET   a=5 b=6 c=0 imm=4
+  36:  CTXGET   a=3 b=6 c=0 imm=5
+  37:  ADDPROT  a=6 b=5 c=3 imm=0
+  38:  MOVI     a=3 b=0 c=0 imm=1
+  39:  RUNCTXI  a=3 b=0 c=0 imm=256
+  40:  RUNCTXI  a=6 b=3 c=2 imm=13
+  41:  MOVI     a=7 b=6 c=6 imm=-3
+  42:  ADDPROT  a=6 b=4 c=1 imm=15
+  43:  MOVI     a=3 b=0 c=0 imm=4
+  44:  CTXGET   a=5 b=3 c=0 imm=4
+  45:  CTXGET   a=6 b=3 c=0 imm=5
+  46:  ADDPROT  a=3 b=5 c=6 imm=0
+  47:  LOAD     a=2 b=1 c=4 imm=26
+  48:  MOVI     a=4 b=0 c=0 imm=4
+  49:  RUNCTXI  a=4 b=0 c=0 imm=128
+  50:  BGE      a=4 b=6 c=2 imm=19  # -> 70
+  51:  MOVI     a=5 b=0 c=0 imm=3
+  52:  JAL      a=5 b=0 c=0 imm=-47  # -> 6
+  53:  XOR      a=2 b=4 c=0 imm=640
+  54:  JMP      a=2 b=3 c=6 imm=14  # -> 69
+  55:  MOVI     a=3 b=0 c=0 imm=4
+  56:  CTXGET   a=5 b=3 c=0 imm=4
+  57:  CTXGET   a=7 b=3 c=0 imm=5
+  58:  ADDPROT  a=3 b=5 c=7 imm=0
+  59:  CTXGET   a=4 b=6 c=6 imm=4
+  60:  BNE      a=0 b=7 c=3 imm=-13  # -> 48
+  61:  RDFAULT  a=4 b=3 c=0 imm=16
+  62:  XOR      a=5 b=2 c=5 imm=-4

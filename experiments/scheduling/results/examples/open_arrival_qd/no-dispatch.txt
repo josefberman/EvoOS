@@ -1,0 +1,23 @@
+# qd cell=no-dispatch R=0.000 survived=False
+   0:  MOVI     a=2 b=0 c=0 imm=2
+   1:  CTXGET   a=6 b=2 c=0 imm=4
+   2:  CTXGET   a=3 b=2 c=0 imm=5
+   3:  ADDPROT  a=2 b=6 c=3 imm=0
+   4:  RUNCTXI  a=4 b=3 c=3 imm=9
+   5:  ADD      a=2 b=5 c=6 imm=512
+   6:  JMP      a=0 b=5 c=6 imm=256  # -> 263
+   7:  ADDPROT  a=6 b=1 c=4 imm=26
+   8:  SUB      a=2 b=0 c=3 imm=-2
+   9:  ADDPROT  a=1 b=7 c=5 imm=-51
+  10:  AND      a=2 b=0 c=7 imm=-54
+  11:  XOR      a=7 b=0 c=4 imm=117
+  12:  MUL      a=1 b=4 c=0 imm=12
+  13:  RUNCTXI  a=5 b=2 c=4 imm=8
+  14:  RUNCTXI  a=4 b=1 c=6 imm=109
+  15:  CMP      a=5 b=5 c=6 imm=5
+  16:  BLT      a=7 b=0 c=4 imm=0  # -> 17
+  17:  SHR      a=5 b=1 c=6 imm=16
+  18:  JR       a=0 b=4 c=5 imm=-4
+  19:  CTXSET   a=4 b=5 c=0 imm=14
+  20:  CTXGET   a=5 b=5 c=1 imm=12
+  21:  HALT     a=0 b=0 c=0 imm=0

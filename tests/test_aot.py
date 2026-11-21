@@ -29,3 +29,17 @@ def test_select_rr_live():
     instrs, origin = select_supervisor("rr_live")
     assert "live" in origin
     assert instrs[-1].op == Op.JMP
+
+
+def test_select_evolved_oneshot_still_halts():
+    instrs, origin = select_supervisor("evolved")
+    assert origin == "evolved_gadgets_s42"
+    assert any(i.op == Op.HALT for i in instrs)
+
+
+def test_select_evolved_open_is_not_rr_live():
+    instrs, origin = select_supervisor("evolved_open")
+    assert origin == "evolved_open_arrival_gadgets_s99"
+    assert "baseline_rr" not in origin
+    rr, _ = select_supervisor("rr_live")
+    assert instrs != rr
