@@ -11,7 +11,13 @@ from evoos.agent.mutations import OPERATOR_PACKS, GADGET_OPS, mutate, random_pro
 from evoos.agent.policy import MutationPolicy, make_policy
 from evoos.agent.program import Candidate
 from evoos.agent.replay_buffer import ReplayBuffer, Transition
-from evoos.evaluator.novelty import NoveltyArchive, behavioral_descriptor, elites_cell, opcode_histogram
+from evoos.evaluator.novelty import (
+    NoveltyArchive,
+    behavioral_descriptor,
+    elites_cell,
+    milestone_cell,
+    opcode_histogram,
+)
 from evoos.evaluator.reward import RewardBreakdown, RewardWeights, score
 from evoos.vm.sandbox import EvalResult, Sandbox, Workload
 from evoos.vm.verifier import VerifyError, verify_supervisor
@@ -38,6 +44,10 @@ class SearchConfig:
     shaping: bool = False
     rich_efficiency: bool = False
     early_stop_complete: bool = False
+    gated: bool = False
+    curiosity: bool = False
+    milestone_archive: bool = False
+    elite_crossover: bool = False
 
 
 @dataclass
@@ -87,6 +97,7 @@ def evaluate_candidate(
     compute_heldout: bool,
     shaping: bool = False,
     rich_efficiency: bool = False,
+    gated: bool = False,
 ) -> tuple[RewardBreakdown, list[EvalResult], list[EvalResult], bool]:
     try:
         verify_supervisor(candidate.instrs, sandbox.config)
@@ -141,6 +152,7 @@ def evaluate_candidate(
         needed_cycles=_needed(train),
         shaping=shaping,
         rich_efficiency=rich_efficiency,
+        gated=gated,
     )
     return breakdown, train_results, held_results, False
 
@@ -190,12 +202,16 @@ def run_search(
             compute_g,
             shaping=config.shaping,
             rich_efficiency=config.rich_efficiency,
+            gated=config.gated,
         )
         rec = EvalRecord(gen, cand, bd, tr, ho, operator, invalid)
         if config.keep_records:
             state.records.append(rec)
         if not invalid:
-            cell = elites_cell(tr[0]) if tr else (0, 0)
+            if config.milestone_archive and tr:
+                cell = milestone_cell(tr[0])
+            else:
+                cell = elites_cell(tr[0]) if tr else (0, 0)
             state.archive.add(cand, cell, bd.total, gen, bd)
             if bd.total > state.best_reward:
                 state.best_reward = bd.total
@@ -227,11 +243,19 @@ def run_search(
         children: list[Candidate] = []
         for _ in range(config.population):
             if rng.random() < config.archive_mix:
-                parent = state.archive.sample(rng) or rng.choice(pop)
+                if config.curiosity:
+                    parent = state.archive.sample_curious(rng) or rng.choice(pop)
+                else:
+                    parent = state.archive.sample(rng) or rng.choice(pop)
             else:
                 parent = rng.choice(pop)
-            other = rng.choice(pop)
+            if config.elite_crossover and state.archive.size() >= 2:
+                other = state.archive.sample_other(rng, parent) or rng.choice(pop)
+            else:
+                other = rng.choice(pop)
             operator = policy.select_operator(rng)
+            if config.elite_crossover and rng.random() < 0.15:
+                operator = "crossover"
             child = mutate(
                 parent,
                 operator,
@@ -256,10 +280,12 @@ def run_search(
             else:
                 children.append(child)
 
-        # Next pop: mix of children and archive elites.
+        # Next pop: all archive stepping-stones plus children, cap at population
+        # unless the archive is larger (keep every occupied milestone cell).
         elites = [e.candidate for e in sorted(state.archive.cells.values(), key=lambda e: -e.reward)]
-        keep = max(1, int(config.elite_fraction * config.population))
-        pop = (elites[:keep] + children + pop)[: config.population]
+        keep = max(1, int(config.elite_fraction * config.population), len(elites) if config.milestone_archive else 0)
+        keep = min(keep, max(config.population, len(elites)))
+        pop = (elites[:keep] + children + pop)[: max(config.population, keep)]
         if not pop:
             pop = [
                 Candidate(

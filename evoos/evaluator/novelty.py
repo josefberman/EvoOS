@@ -46,6 +46,20 @@ def elites_cell(result: EvalResult) -> tuple[int, int]:
     return (x, y)
 
 
+def milestone_cell(result: EvalResult) -> tuple[int, int, int, int, int]:
+    """Stepping-stone grid: cover / entered / progressed / completed / n_guests.
+
+    Counts are isolation-gated (protected-run) so a RUNCTX-without-MPU elite
+    does not occupy the same cell as a cover+entered elite.
+    """
+    n_prot = sum(1 for c in (result.prot_cover or []) if c)
+    n_ent = int(result.entered_protected)
+    n_prog = int(result.progressed_protected)
+    n_done = int(result.completed_protected)
+    n_g = int(result.n_guests)
+    return (n_prot, n_ent, n_prog, n_done, n_g)
+
+
 def _euclid(a: tuple[float, ...] | list[float], b: tuple[float, ...] | list[float]) -> float:
     n = min(len(a), len(b))
     return sum((float(a[i]) - float(b[i])) ** 2 for i in range(n)) ** 0.5

@@ -86,6 +86,9 @@ class Context:
     data_base: int = 0
     data_bound: int = 0
     prot: list[tuple[int, int, int]] = field(default_factory=list)
+    # Evaluator telemetry only (not an ISA CSR). Host stubs may ignore these.
+    protected_cycles: int = 0
+    ran_protected: bool = False
 
     def clone(self) -> "Context":
         c = Context(
@@ -99,6 +102,8 @@ class Context:
             data_base=self.data_base,
             data_bound=self.data_bound,
             prot=list(self.prot),
+            protected_cycles=self.protected_cycles,
+            ran_protected=self.ran_protected,
         )
         return c
 
@@ -207,6 +212,18 @@ class Machine:
             self.supervisor_fault = int(code)
             self.halted = True
 
+    def _window_covered(self, guest: Context) -> bool:
+        """True if some MPU range fully contains the guest's assigned data window.
+
+        Evaluator-only. Does not change load/store faults or any opcode.
+        """
+        if guest.data_bound <= guest.data_base:
+            return False
+        for lo, hi, _flags in guest.prot:
+            if lo <= guest.data_base and hi >= guest.data_bound:
+                return True
+        return False
+
     def _prot_allows(self, cid: int, addr: int, perm: int) -> bool:
         if cid == 0:
             return True
@@ -290,8 +307,12 @@ class Machine:
                 break
             if guest.fault:
                 break
+            covered = self._window_covered(guest)
             self._execute(cid)
             ran += 1
+            if covered:
+                guest.protected_cycles += 1
+                guest.ran_protected = True
         self.switch_count += 1
         self.last_run_steps = ran
         self.last_run_fault = guest.fault

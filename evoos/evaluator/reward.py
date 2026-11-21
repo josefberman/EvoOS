@@ -86,6 +86,7 @@ def score(
     needed_cycles: list[int] | None = None,
     shaping: bool = False,
     rich_efficiency: bool = False,
+    gated: bool = False,
 ) -> RewardBreakdown:
     w = (weights or RewardWeights()).normalized()
     if not train_results:
@@ -112,9 +113,18 @@ def score(
     f = sum(f_parts) / len(f_parts)
     s = sum(s_parts) / len(s_parts)
     e = sum(e_parts) / len(e_parts)
-    shape = mean_shape(train_results)
+    shape = mean_shape(train_results, gated=gated)
     if shaping:
         f = shape.blended()
+        if gated:
+            # Isolation-gated stability: unprotected 1–2-cycle RUNCTX is not "tested isolation".
+            protected_progress = any(r.progressed_protected > 0 for r in train_results)
+            if not protected_progress:
+                s = 0.0
+            else:
+                s = 1.0 if all(r.isolation_ok for r in train_results) else 0.0
+                if any(r.supervisor_fault for r in train_results):
+                    s *= 0.5
 
     g = 0.0
     if heldout_results:

@@ -70,6 +70,12 @@ class EvalResult:
     invalid_reason: str = ""
     prot_cover: list[bool] = field(default_factory=list)
     entered: int = 0
+    # Isolation-gated observables (window covered *before* the credited steps).
+    entered_protected: int = 0
+    progressed_protected: int = 0
+    completed_protected: int = 0
+    ran_protected: list[bool] = field(default_factory=list)
+    protected_cycles: list[int] = field(default_factory=list)
 
     @property
     def isolation_ok(self) -> bool:
@@ -101,6 +107,8 @@ def load_firmware(machine: Machine, workload: Workload) -> None:
         ctx.prot = []
         ctx.data_base = g.data_base
         ctx.data_bound = g.data_bound
+        ctx.protected_cycles = 0
+        ctx.ran_protected = False
         # Hardware reset: r1 = data_base, r2 = data_bound (not an OS ABI).
         ctx.regs[1] = g.data_base
         ctx.regs[2] = g.data_bound
@@ -185,6 +193,11 @@ class Sandbox:
                 invalid_reason=str(exc),
                 prot_cover=[False] * len(workload.guests),
                 entered=0,
+                entered_protected=0,
+                progressed_protected=0,
+                completed_protected=0,
+                ran_protected=[False] * len(workload.guests),
+                protected_cycles=[0] * len(workload.guests),
             )
         machine, snap = self._prepare(workload)
         machine.restore(snap)
@@ -212,6 +225,15 @@ class Sandbox:
             covered = any(lo <= g.data_base and hi >= g.data_bound for lo, hi, _ in ctx.prot)
             prot_cover.append(bool(covered))
         entered = sum(1 for o in outcomes if o.cycles > 0)
+        ran_protected = [bool(machine.contexts[i + 1].ran_protected) for i in range(len(workload.guests))]
+        protected_cycles = [int(machine.contexts[i + 1].protected_cycles) for i in range(len(workload.guests))]
+        entered_protected = sum(1 for flag in ran_protected if flag)
+        progressed_protected = sum(
+            1 for o, flag in zip(outcomes, ran_protected) if o.progressed and flag
+        )
+        completed_protected = sum(
+            1 for o, flag in zip(outcomes, ran_protected) if o.correct and flag
+        )
         return EvalResult(
             workload=workload.name,
             split=workload.split,
@@ -231,6 +253,11 @@ class Sandbox:
             mem_fingerprint=_fingerprint(machine.mem),
             prot_cover=prot_cover,
             entered=entered,
+            entered_protected=entered_protected,
+            progressed_protected=progressed_protected,
+            completed_protected=completed_protected,
+            ran_protected=ran_protected,
+            protected_cycles=protected_cycles,
         )
 
     def clear_cache(self) -> None:

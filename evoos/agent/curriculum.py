@@ -24,6 +24,8 @@ class StageLog:
     entered: list[int] = field(default_factory=list)
     prot_cover: list[list[bool]] = field(default_factory=list)
     shape_f: float = 0.0
+    entered_protected: list[int] = field(default_factory=list)
+    completed_protected: list[int] = field(default_factory=list)
 
 
 @dataclass
@@ -75,6 +77,12 @@ def run_curriculum(
             rich_efficiency=search.rich_efficiency,
             early_stop_complete=True,
             log_every=10**9,
+            gated=search.gated,
+            curiosity=search.curiosity,
+            milestone_archive=search.milestone_archive,
+            elite_crossover=search.elite_crossover,
+            archive_mix=search.archive_mix,
+            elite_fraction=search.elite_fraction,
         )
         state = run_search(
             sandbox,
@@ -85,18 +93,34 @@ def run_curriculum(
         )
         last_state = state
         pop = list(getattr(state, "population", []) or [])
+        stones = list(state.archive.elites())
         if state.best is not None:
-            pop = [state.best] + [c for c in pop if c is not state.best]
+            pop = [state.best] + stones + [c for c in pop if c is not state.best]
+        else:
+            pop = stones + pop
+        # Dedup by id, keep order.
+        seen: set[int] = set()
+        uniq: list[Candidate] = []
+        for c in pop:
+            if c.id in seen:
+                continue
+            seen.add(c.id)
+            uniq.append(c)
+        pop = uniq
         train_done = False
         completed: list[int] = []
         entered: list[int] = []
         covers: list[list[bool]] = []
+        entered_p: list[int] = []
+        completed_p: list[int] = []
         isol = True
         shape_f = 0.0
         if state.best_record and state.best_record.train:
             completed = [r.completed for r in state.best_record.train]
             entered = [r.entered for r in state.best_record.train]
             covers = [list(r.prot_cover) for r in state.best_record.train]
+            entered_p = [r.entered_protected for r in state.best_record.train]
+            completed_p = [r.completed_protected for r in state.best_record.train]
             isol = all(r.isolation_ok for r in state.best_record.train)
             train_done = isol and all(
                 r.completed == r.n_guests for r in state.best_record.train
@@ -119,6 +143,8 @@ def run_curriculum(
                 entered=entered,
                 prot_cover=covers,
                 shape_f=shape_f,
+                entered_protected=entered_p,
+                completed_protected=completed_p,
             )
         )
         if stalled and stall is None:
