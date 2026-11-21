@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from evoos.agent.map_elites import MapElites
-from evoos.agent.mutations import mutate, random_program
+from evoos.agent.mutations import OPERATOR_PACKS, GADGET_OPS, mutate, random_program
 from evoos.agent.policy import MutationPolicy, make_policy
 from evoos.agent.program import Candidate
 from evoos.agent.replay_buffer import ReplayBuffer, Transition
@@ -33,6 +33,8 @@ class SearchConfig:
     policy: str = "ucb1"
     max_len: int = 256
     log_every: int = 1
+    operator_pack: str = "gadgets"
+    keep_records: bool = True
 
 
 @dataclass
@@ -144,7 +146,8 @@ def run_search(
 ) -> SearchState:
     rng = random.Random(config.seed)
     weights = _weights(config.mode)
-    policy: MutationPolicy = make_policy(config.policy)
+    operators = OPERATOR_PACKS.get(config.operator_pack, GADGET_OPS)
+    policy: MutationPolicy = make_policy(config.policy, operators)
     novelty = NoveltyArchive()
     replay = ReplayBuffer()
     state = SearchState()
@@ -158,7 +161,11 @@ def run_search(
     while len(pop) < config.population:
         length = rng.randint(max(4, config.init_len // 2), config.init_len * 2)
         pop.append(
-            Candidate(instrs=random_program(rng, length), origin="random", id=next_id)
+            Candidate(
+                instrs=random_program(rng, length, pack=config.operator_pack),
+                origin="random",
+                id=next_id,
+            )
         )
         next_id += 1
 
@@ -167,7 +174,8 @@ def run_search(
             sandbox, cand, train, heldout, novelty, weights, compute_g
         )
         rec = EvalRecord(gen, cand, bd, tr, ho, operator, invalid)
-        state.records.append(rec)
+        if config.keep_records:
+            state.records.append(rec)
         if not invalid:
             cell = elites_cell(tr[0]) if tr else (0, 0)
             state.archive.add(cand, cell, bd.total, gen, bd)
@@ -213,6 +221,7 @@ def run_search(
                 hall=hall or None,
                 other=other,
                 max_len=min(config.max_len, sandbox.config.max_supervisor_len),
+                operators=operators,
             )
             child = Candidate(
                 instrs=child.instrs,
@@ -235,7 +244,11 @@ def run_search(
         pop = (elites[:keep] + children + pop)[: config.population]
         if not pop:
             pop = [
-                Candidate(instrs=random_program(rng, config.init_len), origin="random", id=next_id)
+                Candidate(
+                    instrs=random_program(rng, config.init_len, pack=config.operator_pack),
+                    origin="random",
+                    id=next_id,
+                )
             ]
             next_id += 1
 

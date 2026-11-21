@@ -119,7 +119,7 @@ class PPOMutationPolicy:
         }
 
 
-def make_policy(name: str) -> MutationPolicy:
+def make_policy(name: str, operators: tuple[str, ...] = MUTATION_OPS) -> MutationPolicy:
     if name in ("ppo", "ppo_lite"):
-        return PPOMutationPolicy()
-    return UCB1Bandit()
+        return PPOMutationPolicy(operators=operators)
+    return UCB1Bandit(operators=operators)

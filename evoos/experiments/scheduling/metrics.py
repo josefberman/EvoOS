@@ -1,0 +1,64 @@
+"""Shared scoring of a supervisor on train + held-out mixes."""
+
+from __future__ import annotations
+
+from evoos.agent.program import Candidate
+from evoos.evaluator.reward import RewardWeights, score
+from evoos.experiments.scheduling.analyze import classify_trace, opcode_stats
+from evoos.vm.sandbox import Sandbox, Workload
+
+
+def evaluate_split(
+    sandbox: Sandbox,
+    cand: Candidate,
+    train: list[Workload],
+    heldout: list[Workload],
+) -> dict:
+    train_res = [sandbox.evaluate(cand.instrs, w) for w in train]
+    held_res = [sandbox.evaluate(cand.instrs, w) for w in heldout]
+    train_bd = score(train_res, novelty=0.0, weights=RewardWeights.correctness_only())
+    held_bd = score(held_res, novelty=0.0, weights=RewardWeights.correctness_only())
+    four = all(r.completed == r.n_guests and r.isolation_ok for r in train_res + held_res)
+    labels = {r.workload: classify_trace(r) for r in train_res + held_res}
+    # Majority behavioral label on held-out, then train.
+    held_labels = [classify_trace(r) for r in held_res]
+    structural = max(set(held_labels), key=held_labels.count) if held_labels else "other"
+    return {
+        "train_reward": train_bd.total,
+        "held_reward": held_bd.total,
+        "train_completed": [r.completed for r in train_res],
+        "held_completed": [r.completed for r in held_res],
+        "train_n": [r.n_guests for r in train_res],
+        "held_n": [r.n_guests for r in held_res],
+        "train_isolation": all(r.isolation_ok for r in train_res),
+        "held_isolation": all(r.isolation_ok for r in held_res),
+        "four_of_four": four,
+        "labels": labels,
+        "structural_label": structural,
+        "train_switches": [r.switch_count for r in train_res],
+        "held_switches": [r.switch_count for r in held_res],
+        "train_guest_cycles": [r.guest_cycles for r in train_res],
+        "held_guest_cycles": [r.guest_cycles for r in held_res],
+        "opcode_stats": opcode_stats(cand),
+        "origin": cand.origin,
+        "length": len(cand),
+    }
+
+
+def diagnose(row: dict) -> str:
+    """Short note when 4/4 failed."""
+    if row.get("four_of_four"):
+        return "4/4 train+heldout with isolation"
+    bits = []
+    if not row.get("train_isolation") or not row.get("held_isolation"):
+        bits.append("isolation failure")
+    tc, hc = row.get("train_completed", []), row.get("held_completed", [])
+    bits.append(f"train completed {tc} held {hc}")
+    cyc = row.get("train_guest_cycles") or []
+    if cyc:
+        starved = []
+        for mix in cyc:
+            starved.append([i for i, c in enumerate(mix) if c <= 2])
+        bits.append(f"near-zero-cycle guests (train idx) {starved}")
+    bits.append(f"label={row.get('structural_label')}")
+    return "; ".join(bits)

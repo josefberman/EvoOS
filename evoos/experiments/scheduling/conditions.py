@@ -29,12 +29,7 @@ def condition_a_candidates() -> dict[str, Candidate]:
 
 
 def condition_b_skeleton(quantum: int) -> Candidate:
-    """Human-designed round-robin skeleton with a tunable quantum.
-
-    Milestone 1 stores the skeleton and the knob. A later RL loop (Condition B)
-    should treat `quantum` (and similar immediates) as the action, not invent
-    a new ISA.
-    """
+    """Human-designed round-robin skeleton; Condition B tunes `quantum` only."""
     return round_robin(quantum)
 
 

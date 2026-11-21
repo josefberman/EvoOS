@@ -79,6 +79,7 @@ def run_experiment(args: argparse.Namespace) -> dict:
         mode=args.mode,
         policy=args.policy,
         max_len=cfg.max_supervisor_len,
+        operator_pack=getattr(args, "operator_pack", "gadgets"),
     )
     log.start_run(args.seed, args.mode, {**vars(args), "config": "SearchConfig"})
 
@@ -183,11 +184,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--mem-words", type=int, default=2048)
     p.add_argument("--eval-heldout-every", type=int, default=5)
     p.add_argument("--out", type=str, default="runs/latest")
+    p.add_argument("--operator-pack", choices=("bare", "gadgets", "full"), default="gadgets")
+    p.add_argument("--sweep", action="store_true", help="multi-seed A/B/C sweep (see experiments.scheduling.sweep)")
+    p.add_argument("--quick", action="store_true")
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.sweep:
+        from evoos.experiments.scheduling.sweep import main as sweep_main
+
+        extra = ["--out", args.out]
+        if args.quick:
+            extra.append("--quick")
+        if args.generations != 25:
+            extra.extend(["--generations", str(args.generations)])
+        if args.population != 16:
+            extra.extend(["--population", str(args.population)])
+        return sweep_main(extra)
     run_experiment(args)
     return 0
 

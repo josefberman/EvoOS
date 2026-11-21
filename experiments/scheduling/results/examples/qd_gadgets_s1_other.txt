@@ -1,0 +1,127 @@
+# c_qd_gadgets_s1 label=other searchR=0.8727917766487476 held=[4, 4] train=[4, 4]
+   0:  MOVI     a=2 b=0 c=0 imm=2
+   1:  CTXGET   a=1 b=2 c=0 imm=4
+   2:  MOVI     a=7 b=0 c=0 imm=4
+   3:  MOVI     a=4 b=0 c=0 imm=1
+   4:  CTXGET   a=1 b=4 c=0 imm=4
+   5:  CTXGET   a=5 b=4 c=0 imm=5
+   6:  ADDPROT  a=4 b=1 c=5 imm=0
+   7:  CTXGET   a=4 b=7 c=0 imm=4
+   8:  CMP      a=2 b=7 c=0 imm=5
+   9:  ADDPROT  a=7 b=4 c=2 imm=0
+  10:  CTXGET   a=6 b=2 c=0 imm=5
+  11:  MOVI     a=6 b=0 c=0 imm=0
+  12:  RUNCTXI  a=6 b=0 c=0 imm=8
+  13:  RUNCTXI  a=2 b=0 c=0 imm=256
+  14:  ADDPROT  a=0 b=1 c=6 imm=0
+  15:  MOVI     a=3 b=0 c=0 imm=2
+  16:  NOP      a=2 b=0 c=2 imm=23
+  17:  CTXGET   a=6 b=3 c=0 imm=4
+  18:  CTXGET   a=4 b=3 c=0 imm=5
+  19:  ADDPROT  a=3 b=6 c=4 imm=0
+  20:  MOVI     a=4 b=0 c=0 imm=3
+  21:  CTXGET   a=6 b=4 c=0 imm=4
+  22:  CTXGET   a=3 b=4 c=0 imm=5
+  23:  ADDPROT  a=4 b=6 c=3 imm=0
+  24:  MOVI     a=6 b=0 c=0 imm=3
+  25:  RUNCTXI  a=6 b=0 c=0 imm=64
+  26:  MOVI     a=4 b=0 c=0 imm=4
+  27:  BNE      a=1 b=7 c=2 imm=4  # -> 32
+  28:  BNE      a=5 b=0 c=4 imm=11  # -> 40
+  29:  ADDI     a=3 b=0 c=5 imm=24
+  30:  RDTIME   a=5 b=4 c=0 imm=19
+  31:  CTXGET   a=4 b=7 c=0 imm=4
+  32:  CTXGET   a=2 b=7 c=0 imm=5
+  33:  ADDPROT  a=7 b=4 c=2 imm=0
+  34:  CTXGET   a=6 b=2 c=0 imm=5
+  35:  MOVI     a=6 b=0 c=0 imm=1
+  36:  XOR      a=4 b=5 c=5 imm=256
+  37:  RUNCTXI  a=2 b=2 c=6 imm=64
+  38:  JMP      a=2 b=6 c=6 imm=22  # -> 61
+  39:  XOR      a=1 b=5 c=0 imm=512
+  40:  CTXSET   a=2 b=5 c=1 imm=1
+  41:  BLT      a=1 b=3 c=1 imm=8  # -> 50
+  42:  BNE      a=1 b=7 c=4 imm=10  # -> 53
+  43:  ADDI     a=3 b=7 c=3 imm=24
+  44:  AND      a=4 b=0 c=0 imm=640
+  45:  MUL      a=3 b=3 c=6 imm=-6
+  46:  SHR      a=3 b=2 c=1 imm=2
+  47:  ADDPROT  a=4 b=4 c=7 imm=32
+  48:  JMP      a=0 b=6 c=0 imm=12  # -> 61
+  49:  MOVI     a=6 b=0 c=0 imm=3
+  50:  CTXGET   a=1 b=6 c=0 imm=4
+  51:  CTXGET   a=2 b=6 c=0 imm=5
+  52:  ADD      a=5 b=6 c=5 imm=384
+  53:  XOR      a=2 b=3 c=7 imm=123
+  54:  JAL      a=4 b=4 c=6 imm=7  # -> 62
+  55:  CLRPROT  a=5 b=2 c=7 imm=5
+  56:  SHR      a=2 b=4 c=4 imm=-4
+  57:  CMP      a=6 b=6 c=6 imm=-8
+  58:  JR       a=7 b=6 c=6 imm=1
+  59:  ADD      a=6 b=5 c=7 imm=14
+  60:  ADDI     a=2 b=2 c=2 imm=6
+  61:  JMP      a=1 b=1 c=3 imm=8  # -> 70
+  62:  ADDPROT  a=6 b=1 c=7 imm=0
+  63:  BLT      a=7 b=6 c=5 imm=4  # -> 68
+  64:  CTXGET   a=7 b=1 c=4 imm=12
+  65:  MOVI     a=6 b=0 c=0 imm=1
+  66:  RUNCTXI  a=6 b=0 c=0 imm=8
+  67:  ADDPROT  a=2 b=2 c=5 imm=-4
+  68:  ADDI     a=2 b=5 c=5 imm=-7
+  69:  ADDPROT  a=1 b=5 c=2 imm=0
+  70:  RUNCTXI  a=1 b=0 c=0 imm=8
+  71:  RUNCTXI  a=6 b=0 c=0 imm=64
+  72:  CLRPROT  a=4 b=0 c=0 imm=4
+  73:  RUNCTXI  a=4 b=0 c=0 imm=128
+  74:  BNE      a=1 b=7 c=2 imm=5  # -> 80
+  75:  BNE      a=5 b=0 c=4 imm=11  # -> 87
+  76:  ADDI     a=3 b=0 c=5 imm=24
+  77:  RDTIME   a=5 b=4 c=0 imm=19
+  78:  XOR      a=4 b=5 c=5 imm=256
+  79:  JR       a=7 b=2 c=0 imm=-20
+  80:  CMP      a=3 b=0 c=6 imm=12
+  81:  CTXGET   a=1 b=0 c=3 imm=-7
+  82:  STORE    a=3 b=0 c=4 imm=31
+  83:  SHR      a=5 b=4 c=6 imm=-53
+  84:  RUNCTXI  a=2 b=2 c=6 imm=64
+  85:  JMP      a=2 b=6 c=6 imm=22  # -> 108
+  86:  OR       a=7 b=2 c=6 imm=-3
+  87:  MOVI     a=1 b=0 c=7 imm=384
+  88:  RUNCTX   a=3 b=0 c=4 imm=2
+  89:  CTXSET   a=7 b=4 c=5 imm=82
+  90:  MOVI     a=4 b=0 c=0 imm=2
+  91:  MOVI     a=4 b=0 c=0 imm=4
+  92:  RUNCTXI  a=4 b=0 c=0 imm=128
+  93:  BNE      a=1 b=7 c=2 imm=4  # -> 98
+  94:  MOVI     a=6 b=0 c=0 imm=4
+  95:  CTXGET   a=1 b=6 c=0 imm=4
+  96:  CTXGET   a=5 b=6 c=0 imm=5
+  97:  ADDPROT  a=6 b=1 c=5 imm=0
+  98:  BNE      a=5 b=0 c=4 imm=11  # -> 110
+  99:  MOVI     a=1 b=0 c=0 imm=4
+ 100:  MOVI     a=1 b=0 c=0 imm=3
+ 101:  CTXGET   a=5 b=1 c=0 imm=4
+ 102:  CTXGET   a=7 b=1 c=0 imm=5
+ 103:  ADDPROT  a=1 b=5 c=7 imm=0
+ 104:  RUNCTXI  a=1 b=0 c=0 imm=8
+ 105:  MOVI     a=2 b=0 c=0 imm=1
+ 106:  RUNCTXI  a=2 b=0 c=0 imm=64
+ 107:  MOVI     a=6 b=0 c=0 imm=3
+ 108:  MOVI     a=6 b=0 c=0 imm=3
+ 109:  RUNCTXI  a=6 b=0 c=0 imm=32
+ 110:  MOVI     a=1 b=0 c=0 imm=2
+ 111:  MOVI     a=4 b=0 c=0 imm=4
+ 112:  RUNCTXI  a=4 b=0 c=0 imm=128
+ 113:  BNE      a=1 b=7 c=2 imm=4  # -> 118
+ 114:  RUNCTXI  a=6 b=0 c=0 imm=32
+ 115:  MOVI     a=1 b=0 c=0 imm=4
+ 116:  RUNCTXI  a=1 b=0 c=0 imm=64
+ 117:  MOVI     a=1 b=0 c=0 imm=2
+ 118:  MOVI     a=7 b=0 c=0 imm=2
+ 119:  RUNCTXI  a=7 b=0 c=0 imm=256
+ 120:  RUNCTXI  a=1 b=0 c=0 imm=256
+ 121:  BNE      a=5 b=0 c=4 imm=11  # -> 133
+ 122:  ADDI     a=3 b=0 c=5 imm=24
+ 123:  RDTIME   a=5 b=4 c=0 imm=19
+ 124:  XOR      a=4 b=5 c=5 imm=256
+ 125:  JMP      a=2 b=6 c=6 imm=22  # -> 148

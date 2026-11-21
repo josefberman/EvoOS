@@ -23,6 +23,7 @@ def test_mutations_stay_typed_or_are_caught():
         "insert_gadget",
         "insert_mmu_gadget",
         "insert_runctx_gadget",
+        "insert_ctx_scan",
         "control_flow",
     ):
         child = mutate(parent, op, rng, max_len=64)

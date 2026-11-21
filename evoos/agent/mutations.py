@@ -9,7 +9,9 @@ from evoos.vm.instruction_set import IMM_MAX, IMM_MIN, N_REGS, CtxField, Instr, 
 from evoos.agent.program import Candidate
 
 
-MUTATION_OPS = (
+# Bytecode edits. None of these is a scheduler: no run queue, no time-slice
+# policy, no skip-halted / until-idle outer loop.
+BARE_OPS = (
     "insert",
     "remove",
     "modify_op",
@@ -18,12 +20,53 @@ MUTATION_OPS = (
     "duplicate_block",
     "swap",
     "insert_gadget",
-    "insert_mmu_gadget",
-    "insert_runctx_gadget",
     "crossover",
     "control_flow",
     "revert_mutate",
 )
+GADGET_OPS = BARE_OPS + (
+    "insert_mmu_gadget",
+    "insert_runctx_gadget",
+)
+FULL_OPS = GADGET_OPS + ("insert_ctx_scan",)
+
+OPERATOR_PACKS = {
+    "bare": BARE_OPS,  # instruction edits only; no ISA-manual sequences
+    "gadgets": GADGET_OPS,  # + MMU / RUNCTX calling-convention snippets
+    "full": FULL_OPS,  # + loop that walks hardware context ids
+}
+
+MUTATION_OPS = FULL_OPS
+
+OPERATOR_DOCS = {
+    "insert": "Insert one random ISA instruction.",
+    "remove": "Delete one instruction.",
+    "modify_op": "Replace an opcode, keep operands.",
+    "modify_operand": "Replace a register field.",
+    "modify_imm": "Nudge an immediate.",
+    "duplicate_block": "Copy a short subsequence.",
+    "swap": "Swap two instructions.",
+    "insert_gadget": "Insert 2–5 random ISA instructions (not a named sequence).",
+    "crossover": "Splice two parents.",
+    "control_flow": "Replace one instruction with a random jump/branch.",
+    "revert_mutate": "Take a hall-of-fame program and mutate it.",
+    "insert_mmu_gadget": (
+        "ISA calling convention for protection registers: "
+        "MOVI ctx; CTXGET DATA_BASE; CTXGET DATA_BOUND; ADDPROT. "
+        "Not a scheduler. ctx is a single random id, not a loop over guests."
+    ),
+    "insert_runctx_gadget": (
+        "ISA calling convention for RUNCTXI: MOVI ctx; RUNCTXI steps. "
+        "One context, one burst. Not round-robin / not a run queue."
+    ),
+    "insert_ctx_scan": (
+        "Hardware enumeration: MOVI r,1; <one body instr>; ADDI r,1; "
+        "CTXGET N_CONTEXTS; BLT r, n, body. Encodes 'the machine reports how "
+        "many contexts it has; you can walk ids'. Body is NOP or one rewritten "
+        "parent instruction — not skip-if-halted, not quantum, not until-idle. "
+        "That extra control flow, if it appears, must still be discovered."
+    ),
+}
 
 
 # HALT in the middle of a random program collapses the rest; it is appended
@@ -67,6 +110,24 @@ def runctx_gadget(rng: random.Random) -> tuple[Instr, ...]:
     )
 
 
+def ctx_scan_gadget(rng: random.Random, body: Instr | None = None) -> tuple[Instr, ...]:
+    """Walk context ids 1 .. N_CONTEXTS-1. See OPERATOR_DOCS['insert_ctx_scan']."""
+    r = rng.randint(1, 5)
+    rn = 7 if r != 7 else 6
+    if body is None:
+        body_ins = Instr(int(Op.NOP), 0, 0, 0, 0)
+    else:
+        body_ins = Instr(body.op, r, body.b, body.c, body.imm)
+    # pc of BLT in this snippet is 4; body is at 1; imm = 1 - (4+1) = -4.
+    return (
+        Instr(int(Op.MOVI), r, 0, 0, 1),
+        body_ins,
+        Instr(int(Op.ADDI), r, r, 0, 1),
+        Instr(int(Op.CTXGET), rn, 0, 0, int(CtxField.N_CONTEXTS)),
+        Instr(int(Op.BLT), r, rn, 0, -4),
+    )
+
+
 def random_instr(rng: random.Random) -> Instr:
     op = rng.choice(_BIASED_OPS)
     # Immediates: mostly small, occasionally firmware-table / data-window scale.
@@ -81,13 +142,20 @@ def random_instr(rng: random.Random) -> Instr:
     return Instr(op, rng.randrange(N_REGS), rng.randrange(N_REGS), rng.randrange(N_REGS), imm)
 
 
-def random_program(rng: random.Random, length: int) -> tuple[Instr, ...]:
+def random_program(
+    rng: random.Random,
+    length: int,
+    pack: str = "gadgets",
+) -> tuple[Instr, ...]:
     length = max(1, length)
+    ops = OPERATOR_PACKS.get(pack, GADGET_OPS)
     body: list[Instr] = []
-    if rng.random() < 0.55:
+    if "insert_mmu_gadget" in ops and rng.random() < 0.55:
         body.extend(mmu_gadget(rng))
-    if rng.random() < 0.55:
+    if "insert_runctx_gadget" in ops and rng.random() < 0.55:
         body.extend(runctx_gadget(rng))
+    if "insert_ctx_scan" in ops and rng.random() < 0.35:
+        body.extend(ctx_scan_gadget(rng))
     body.extend(random_instr(rng) for _ in range(length))
     if rng.random() < 0.7:
         body.append(Instr(int(Op.HALT), 0, 0, 0, 0))
@@ -106,6 +174,7 @@ def mutate(
     hall: list[Candidate] | None = None,
     other: Candidate | None = None,
     max_len: int = 256,
+    operators: tuple[str, ...] | None = None,
 ) -> Candidate:
     seq = parent.instrs
     n = len(seq)
@@ -156,6 +225,11 @@ def mutate(
         i = rng.randrange(n + 1) if n else 0
         seq = _splice(seq, i, i, runctx_gadget(rng))
         origin = "insert_runctx_gadget"
+    elif op == "insert_ctx_scan":
+        body = seq[rng.randrange(n)] if n and rng.random() < 0.5 else None
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, ctx_scan_gadget(rng, body))
+        origin = "insert_ctx_scan"
     elif op == "crossover" and other is not None and other.instrs:
         cut_a = rng.randrange(n + 1) if n else 0
         cut_b = rng.randrange(len(other.instrs) + 1)
@@ -171,8 +245,18 @@ def mutate(
         rel = rng.randint(-n, n)
         seq = seq[:i] + (Instr(int(cf), ins.a, ins.b, ins.c, rel),) + seq[i + 1 :]
     elif op == "revert_mutate" and hall:
+        allowed = operators or MUTATION_OPS
+        choices = [o for o in allowed if o != "revert_mutate"]
         base = rng.choice(hall)
-        return mutate(base, rng.choice([o for o in MUTATION_OPS if o != "revert_mutate"]), rng, max_len=max_len)
+        return mutate(
+            base,
+            rng.choice(choices or ("insert",)),
+            rng,
+            hall=hall,
+            other=other,
+            max_len=max_len,
+            operators=allowed,
+        )
     else:
         i = rng.randrange(n + 1) if n else 0
         seq = _splice(seq, i, i, (random_instr(rng),))
