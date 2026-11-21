@@ -103,6 +103,7 @@ typedef struct {
 extern HwMachine hw;
 extern const char supervisor_origin[];
 extern const char supervisor_note[];
+extern const char persist_storage_origin[];
 
 void evoos_hw_init(uint64_t hhdm, uint64_t kphys, uint64_t kvirt);
 int32_t evoos_hw_runctx(int32_t cid, int32_t n_steps);
@@ -119,6 +120,7 @@ int evoos_hw_install_guest(int slot, const uint8_t *code, uint64_t n_code, const
                            const int32_t *init_off, const int32_t *init_val, int n_init);
 int32_t evoos_hw_word(int slot, int off);
 void supervisor_main(void);
+void persist_storage_main(void);
 
 /* Firmware I/O hook. No scheduling. */
 void evoos_firmware_after_runctx(int32_t cid, int32_t ran, int32_t fault, int32_t vector);

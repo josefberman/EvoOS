@@ -1,0 +1,53 @@
+# remove R=0.4656 layout=other stage=B gated=0
+   0:  MOVI     a=1 b=0 c=0 imm=1
+   1:  CTXGET   a=2 b=1 c=0 imm=4
+   2:  CTXGET   a=3 b=1 c=0 imm=5
+   3:  RUNCTX   a=1 b=2 c=3 imm=0
+   4:  ADDI     a=1 b=1 c=0 imm=1
+   5:  CTXGET   a=7 b=0 c=0 imm=6
+   6:  BLT      a=1 b=7 c=0 imm=-6  # -> 1
+   7:  CTXGET   a=2 b=0 c=0 imm=14
+   8:  BEQ      a=2 b=0 c=0 imm=30  # -> 39
+   9:  CTXGET   a=3 b=0 c=0 imm=15
+  10:  MOVI     a=4 b=0 c=0 imm=1
+  11:  BEQ      a=2 b=4 c=0 imm=3  # -> 15
+  12:  MOVI     a=4 b=0 c=0 imm=2
+  13:  BEQ      a=2 b=4 c=0 imm=12  # -> 26
+  14:  JMP      a=0 b=0 c=0 imm=22  # -> 37
+  15:  CTXGET   a=4 b=3 c=0 imm=4
+  16:  LOAD     a=5 b=4 c=0 imm=0
+  17:  ADDI     a=6 b=4 c=0 imm=2
+  18:  ADDI     a=7 b=3 c=0 imm=-1
+  19:  MOVI     a=2 b=0 c=0 imm=3
+  20:  SHL      a=7 b=7 c=2 imm=0
+  21:  MOVI     a=2 b=0 c=0 imm=7
+  22:  AND      a=5 b=5 c=2 imm=0
+  23:  ADD      a=5 b=5 c=7 imm=0
+  24:  BLKWR    a=5 b=6 c=0 imm=0
+  25:  JMP      a=0 b=0 c=0 imm=11  # -> 37
+  26:  CTXGET   a=4 b=3 c=0 imm=4
+  27:  ADDI     a=6 b=4 c=0 imm=2
+  28:  ADDI     a=7 b=3 c=0 imm=-1
+  29:  MOVI     a=2 b=0 c=0 imm=3
+  30:  SHL      a=7 b=7 c=2 imm=0
+  31:  MOVI     a=5 b=0 c=0 imm=3
+  32:  RUNCTXI  a=5 b=0 c=0 imm=8
+  33:  MOVI     a=2 b=0 c=0 imm=7
+  34:  AND      a=5 b=5 c=2 imm=0
+  35:  ADD      a=5 b=5 c=7 imm=4
+  36:  BLKRD    a=2 b=5 c=6 imm=0
+  37:  JMP      a=0 b=0 c=0 imm=0  # -> 38
+  38:  MOVI     a=2 b=0 c=0 imm=0
+  39:  CTXSET   a=0 b=1 c=0 imm=14
+  40:  MOVI     a=1 b=0 c=0 imm=1
+  41:  CTXGET   a=2 b=1 c=0 imm=1
+  42:  STORE    a=2 b=5 c=3 imm=11
+  43:  BNE      a=2 b=0 c=0 imm=4  # -> 48
+  44:  CTXGET   a=2 b=1 c=0 imm=2
+  45:  BNE      a=2 b=0 c=0 imm=2  # -> 48
+  46:  RUNCTXI  a=1 b=0 c=0 imm=32
+  47:  JMP      a=0 b=0 c=0 imm=-39  # -> 9
+  48:  SVC      a=1 b=1 c=0 imm=1
+  49:  CTXGET   a=7 b=0 c=0 imm=6
+  50:  BLT      a=1 b=7 c=0 imm=-9  # -> 42
+  51:  JMP      a=0 b=0 c=0 imm=-43  # -> 9

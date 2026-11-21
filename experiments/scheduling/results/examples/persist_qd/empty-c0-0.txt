@@ -1,0 +1,52 @@
+# insert R=0.2500 layout=empty stage=A gated=0
+   0:  MOVI     a=2 b=0 c=0 imm=4
+   1:  RUNCTXI  a=2 b=0 c=0 imm=128
+   2:  MOVI     a=6 b=0 c=0 imm=15
+   3:  MOVI     a=5 b=0 c=0 imm=512
+   4:  BLKWR    a=6 b=5 c=0 imm=0
+   5:  BLT      a=4 b=4 c=4 imm=4  # -> 10
+   6:  BLT      a=5 b=7 c=6 imm=2  # -> 9
+   7:  OR       a=6 b=3 c=4 imm=64
+   8:  AND      a=1 b=0 c=4 imm=-58
+   9:  BLT      a=2 b=1 c=5 imm=256  # -> 266
+  10:  CTXGET   a=5 b=5 c=0 imm=47
+  11:  OR       a=5 b=4 c=6 imm=20
+  12:  JAL      a=7 b=1 c=6 imm=256  # -> 269
+  13:  RUNCTXI  a=4 b=3 c=7 imm=-8
+  14:  RUNCTXI  a=4 b=2 c=7 imm=40
+  15:  RUNCTX   a=5 b=0 c=6 imm=3
+  16:  ADDPROT  a=5 b=1 c=7 imm=17
+  17:  AND      a=2 b=7 c=0 imm=1
+  18:  CMP      a=4 b=0 c=6 imm=256
+  19:  BLKRD    a=4 b=2 c=1 imm=17
+  20:  RUNCTXI  a=6 b=4 c=2 imm=8
+  21:  RDTIME   a=2 b=7 c=0 imm=60
+  22:  BNE      a=6 b=1 c=5 imm=29  # -> 52
+  23:  SUB      a=2 b=2 c=1 imm=0
+  24:  CTXGET   a=4 b=3 c=3 imm=4
+  25:  CMP      a=1 b=1 c=5 imm=4
+  26:  RDTIME   a=2 b=4 c=4 imm=-5
+  27:  JR       a=6 b=6 c=2 imm=3
+  28:  RDFAULT  a=5 b=3 c=4 imm=640
+  29:  RUNCTX   a=0 b=6 c=5 imm=640
+  30:  ADDPROT  a=4 b=3 c=1 imm=-1
+  31:  BLKRD    a=7 b=2 c=4 imm=640
+  32:  RDTIME   a=2 b=7 c=5 imm=0
+  33:  BGE      a=1 b=3 c=4 imm=3  # -> 37
+  34:  SUB      a=5 b=7 c=1 imm=17
+  35:  NOT      a=0 b=3 c=0 imm=30
+  36:  BLKRD    a=7 b=5 c=4 imm=640
+  37:  OR       a=1 b=3 c=6 imm=2
+  38:  STORE    a=2 b=3 c=3 imm=16
+  39:  BLT      a=6 b=3 c=7 imm=29  # -> 69
+  40:  BEQ      a=1 b=3 c=1 imm=29  # -> 70
+  41:  MOVI     a=7 b=5 c=6 imm=-8
+  42:  ADDPROT  a=6 b=2 c=2 imm=4
+  43:  MOV      a=0 b=6 c=4 imm=1
+  44:  XOR      a=0 b=0 c=0 imm=11
+  45:  SVC      a=4 b=1 c=6 imm=-54
+  46:  MUL      a=2 b=4 c=3 imm=23
+  47:  SVC      a=4 b=4 c=3 imm=13
+  48:  CMP      a=2 b=5 c=6 imm=29
+  49:  RUNCTXI  a=0 b=5 c=6 imm=256
+  50:  HALT     a=0 b=0 c=0 imm=0

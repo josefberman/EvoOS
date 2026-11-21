@@ -1,235 +1,688 @@
 {
-  "best_reward": 1.1500000000000001,
-  "best_origin": "baseline_persist_rr_q32",
-  "best_layout": "sparse-hash-like",
-  "best_correct": 2,
-  "best_note": "best scoring program is still persist_rr (human slot table). Not copied to persist_gadgets_elite as an evolved OS.",
-  "qd_cells": [
+  "evals": 804697,
+  "elapsed": 3300.1558544635773,
+  "cells": [
     {
-      "layout": "empty",
-      "reward": 0.265625,
-      "origin": "random",
-      "correct": 0,
-      "n_write": 1,
-      "length": 50
-    },
-    {
-      "layout": "append-log-like",
-      "reward": 0.7250000000000001,
-      "origin": "modify_operand",
-      "correct": 1,
-      "n_write": 2,
-      "length": 50
-    },
-    {
+      "cell": [
+        3,
+        5
+      ],
       "layout": "sparse-hash-like",
-      "reward": 1.1500000000000001,
+      "reward": 1.6,
       "origin": "baseline_persist_rr_q32",
+      "max_stage": "D",
       "correct": 2,
-      "n_write": 2,
       "length": 50
+    },
+    {
+      "cell": [
+        4,
+        0
+      ],
+      "layout": "other",
+      "reward": 0.234375,
+      "origin": "insert_gadget",
+      "max_stage": "A",
+      "correct": 0,
+      "length": 56
+    },
+    {
+      "cell": [
+        1,
+        0
+      ],
+      "layout": "append-log-like",
+      "reward": 0.25,
+      "origin": "insert",
+      "max_stage": "A",
+      "correct": 0,
+      "length": 51
+    },
+    {
+      "cell": [
+        0,
+        0
+      ],
+      "layout": "empty",
+      "reward": 0.25,
+      "origin": "insert",
+      "max_stage": "A",
+      "correct": 0,
+      "length": 51
+    },
+    {
+      "cell": [
+        1,
+        2
+      ],
+      "layout": "append-log-like",
+      "reward": 0.73125,
+      "origin": "modify_imm",
+      "max_stage": "B",
+      "correct": 1,
+      "length": 51
+    },
+    {
+      "cell": [
+        1,
+        4
+      ],
+      "layout": "append-log-like",
+      "reward": 1.240625,
+      "origin": "remove",
+      "max_stage": "D",
+      "correct": 1,
+      "length": 49
+    },
+    {
+      "cell": [
+        4,
+        2
+      ],
+      "layout": "other",
+      "reward": 0.715625,
+      "origin": "modify_op",
+      "max_stage": "B",
+      "correct": 1,
+      "length": 51
+    },
+    {
+      "cell": [
+        1,
+        1
+      ],
+      "layout": "append-log-like",
+      "reward": 0.48125,
+      "origin": "insert_runctx_gadget",
+      "max_stage": "B",
+      "correct": 0,
+      "length": 53
+    },
+    {
+      "cell": [
+        1,
+        3
+      ],
+      "layout": "append-log-like",
+      "reward": 0.93125,
+      "origin": "control_flow",
+      "max_stage": "C",
+      "correct": 1,
+      "length": 51
+    },
+    {
+      "cell": [
+        3,
+        0
+      ],
+      "layout": "sparse-hash-like",
+      "reward": 0.234375,
+      "origin": "random",
+      "max_stage": "A",
+      "correct": 0,
+      "length": 58
+    },
+    {
+      "cell": [
+        3,
+        2
+      ],
+      "layout": "sparse-hash-like",
+      "reward": 0.715625,
+      "origin": "remove",
+      "max_stage": "B",
+      "correct": 1,
+      "length": 56
+    },
+    {
+      "cell": [
+        3,
+        1
+      ],
+      "layout": "sparse-hash-like",
+      "reward": 0.465625,
+      "origin": "swap",
+      "max_stage": "B",
+      "correct": 0,
+      "length": 59
+    },
+    {
+      "cell": [
+        4,
+        1
+      ],
+      "layout": "other",
+      "reward": 0.465625,
+      "origin": "remove",
+      "max_stage": "B",
+      "correct": 0,
+      "length": 52
+    },
+    {
+      "cell": [
+        3,
+        4
+      ],
+      "layout": "sparse-hash-like",
+      "reward": 1.225,
+      "origin": "remove",
+      "max_stage": "D",
+      "correct": 1,
+      "length": 56
+    },
+    {
+      "cell": [
+        0,
+        3
+      ],
+      "layout": "empty",
+      "reward": 0.8656250000000001,
+      "origin": "crossover",
+      "max_stage": "D",
+      "correct": 0,
+      "length": 79
+    },
+    {
+      "cell": [
+        2,
+        0
+      ],
+      "layout": "dense-table",
+      "reward": 0.21875,
+      "origin": "insert_blk_gadget",
+      "max_stage": "A",
+      "correct": 0,
+      "length": 59
+    },
+    {
+      "cell": [
+        2,
+        1
+      ],
+      "layout": "dense-table",
+      "reward": 0.45,
+      "origin": "crossover",
+      "max_stage": "B",
+      "correct": 0,
+      "length": 63
+    },
+    {
+      "cell": [
+        3,
+        3
+      ],
+      "layout": "sparse-hash-like",
+      "reward": 0.915625,
+      "origin": "insert_blk_gadget",
+      "max_stage": "C",
+      "correct": 1,
+      "length": 54
+    },
+    {
+      "cell": [
+        2,
+        2
+      ],
+      "layout": "dense-table",
+      "reward": 0.7,
+      "origin": "insert_gadget",
+      "max_stage": "B",
+      "correct": 1,
+      "length": 61
+    },
+    {
+      "cell": [
+        4,
+        3
+      ],
+      "layout": "other",
+      "reward": 0.915625,
+      "origin": "insert_blk_gadget",
+      "max_stage": "C",
+      "correct": 1,
+      "length": 54
+    },
+    {
+      "cell": [
+        0,
+        1
+      ],
+      "layout": "empty",
+      "reward": 0.48125,
+      "origin": "modify_op",
+      "max_stage": "B",
+      "correct": 0,
+      "length": 51
+    },
+    {
+      "cell": [
+        4,
+        4
+      ],
+      "layout": "other",
+      "reward": 1.225,
+      "origin": "crossover",
+      "max_stage": "D",
+      "correct": 1,
+      "length": 79
+    },
+    {
+      "cell": [
+        2,
+        4
+      ],
+      "layout": "dense-table",
+      "reward": 0.9750000000000001,
+      "origin": "crossover",
+      "max_stage": "D",
+      "correct": 1,
+      "length": 64
+    },
+    {
+      "cell": [
+        2,
+        3
+      ],
+      "layout": "dense-table",
+      "reward": 0.9,
+      "origin": "insert_gadget",
+      "max_stage": "C",
+      "correct": 1,
+      "length": 63
+    },
+    {
+      "cell": [
+        4,
+        5
+      ],
+      "layout": "other",
+      "reward": 1.5375,
+      "origin": "crossover",
+      "max_stage": "D",
+      "correct": 2,
+      "length": 91
     }
   ],
-  "history": [
+  "history_tail": [
     {
-      "seed": 1,
-      "generation": 0,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2
-    },
-    {
-      "seed": 1,
-      "generation": 1,
-      "best_reward": 0.6625000000000001,
-      "layout": "append-log-like",
-      "correct": 1,
-      "mean_reward": 0.16197916666666667
-    },
-    {
-      "seed": 1,
-      "generation": 2,
-      "best_reward": 0.690625,
-      "layout": "append-log-like",
-      "correct": 1,
-      "mean_reward": 0.24765625
-    },
-    {
-      "seed": 1,
-      "generation": 3,
-      "best_reward": 0.690625,
-      "layout": "append-log-like",
-      "correct": 1,
-      "mean_reward": 0.3263020833333334
-    },
-    {
-      "seed": 1,
-      "generation": 4,
-      "best_reward": 0.7250000000000001,
-      "layout": "append-log-like",
-      "correct": 1,
-      "mean_reward": 0.40625
-    },
-    {
-      "seed": 1,
-      "generation": 5,
-      "best_reward": 0.690625,
-      "layout": "append-log-like",
-      "correct": 1,
-      "mean_reward": 0.5015625
-    },
-    {
-      "seed": 1,
-      "generation": 6,
-      "best_reward": 0.690625,
-      "layout": "append-log-like",
-      "correct": 1,
-      "mean_reward": 0.23177083333333334
-    },
-    {
-      "seed": 7,
-      "generation": 0,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2
-    },
-    {
-      "seed": 7,
-      "generation": 1,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.2859375
-    },
-    {
-      "seed": 7,
-      "generation": 2,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.2638020833333334
-    },
-    {
-      "seed": 7,
-      "generation": 3,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.32526041666666666
-    },
-    {
-      "seed": 7,
-      "generation": 4,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.8854166666666669
-    },
-    {
-      "seed": 7,
-      "generation": 5,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.5195312500000001
-    },
-    {
-      "seed": 7,
-      "generation": 6,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.30911458333333336
-    },
-    {
+      "gen": 33500,
       "seed": 99,
-      "generation": 0,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2
-    },
-    {
-      "seed": 99,
-      "generation": 1,
-      "best_reward": 0.265625,
+      "elapsed": 3297.2233979701996,
+      "evals": 804001,
+      "best_batch": 0.73125,
+      "mean_batch": 0.28229166666666666,
+      "stage": "B",
       "layout": "append-log-like",
-      "correct": 0,
-      "mean_reward": 0.21614583333333334
+      "cells": 25,
+      "origin": "swap"
     },
     {
-      "seed": 99,
-      "generation": 2,
-      "best_reward": 0.265625,
+      "gen": 33501,
+      "seed": 2024,
+      "elapsed": 3297.2913427352905,
+      "evals": 804025,
+      "best_batch": 0.915625,
+      "mean_batch": 0.20768229166666666,
+      "stage": "C",
+      "layout": "other",
+      "cells": 25,
+      "origin": "modify_operand"
+    },
+    {
+      "gen": 33502,
+      "seed": 8,
+      "elapsed": 3297.3911073207855,
+      "evals": 804049,
+      "best_batch": 0.9750000000000001,
+      "mean_batch": 0.33255208333333336,
+      "stage": "D",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "insert"
+    },
+    {
+      "gen": 33503,
+      "seed": 33,
+      "elapsed": 3297.4419071674347,
+      "evals": 804073,
+      "best_batch": 0.7,
+      "mean_batch": 0.19166666666666665,
+      "stage": "B",
+      "layout": "dense-table",
+      "cells": 25,
+      "origin": "duplicate_block"
+    },
+    {
+      "gen": 33504,
+      "seed": 1,
+      "elapsed": 3297.589176416397,
+      "evals": 804097,
+      "best_batch": 1.521875,
+      "mean_batch": 0.43710937499999997,
+      "stage": "D",
+      "layout": "other",
+      "cells": 25,
+      "origin": "crossover"
+    },
+    {
+      "gen": 33505,
+      "seed": 7,
+      "elapsed": 3297.67520737648,
+      "evals": 804121,
+      "best_batch": 0.915625,
+      "mean_batch": 0.29401041666666666,
+      "stage": "C",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "duplicate_block"
+    },
+    {
+      "gen": 33506,
+      "seed": 13,
+      "elapsed": 3297.7717254161835,
+      "evals": 804145,
+      "best_batch": 0.93125,
+      "mean_batch": 0.29049479166666664,
+      "stage": "C",
       "layout": "append-log-like",
-      "correct": 0,
-      "mean_reward": 0.2421875
+      "cells": 25,
+      "origin": "crossover"
     },
     {
-      "seed": 99,
-      "generation": 3,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.3328125
+      "gen": 33507,
+      "seed": 42,
+      "elapsed": 3297.8672847747803,
+      "evals": 804169,
+      "best_batch": 0.73125,
+      "mean_batch": 0.3302083333333333,
+      "stage": "B",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "modify_imm"
     },
     {
+      "gen": 33508,
       "seed": 99,
-      "generation": 4,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.5906250000000001
+      "elapsed": 3297.941086292267,
+      "evals": 804193,
+      "best_batch": 0.93125,
+      "mean_batch": 0.23372395833333334,
+      "stage": "C",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "duplicate_block"
     },
     {
-      "seed": 99,
-      "generation": 5,
-      "best_reward": 1.1500000000000001,
-      "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.4739583333333333
+      "gen": 33509,
+      "seed": 2024,
+      "elapsed": 3298.01650595665,
+      "evals": 804217,
+      "best_batch": 0.73125,
+      "mean_batch": 0.31354166666666666,
+      "stage": "B",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "crossover"
     },
     {
-      "seed": 99,
-      "generation": 6,
-      "best_reward": 1.1500000000000001,
+      "gen": 33510,
+      "seed": 8,
+      "elapsed": 3298.144209384918,
+      "evals": 804241,
+      "best_batch": 0.915625,
+      "mean_batch": 0.38307291666666665,
+      "stage": "C",
       "layout": "sparse-hash-like",
-      "correct": 2,
-      "mean_reward": 0.4114583333333333
+      "cells": 25,
+      "origin": "duplicate_block"
+    },
+    {
+      "gen": 33511,
+      "seed": 33,
+      "elapsed": 3298.237954854965,
+      "evals": 804265,
+      "best_batch": 0.73125,
+      "mean_batch": 0.28346354166666665,
+      "stage": "B",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "insert_runctx_gadget"
+    },
+    {
+      "gen": 33512,
+      "seed": 1,
+      "elapsed": 3298.327075481415,
+      "evals": 804289,
+      "best_batch": 0.915625,
+      "mean_batch": 0.29830729166666664,
+      "stage": "C",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "insert_runctx_gadget"
+    },
+    {
+      "gen": 33513,
+      "seed": 7,
+      "elapsed": 3298.439371109009,
+      "evals": 804313,
+      "best_batch": 0.715625,
+      "mean_batch": 0.25533854166666664,
+      "stage": "B",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "insert_gadget"
+    },
+    {
+      "gen": 33514,
+      "seed": 13,
+      "elapsed": 3298.5552456378937,
+      "evals": 804337,
+      "best_batch": 0.915625,
+      "mean_batch": 0.31640625,
+      "stage": "C",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "control_flow"
+    },
+    {
+      "gen": 33515,
+      "seed": 42,
+      "elapsed": 3298.6713337898254,
+      "evals": 804361,
+      "best_batch": 0.9750000000000001,
+      "mean_batch": 0.3940104166666667,
+      "stage": "D",
+      "layout": "dense-table",
+      "cells": 25,
+      "origin": "crossover"
+    },
+    {
+      "gen": 33516,
+      "seed": 99,
+      "elapsed": 3298.7707602977753,
+      "evals": 804385,
+      "best_batch": 0.915625,
+      "mean_batch": 0.3364583333333333,
+      "stage": "C",
+      "layout": "other",
+      "cells": 25,
+      "origin": "remove"
+    },
+    {
+      "gen": 33517,
+      "seed": 2024,
+      "elapsed": 3298.8676500320435,
+      "evals": 804409,
+      "best_batch": 0.715625,
+      "mean_batch": 0.26276041666666666,
+      "stage": "B",
+      "layout": "other",
+      "cells": 25,
+      "origin": "swap"
+    },
+    {
+      "gen": 33518,
+      "seed": 8,
+      "elapsed": 3298.9838671684265,
+      "evals": 804433,
+      "best_batch": 0.915625,
+      "mean_batch": 0.32317708333333334,
+      "stage": "C",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "modify_imm"
+    },
+    {
+      "gen": 33519,
+      "seed": 33,
+      "elapsed": 3299.052809715271,
+      "evals": 804457,
+      "best_batch": 0.684375,
+      "mean_batch": 0.23190104166666667,
+      "stage": "B",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "insert"
+    },
+    {
+      "gen": 33520,
+      "seed": 1,
+      "elapsed": 3299.170551300049,
+      "evals": 804481,
+      "best_batch": 1.209375,
+      "mean_batch": 0.310546875,
+      "stage": "D",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "crossover"
+    },
+    {
+      "gen": 33521,
+      "seed": 7,
+      "elapsed": 3299.280422925949,
+      "evals": 804505,
+      "best_batch": 0.915625,
+      "mean_batch": 0.3125,
+      "stage": "C",
+      "layout": "other",
+      "cells": 25,
+      "origin": "modify_imm"
+    },
+    {
+      "gen": 33522,
+      "seed": 13,
+      "elapsed": 3299.363306045532,
+      "evals": 804529,
+      "best_batch": 0.9750000000000001,
+      "mean_batch": 0.24361979166666667,
+      "stage": "D",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "insert_runctx_gadget"
+    },
+    {
+      "gen": 33523,
+      "seed": 42,
+      "elapsed": 3299.4744803905487,
+      "evals": 804553,
+      "best_batch": 0.9750000000000001,
+      "mean_batch": 0.34401041666666665,
+      "stage": "D",
+      "layout": "other",
+      "cells": 25,
+      "origin": "insert"
+    },
+    {
+      "gen": 33524,
+      "seed": 99,
+      "elapsed": 3299.5737574100494,
+      "evals": 804577,
+      "best_batch": 0.73125,
+      "mean_batch": 0.3243489583333333,
+      "stage": "B",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "duplicate_block"
+    },
+    {
+      "gen": 33525,
+      "seed": 2024,
+      "elapsed": 3299.6682324409485,
+      "evals": 804601,
+      "best_batch": 0.915625,
+      "mean_batch": 0.27174479166666665,
+      "stage": "C",
+      "layout": "other",
+      "cells": 25,
+      "origin": "modify_imm"
+    },
+    {
+      "gen": 33526,
+      "seed": 8,
+      "elapsed": 3299.7946972846985,
+      "evals": 804625,
+      "best_batch": 0.73125,
+      "mean_batch": 0.33880208333333334,
+      "stage": "B",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "insert_blk_gadget"
+    },
+    {
+      "gen": 33527,
+      "seed": 33,
+      "elapsed": 3299.9099655151367,
+      "evals": 804649,
+      "best_batch": 0.915625,
+      "mean_batch": 0.3436197916666666,
+      "stage": "C",
+      "layout": "sparse-hash-like",
+      "cells": 25,
+      "origin": "insert_mmu_gadget"
+    },
+    {
+      "gen": 33528,
+      "seed": 1,
+      "elapsed": 3299.9986674785614,
+      "evals": 804673,
+      "best_batch": 0.73125,
+      "mean_batch": 0.2516927083333333,
+      "stage": "B",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "insert_runctx_gadget"
+    },
+    {
+      "gen": 33529,
+      "seed": 7,
+      "elapsed": 3300.083608150482,
+      "evals": 804697,
+      "best_batch": 0.93125,
+      "mean_batch": 0.22669270833333333,
+      "stage": "C",
+      "layout": "append-log-like",
+      "cells": 25,
+      "origin": "modify_op"
     }
   ],
   "baseline_persist_rr": {
-    "invalid": false,
-    "reward": 1.1500000000000001,
-    "isolation_ok": true,
+    "reward": 1.6,
+    "max_stage": "D",
     "correct": 2,
-    "leak": false,
     "layout": "sparse-hash-like",
-    "n_write": 2,
-    "crash_correct": 1,
-    "crash_isolation": true,
-    "corrupt_correct": 2,
-    "supervisor_fault": 0,
-    "n_halt": 0,
-    "length": 50,
-    "n_blk": 2,
-    "n_svc": 0
-  },
-  "baseline_rr_live": {
-    "invalid": false,
-    "reward": 0.0,
     "isolation_ok": true,
-    "correct": 0,
-    "leak": false,
-    "layout": "empty",
-    "n_write": 0,
-    "crash_correct": 0,
-    "crash_isolation": true,
-    "corrupt_correct": 0,
-    "supervisor_fault": 0,
-    "n_halt": 0,
-    "length": 17,
-    "n_blk": 0,
-    "n_svc": 0
+    "leak": false
   },
-  "elite_path": ""
+  "best_evolved": {
+    "origin": "crossover",
+    "reward": 1.5375,
+    "max_stage": "D",
+    "correct": 2,
+    "layout": "other",
+    "isolation_ok": true
+  },
+  "note": "wrote persist_gadgets_elite.txt (evolved, gated D 2/2)",
+  "elite_path": "/agent/repos/EvoOS/experiments/scheduling/results/examples/persist_gadgets_elite.txt",
+  "curve": "/agent/repos/EvoOS/experiments/scheduling/results/persist_curriculum_curve.jsonl",
+  "checkpoint": "/agent/repos/EvoOS/experiments/scheduling/results/persist_curriculum_ckpt.json"
 }

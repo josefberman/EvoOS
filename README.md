@@ -173,17 +173,17 @@ qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -serial mon:stdio \
   -device isa-debug-exit,iobase=0xf4,iosize=0x04
 ```
 
-**Live supervisor.** Default ISO AOT-compiles `evolved_open`: gadgets elite **s99** (no HALT). Open-arrival scoring treats supervisor HALT before the horizon as failure. s99 is `other` on held-out / train_medium and `round-robin-like` on train_small. A search mutant labeled batched/priority-like matched on Python 4/4 but failed the live `#PF` keyboard test (never RUNCTX'd the new guest); it is kept in the QD set, not the ISO. `LIVE_SUPERVISOR=rr_live` is the human baseline only. One-shot s42 remains `--supervisor evolved` for `make test-diff`. HITL: `python -m evoos.evaluator.hitl --supervisor evolved_open --boot`. Search: `python -m evoos.experiments.scheduling.search_open_live`.
+**Live supervisor.** Default ISO AOT-compiles `evolved_open`: gadgets elite **s99** (no HALT). A HITL-ok persist elite is composed as `persist_storage_main` (SVC/`BLK*` oneshot), not as a prefix that would replace s99. Open-arrival scoring treats supervisor HALT before the horizon as failure. s99 is `other` on held-out / train_medium and `round-robin-like` on train_small. A search mutant labeled batched/priority-like matched on Python 4/4 but failed the live `#PF` keyboard test (never RUNCTX'd the new guest); it is kept in the QD set, not the ISO. `LIVE_SUPERVISOR=rr_live` is the human baseline only. One-shot s42 remains `--supervisor evolved` for `make test-diff`. HITL: `python -m evoos.evaluator.hitl --supervisor evolved_open --boot`. Search: `python -m evoos.experiments.scheduling.search_open_live`.
 
 **Still simulated:** PIT counts vs instruction retirement; QEMU; firmware framebuffer/keyboard; no SMP. Disk is a QEMU IDE image; firmware only copies ATA bytes. See `docs/isa.md` encoding v2 (BLKRD/BLKWR/SVC).
 
-**Persistence (stage 3).** Python models a 32-block device, power cuts, and bad blocks. Guests PUT/GET via `SVC` / `int $0x80` (`rax` 1/2). Default ISO remains **s99** so `make test-qemu` stays a live scheduler test. Persist HITL:
+**Persistence (stage 3).** Python models a 32-block device, power cuts, and bad blocks. Guests PUT/GET via `SVC` / `int $0x80` (`rax` 1/2). GET credit is gated: the payload must already be on the device after PUT, and GET must `BLKRD`. Curriculum A→D (one key; several keys + random cuts; bad blocks; two guests / isolation). MAP-Elites + curiosity, checkpointed: `python -m evoos.experiments.scheduling.search_persist --wall-seconds 3300`.
+
+**What handles storage on the default ISO today:** scheduling is **s99** (never `BLKRD`/`BLKWR`). After a HITL-ok persist elite, AOT also emits `persist_storage_main`: the elite’s PUT/GET + `BLK*` path with its own `RUNCTX` loop cut off. Firmware calls that oneshot after a guest `SVC` (`w`/`r`). Serial prints `storage=evolved_persist_crossover` (or `storage=none`). Prefixing the never-halting elite onto s99 would replace the scheduler, so that compose is not the default ISO. `make test-persist` packs the full elite as `evolved_persist`, then re-checks w/r/z on the restored s99 ISO. `LIVE_SUPERVISOR=persist_rr` is Condition A.
 
 ```bash
 make test-persist
 ```
-
-Rebuilds the ISO with `LIVE_SUPERVISOR=persist_rr` (human Condition A slot table: `block = (ctx-1)*8 + (key & 7)`), attaches `build/persist.img`, stores `key=7 val=123`, kills QEMU, reboots the same image, recalls 123. Then restores the s99 ISO. Search: `python -m evoos.experiments.scheduling.search_persist`. An evolved persist elite is used only if search beats persist_rr without leaking.
 
 **VirtualBox**
 
@@ -205,7 +205,7 @@ make test-diff
 pytest tests/test_codec.py tests/test_differential.py tests/test_open_arrival.py tests/test_aot.py
 ```
 
-**Select supervisor at pack time:** `--supervisor evolved_open` (default ISO) / `evolved` (oneshot s42) / `evolved_live` (human HALT→JMP, not the ISO) / `rr` / `rr_live` / `persist_rr`.
+**Select supervisor at pack time:** `--supervisor evolved_open` (default ISO) / `evolved` (oneshot s42) / `evolved_live` (human HALT→JMP, not the ISO) / `rr` / `rr_live` / `persist_rr` / `evolved_persist`.
 
 ## Layout
 

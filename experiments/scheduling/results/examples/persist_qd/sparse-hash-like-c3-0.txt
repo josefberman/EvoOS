@@ -1,0 +1,59 @@
+# random R=0.2344 layout=sparse-hash-like stage=A gated=0
+   0:  MOVI     a=4 b=0 c=0 imm=29
+   1:  MOVI     a=2 b=0 c=0 imm=256
+   2:  BLKWR    a=4 b=2 c=0 imm=0
+   3:  RDFAULT  a=7 b=1 c=2 imm=0
+   4:  CTXGET   a=4 b=0 c=2 imm=-9
+   5:  ADDPROT  a=1 b=3 c=2 imm=24
+   6:  BLKWR    a=6 b=0 c=4 imm=384
+   7:  RUNCTX   a=5 b=6 c=3 imm=3
+   8:  NOT      a=0 b=1 c=6 imm=-28
+   9:  JMP      a=4 b=2 c=2 imm=14  # -> 24
+  10:  MOV      a=7 b=4 c=2 imm=12
+  11:  JAL      a=2 b=6 c=3 imm=1  # -> 13
+  12:  SHR      a=6 b=6 c=3 imm=20
+  13:  CTXGET   a=7 b=5 c=6 imm=-6
+  14:  JMP      a=4 b=0 c=7 imm=7  # -> 22
+  15:  BLKRD    a=1 b=4 c=7 imm=-4
+  16:  BLKWR    a=5 b=6 c=0 imm=26
+  17:  RUNCTX   a=1 b=4 c=3 imm=19
+  18:  JMP      a=2 b=7 c=4 imm=119  # -> 138
+  19:  BGE      a=0 b=6 c=6 imm=3  # -> 23
+  20:  RDTIME   a=2 b=2 c=4 imm=-3
+  21:  RUNCTXI  a=3 b=3 c=0 imm=2
+  22:  SVC      a=2 b=1 c=3 imm=-2
+  23:  BLKRD    a=6 b=1 c=3 imm=-59
+  24:  OR       a=0 b=0 c=0 imm=4
+  25:  ADDPROT  a=7 b=5 c=5 imm=-1
+  26:  NOT      a=6 b=1 c=5 imm=78
+  27:  JAL      a=1 b=5 c=1 imm=384  # -> 412
+  28:  BLT      a=3 b=7 c=2 imm=30  # -> 59
+  29:  RUNCTXI  a=3 b=2 c=3 imm=64
+  30:  LOAD     a=3 b=5 c=5 imm=84
+  31:  MOVI     a=4 b=3 c=4 imm=22
+  32:  LOAD     a=0 b=2 c=5 imm=-2
+  33:  JMP      a=7 b=4 c=6 imm=5  # -> 39
+  34:  SVC      a=1 b=3 c=1 imm=16
+  35:  MOV      a=0 b=2 c=2 imm=24
+  36:  NOP      a=4 b=6 c=6 imm=35
+  37:  MOV      a=1 b=6 c=3 imm=-45
+  38:  MOV      a=6 b=3 c=1 imm=5
+  39:  RUNCTX   a=4 b=2 c=0 imm=9
+  40:  RDTIME   a=4 b=6 c=7 imm=2
+  41:  RDFAULT  a=7 b=4 c=4 imm=13
+  42:  ADDI     a=5 b=6 c=2 imm=-54
+  43:  LOAD     a=1 b=7 c=0 imm=-2
+  44:  OR       a=0 b=7 c=6 imm=13
+  45:  RDTIME   a=4 b=3 c=6 imm=31
+  46:  LOAD     a=7 b=3 c=2 imm=-25
+  47:  ADD      a=4 b=0 c=4 imm=18
+  48:  MOVI     a=6 b=4 c=6 imm=4
+  49:  BLKWR    a=5 b=4 c=0 imm=32
+  50:  CLRPROT  a=5 b=0 c=4 imm=384
+  51:  BEQ      a=7 b=7 c=6 imm=7  # -> 59
+  52:  LOAD     a=1 b=0 c=6 imm=-4
+  53:  RUNCTX   a=0 b=5 c=4 imm=512
+  54:  CLRPROT  a=4 b=6 c=3 imm=2
+  55:  ADDPROT  a=4 b=6 c=6 imm=13
+  56:  RDTIME   a=1 b=3 c=0 imm=93
+  57:  HALT     a=0 b=0 c=0 imm=0

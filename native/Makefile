@@ -3,7 +3,8 @@
 ROOT := $(abspath ..)
 PYTHON ?= python3
 SUPERVISOR ?= evolved
-LIVE_SUPERVISOR ?= evolved_open
+LIVE_SUPERVISOR ?= $(shell cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -c "from evoos.boot.pack import default_live_kind; print(default_live_kind())" 2>/dev/null || echo evolved_open)
+PERSIST_SUPERVISOR ?= $(shell cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -c "from evoos.boot.pack import persist_iso_kind; print(persist_iso_kind())" 2>/dev/null || echo persist_rr)
 WORKLOAD ?= train_small
 BUILD := $(ROOT)/build
 LIMINE := third_party/limine
@@ -133,11 +134,11 @@ test-live: iso
 $(BUILD)/persist.img: | $(BUILD)
 	dd if=/dev/zero of=$@ bs=512 count=2048 status=none
 
-# persist_rr is Condition A (human slot table). Force AOT rebuild; default
-# ISO remains evolved_open (s99). Restore LIVE_SUPERVISOR afterwards.
+# Storage HITL. PERSIST_SUPERVISOR is persist_rr (Condition A) unless an
+# evolved elite passed QEMU reboot. Default ISO restore uses LIVE_SUPERVISOR.
 test-persist: $(BUILD)/persist.img
 	rm -f supervisor_aot.c $(BUILD)/kernel.elf $(BUILD)/evoos.iso
-	$(MAKE) iso LIVE_SUPERVISOR=persist_rr
+	$(MAKE) iso LIVE_SUPERVISOR=$(PERSIST_SUPERVISOR)
 	mkdir -p $(ROOT)/artifacts
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_persist_test.py \
 		--iso $(BUILD)/evoos.iso \
@@ -146,6 +147,12 @@ test-persist: $(BUILD)/persist.img
 	cp $(BUILD)/serial-persist.log $(ROOT)/artifacts/serial-persist.log
 	rm -f supervisor_aot.c $(BUILD)/kernel.elf $(BUILD)/evoos.iso
 	$(MAKE) iso LIVE_SUPERVISOR=$(LIVE_SUPERVISOR)
+	dd if=/dev/zero of=$(BUILD)/persist.img bs=512 count=2048 status=none
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_persist_test.py \
+		--iso $(BUILD)/evoos.iso \
+		--disk $(BUILD)/persist.img \
+		--serial $(BUILD)/serial-persist-live.log
+	cp $(BUILD)/serial-persist-live.log $(ROOT)/artifacts/serial-persist-live.log
 	@echo "persist QEMU reboot test OK"
 
 clean:

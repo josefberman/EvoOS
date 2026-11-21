@@ -133,10 +133,7 @@ def main() -> int:
     if "put=123" not in first:
         print(first, file=sys.stderr)
         return 1
-    if "baseline_persist" not in first and "persist" not in first:
-        print("persist ISO should boot persist_rr or an evolved persist elite", file=sys.stderr)
-        print(first[-2000:], file=sys.stderr)
-        return 1
+    # Origin is informational. The contract is put then recall after reboot.
 
     proc = boot(iso, disk, serial, qmp_path)
     try:

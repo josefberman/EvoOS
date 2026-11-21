@@ -1,0 +1,60 @@
+# swap R=0.4656 layout=sparse-hash-like stage=B gated=0
+   0:  MOVI     a=1 b=0 c=0 imm=1
+   1:  CTXGET   a=2 b=1 c=0 imm=4
+   2:  CTXGET   a=3 b=1 c=0 imm=5
+   3:  RUNCTX   a=1 b=2 c=3 imm=0
+   4:  ADDI     a=1 b=1 c=0 imm=1
+   5:  BLT      a=1 b=7 c=0 imm=-6  # -> 0
+   6:  MOVI     a=7 b=0 c=0 imm=17
+   7:  MOVI     a=1 b=0 c=0 imm=256
+   8:  MOVI     a=3 b=0 c=0 imm=1
+   9:  MOVI     a=5 b=0 c=0 imm=640
+  10:  SHL      a=7 b=7 c=2 imm=0
+  11:  BLKWR    a=7 b=1 c=0 imm=0
+  12:  CTXGET   a=2 b=0 c=0 imm=14
+  13:  BEQ      a=2 b=0 c=0 imm=30  # -> 44
+  14:  CTXGET   a=3 b=0 c=0 imm=15
+  15:  MOVI     a=4 b=0 c=0 imm=1
+  16:  BEQ      a=2 b=4 c=0 imm=3  # -> 20
+  17:  MOVI     a=4 b=0 c=0 imm=2
+  18:  BEQ      a=2 b=4 c=0 imm=12  # -> 31
+  19:  JMP      a=0 b=0 c=0 imm=22  # -> 42
+  20:  CTXGET   a=4 b=3 c=0 imm=4
+  21:  LOAD     a=5 b=4 c=0 imm=0
+  22:  ADDI     a=6 b=4 c=0 imm=2
+  23:  ADDI     a=7 b=3 c=0 imm=-1
+  24:  MOVI     a=2 b=0 c=0 imm=3
+  25:  SHL      a=7 b=7 c=2 imm=0
+  26:  MOVI     a=2 b=0 c=0 imm=7
+  27:  AND      a=5 b=5 c=2 imm=0
+  28:  ADD      a=5 b=5 c=7 imm=0
+  29:  BLKWR    a=5 b=6 c=0 imm=0
+  30:  JMP      a=0 b=0 c=0 imm=11  # -> 42
+  31:  CTXGET   a=4 b=3 c=0 imm=4
+  32:  LOAD     a=5 b=4 c=0 imm=0
+  33:  ADDI     a=6 b=4 c=0 imm=2
+  34:  ADDI     a=7 b=3 c=0 imm=-1
+  35:  MOVI     a=2 b=0 c=0 imm=3
+  36:  BLKWR    a=3 b=5 c=0 imm=0
+  37:  MOVI     a=2 b=0 c=0 imm=7
+  38:  AND      a=5 b=5 c=2 imm=0
+  39:  ADD      a=5 b=5 c=7 imm=0
+  40:  BLKRD    a=2 b=5 c=6 imm=0
+  41:  JMP      a=0 b=0 c=0 imm=0  # -> 42
+  42:  MOVI     a=2 b=0 c=0 imm=0
+  43:  CTXSET   a=0 b=1 c=0 imm=14
+  44:  MOVI     a=1 b=0 c=0 imm=1
+  45:  CTXGET   a=2 b=1 c=0 imm=1
+  46:  STORE    a=2 b=5 c=3 imm=11
+  47:  BNE      a=2 b=0 c=0 imm=4  # -> 52
+  48:  CTXGET   a=2 b=1 c=0 imm=2
+  49:  BNE      a=2 b=0 c=0 imm=2  # -> 52
+  50:  RUNCTXI  a=1 b=0 c=0 imm=32
+  51:  JMP      a=0 b=0 c=0 imm=-39  # -> 13
+  52:  SVC      a=1 b=1 c=0 imm=1
+  53:  CTXGET   a=7 b=0 c=0 imm=6
+  54:  BLT      a=1 b=7 c=0 imm=-9  # -> 46
+  55:  JMP      a=0 b=0 c=0 imm=-43  # -> 13
+  56:  CTXGET   a=2 b=1 c=0 imm=1
+  57:  STORE    a=2 b=5 c=3 imm=11
+  58:  BNE      a=2 b=0 c=0 imm=4  # -> 63

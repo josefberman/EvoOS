@@ -1,19 +1,24 @@
-"""Evolve a supervisor that stores/retrieves names across power cuts.
+"""Curriculum MAP-Elites search for persistence (stage 3).
 
-Seeds: persist_rr (human Condition A slot table) plus open-arrival elites
-and blk-gadget randoms. Fitness: isolation hard-fail, persist correctness
-after restart, crash/corrupt recovery, write efficiency. Layout is not
-prescribed — classify_disk only labels what landed.
+Seeds: persist_rr (Condition A comparison), s99, s42, stepping-stone QD
+elites (append-log-like 1/2), blk-gadget randoms.
 
-insert_blk_gadget is an ISA calling-convention prior (MOVI block; MOVI addr;
-BLKRD/BLKWR), not a namespace.
+Curriculum: A one key no crash; B several keys + random power cuts; C bad
+blocks; D two guests, isolation hard-fail. Promote on partial success.
+
+Gated GET credit lives in evoos.evaluator.persist. insert_blk_gadget is a
+calling-convention prior, not a namespace.
+
+Checkpointed; resume with --checkpoint.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,7 +27,17 @@ from evoos.agent.mutations import GADGET_OPS, mutate, random_program
 from evoos.agent.policy import make_policy
 from evoos.agent.program import Candidate
 from evoos.boot.pack import OPEN_ELITE_PATH, parse_elite
-from evoos.evaluator.persist import classify_disk, evaluate_persist, score_persist
+from evoos.evaluator.persist import (
+    LAYOUTS,
+    STAGES,
+    classify_disk,
+    evaluate_persist,
+    evaluate_stage,
+    persist_cell,
+    program_rng,
+    promote,
+    score_persist,
+)
 from evoos.experiments.scheduling.baselines import persist_rr, round_robin_live
 from evoos.vm.instruction_set import Instr, Op, disassemble, parse_disassembly
 from evoos.vm.machine import MachineConfig
@@ -33,300 +48,474 @@ ELITE_DIR = ROOT / "experiments/scheduling/results/examples"
 OUT_ELITE = ELITE_DIR / "persist_gadgets_elite.txt"
 OUT_JSON = ROOT / "experiments/scheduling/results/persist_search.json"
 QD_DIR = ELITE_DIR / "persist_qd"
+CKPT = ROOT / "experiments/scheduling/results/persist_curriculum_ckpt.json"
+CURVE = ROOT / "experiments/scheduling/results/persist_curriculum_curve.jsonl"
 
 
 def _jsonable(instrs: tuple[Instr, ...]) -> list[list[int]]:
     return [[i.op, i.a, i.b, i.c, i.imm] for i in instrs]
 
 
+def _from_rows(rows: list[list[int]]) -> tuple[Instr, ...]:
+    return tuple(Instr(*r) for r in rows)
+
+
 def load_seeds() -> list[Candidate]:
     out: list[Candidate] = [persist_rr()]
     if OPEN_ELITE_PATH.exists():
         out.append(
-            Candidate(
-                instrs=parse_disassembly(OPEN_ELITE_PATH.read_text()),
-                origin="s99",
-                id=-2,
-            )
+            Candidate(instrs=parse_disassembly(OPEN_ELITE_PATH.read_text()), origin="s99", id=-2)
         )
     out.append(Candidate(instrs=parse_elite(), origin="s42", id=-3))
     out.append(round_robin_live())
+    stone = ELITE_DIR / "persist_qd" / "append-log-like.txt"
+    if stone.exists():
+        out.append(Candidate(instrs=parse_disassembly(stone.read_text()), origin="stone_append", id=-4))
+    empty = ELITE_DIR / "persist_qd" / "empty.txt"
+    if empty.exists():
+        out.append(Candidate(instrs=parse_disassembly(empty.read_text()), origin="stone_empty", id=-5))
     return out
 
 
-def eval_candidate_rows(rows: list[list[int]]) -> dict:
-    instrs = tuple(Instr(*r) for r in rows)
+def eval_curriculum_rows(rows: list[list[int]]) -> dict:
+    instrs = _from_rows(rows)
+    n_halt = sum(1 for op, *_ in rows if op == int(Op.HALT))
+    n_blk = sum(1 for op, *_ in rows if op in (int(Op.BLKRD), int(Op.BLKWR)))
+    base = {
+        "invalid": False,
+        "n_halt": n_halt,
+        "n_blk": n_blk,
+        "length": len(rows),
+        "stages": {},
+        "max_stage": None,
+        "reward": -1.0,
+        "isolation_ok": True,
+        "correct": 0,
+        "layout": "empty",
+        "leak": False,
+        "n_write": 0,
+        "cell": [0, 0],
+    }
     try:
         verify_supervisor(instrs, MachineConfig())
     except VerifyError as exc:
-        return {
-            "invalid": True,
-            "reason": str(exc),
-            "reward": -1.0,
-            "isolation_ok": True,
-            "correct": 0,
-            "leak": False,
-            "layout": "invalid",
-            "n_write": 0,
-            "crash_correct": 0,
-            "corrupt_correct": 0,
-            "n_halt": sum(1 for op, *_ in rows if op == int(Op.HALT)),
-            "length": len(rows),
+        base["invalid"] = True
+        base["reason"] = str(exc)
+        return base
+    rng = program_rng(rows)
+    unlocked = "A"
+    last = None
+    for st in STAGES:
+        r = evaluate_stage(instrs, st, rng=rng)
+        slim = {
+            "stage": st,
+            "correct": r["correct"],
+            "n": r["n"],
+            "raw_match": r["raw_match"],
+            "isolation_ok": r["isolation_ok"],
+            "leak": r["leak"],
+            "n_write": r["n_write"],
+            "n_read_get": r["n_read_get"],
+            "layout": r["layout"],
+            "supervisor_fault": r["supervisor_fault"],
+            "reward": score_persist(r),
+            "promoted": promote(r),
         }
-    r = evaluate_persist(instrs)
-    r_crash = evaluate_persist(instrs, crash_write=True)
-    r_bad = evaluate_persist(instrs, corrupt=True)
-    reward = score_persist(r)
-    if r["isolation_ok"]:
-        # Crash: a dropped write must not leak the other guest's value.
-        if not r_crash["isolation_ok"] or r_crash["leak"]:
-            reward = -1.0
-        else:
-            reward += 0.1 * (r_crash["correct"] / 2.0)
-            reward += 0.1 * (r_bad["correct"] / 2.0 if r_bad["isolation_ok"] else 0.0)
-    layout = classify_disk(r["disk"])
-    return {
-        "invalid": False,
-        "reward": reward,
-        "isolation_ok": r["isolation_ok"],
-        "correct": r["correct"],
-        "got": r["got"],
-        "leak": r["leak"],
-        "layout": layout,
-        "n_write": r["n_write"],
-        "crash_correct": r_crash["correct"],
-        "crash_isolation": r_crash["isolation_ok"],
-        "corrupt_correct": r_bad["correct"],
-        "supervisor_fault": r["supervisor_fault"],
-        "n_halt": sum(1 for i in instrs if i.op == int(Op.HALT)),
-        "length": len(instrs),
-        "n_blk": sum(1 for i in instrs if i.op in (int(Op.BLKRD), int(Op.BLKWR))),
-        "n_svc": sum(1 for i in instrs if i.op == int(Op.SVC)),
-    }
+        base["stages"][st] = slim
+        last = r
+        unlocked = st
+        if not slim["promoted"]:
+            break
+    assert last is not None
+    stage_bonus = 0.2 * STAGES.index(unlocked)
+    reward = score_persist(last) + stage_bonus
+    if not last["isolation_ok"] or last["leak"]:
+        reward = -1.0
+    x, y = persist_cell(last)
+    y = min(y + STAGES.index(unlocked), 7)
+    base.update(
+        {
+            "max_stage": unlocked,
+            "reward": reward,
+            "isolation_ok": last["isolation_ok"],
+            "correct": last["correct"],
+            "layout": last["layout"],
+            "leak": last["leak"],
+            "n_write": last["n_write"],
+            "cell": [x, y],
+            "got": last["got"],
+        }
+    )
+    return base
 
 
 @dataclass
-class QDArchive:
-    cells: dict[str, tuple[float, Candidate, dict]] = field(default_factory=dict)
+class PersistArchive:
+    """MAP-Elites over (layout, gated-correct+stage) with curiosity visits."""
 
-    def add(self, cand: Candidate, rec: dict) -> None:
+    cells: dict[tuple[int, int], tuple[float, Candidate, dict]] = field(default_factory=dict)
+    visits: dict[tuple[int, int], int] = field(default_factory=dict)
+
+    def add(self, cand: Candidate, rec: dict) -> bool:
         if rec.get("invalid") or rec["reward"] < 0:
-            return
-        if not rec.get("isolation_ok"):
-            return
-        key = rec["layout"]
+            return False
+        if rec.get("leak"):
+            return False
+        key = (int(rec["cell"][0]), int(rec["cell"][1]))
+        self.visits[key] = self.visits.get(key, 0) + 1
         prev = self.cells.get(key)
         if prev is None or rec["reward"] > prev[0]:
             self.cells[key] = (rec["reward"], cand, rec)
+            return True
+        return False
 
-    def best(self) -> tuple[Candidate, dict] | None:
+    def curiosity_sample(self, rng: random.Random) -> Candidate | None:
         if not self.cells:
             return None
-        return max(self.cells.values(), key=lambda t: t[0])[1:]  # type: ignore[return-value]
+        keys = list(self.cells)
+        weights = []
+        for k in keys:
+            v = self.visits.get(k, 0)
+            r = self.cells[k][0]
+            weights.append((1.0 / math.sqrt(v + 1)) * (1.0 + max(0.0, r)))
+        return self.cells[rng.choices(keys, weights=weights, k=1)[0]][1]
+
+    def stepping_stones(self) -> list[Candidate]:
+        out = []
+        for _, c, rec in self.cells.values():
+            if rec.get("max_stage") in ("A", "B", "C") and rec["reward"] > 0:
+                out.append(c)
+        return out
+
+    def best_evolved(self) -> tuple[Candidate, dict] | None:
+        ranked = sorted(self.cells.values(), key=lambda t: t[0], reverse=True)
+        for r, c, rec in ranked:
+            if str(c.origin).startswith("baseline_persist"):
+                continue
+            if rec.get("max_stage") == "D" and rec.get("correct", 0) >= 2 and rec.get("isolation_ok"):
+                return c, rec
+        for r, c, rec in ranked:
+            if str(c.origin).startswith("baseline_persist"):
+                continue
+            if rec["reward"] > 0.5 and rec.get("isolation_ok"):
+                return c, rec
+        return None
+
+    def dump(self) -> list[dict]:
+        rows = []
+        for k, (r, c, rec) in sorted(self.cells.items()):
+            rows.append(
+                {
+                    "cell": list(k),
+                    "reward": r,
+                    "origin": c.origin,
+                    "layout": rec.get("layout"),
+                    "max_stage": rec.get("max_stage"),
+                    "correct": rec.get("correct"),
+                    "length": rec.get("length"),
+                    "visits": self.visits.get(k, 0),
+                    "instrs": _jsonable(c.instrs),
+                }
+            )
+        return rows
+
+
+def _save_ckpt(path: Path, archive: PersistArchive, history: list, evals: int, t0: float) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    blob = {
+        "evals": evals,
+        "elapsed": time.time() - t0,
+        "archive": archive.dump(),
+        "visits": {f"{a},{b}": v for (a, b), v in archive.visits.items()},
+        "history": history[-400:],
+    }
+    path.write_text(json.dumps(blob) + "\n")
+
+
+def _load_ckpt(path: Path, next_id: list[int]) -> tuple[PersistArchive, list, int]:
+    archive = PersistArchive()
+    history: list = []
+    evals = 0
+    if not path.exists():
+        return archive, history, evals
+    data = json.loads(path.read_text())
+    evals = int(data.get("evals", 0))
+    history = list(data.get("history", []))
+    for row in data.get("archive", []):
+        cand = Candidate(
+            instrs=_from_rows(row["instrs"]),
+            origin=row.get("origin", "ckpt"),
+            id=next_id[0],
+        )
+        next_id[0] += 1
+        rec = {
+            "reward": row["reward"],
+            "layout": row.get("layout", "empty"),
+            "max_stage": row.get("max_stage"),
+            "correct": row.get("correct", 0),
+            "isolation_ok": True,
+            "leak": False,
+            "invalid": False,
+            "cell": row["cell"],
+            "length": row.get("length"),
+            "n_write": 0,
+        }
+        archive.cells[(row["cell"][0], row["cell"][1])] = (row["reward"], cand, rec)
+    for k, v in data.get("visits", {}).items():
+        a, b = k.split(",")
+        archive.visits[(int(a), int(b))] = int(v)
+    print(f"resumed checkpoint evals={evals} cells={archive.cells and len(archive.cells)}", flush=True)
+    return archive, history, evals
 
 
 def run_search(
     *,
-    generations: int = 12,
-    population: int = 20,
-    seeds: list[int] | None = None,
+    wall_seconds: float = 3000.0,
+    population: int = 24,
     workers: int = 4,
+    seeds: list[int] | None = None,
+    checkpoint: Path | None = None,
+    resume: bool = True,
 ) -> dict:
-    seeds = seeds or [1, 7, 13, 99]
-    archive = QDArchive()
-    history: list[dict] = []
-    best: tuple[float, Candidate, dict] | None = None
+    seeds = seeds or [1, 7, 13, 42, 99, 2024, 8, 33]
+    ckpt_path = checkpoint or CKPT
     operators = GADGET_OPS
-    next_id = 1
+    next_id = [1]
+    archive, history, evals = _load_ckpt(ckpt_path, next_id) if resume else (PersistArchive(), [], 0)
+    t0 = time.time()
     seed_cands = load_seeds()
+    policy = make_policy("ucb1", operators)
+    rng = random.Random(seeds[0])
 
     def consider(cand: Candidate, rec: dict) -> None:
-        nonlocal best
         rec["origin"] = cand.origin
         rec["id"] = cand.id
         archive.add(cand, rec)
-        if best is None or rec["reward"] > best[0]:
-            best = (rec["reward"], cand, rec)
 
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        for seed in seeds:
-            rng = random.Random(seed)
-            policy = make_policy("ucb1", operators)
-            pop: list[Candidate] = []
+
+        def submit(cands: list[Candidate]) -> list[tuple[Candidate, dict]]:
+            futs = {pool.submit(eval_curriculum_rows, _jsonable(c.instrs)): c for c in cands}
+            out = []
+            for fut in as_completed(futs):
+                c = futs[fut]
+                rec = fut.result()
+                out.append((c, rec))
+            return out
+
+        # Baseline Condition A once.
+        base_rec = eval_curriculum_rows(_jsonable(persist_rr().instrs))
+        consider(persist_rr(), base_rec)
+        evals += 1
+        print(
+            f"baseline persist_rr R={base_rec['reward']:.3f} stage={base_rec['max_stage']} "
+            f"correct={base_rec['correct']} layout={base_rec['layout']}",
+            flush=True,
+        )
+
+        if not archive.cells:
+            init = []
             for e in seed_cands:
-                pop.append(Candidate(instrs=e.instrs, origin=e.origin, id=next_id))
-                next_id += 1
-            while len(pop) < population:
-                pop.append(
+                init.append(Candidate(instrs=e.instrs, origin=e.origin, id=next_id[0]))
+                next_id[0] += 1
+            while len(init) < population:
+                init.append(
                     Candidate(
-                        instrs=random_program(rng, rng.randint(20, 56), pack="gadgets"),
+                        instrs=random_program(rng, rng.randint(24, 64), pack="gadgets"),
                         origin="random",
-                        id=next_id,
+                        id=next_id[0],
                     )
                 )
-                next_id += 1
-
-            def submit_all(cands: list[Candidate]):
-                futs = {
-                    pool.submit(eval_candidate_rows, _jsonable(c.instrs)): c for c in cands
-                }
-                out: list[tuple[Candidate, dict]] = []
-                for fut in as_completed(futs):
-                    c = futs[fut]
-                    rec = fut.result()
-                    out.append((c, rec))
-                return out
-
-            scored = submit_all(pop)
-            hall: list[Candidate] = []
+                next_id[0] += 1
+            scored = submit(init)
+            evals += len(scored)
             for c, rec in scored:
                 consider(c, rec)
-                if rec["reward"] > 0.2:
-                    hall.append(c)
-
-            seed_best = max(scored, key=lambda t: t[1]["reward"])
-            history.append(
-                {
-                    "seed": seed,
-                    "generation": 0,
-                    "best_reward": seed_best[1]["reward"],
-                    "layout": seed_best[1]["layout"],
-                    "correct": seed_best[1]["correct"],
-                }
-            )
+            top = max(scored, key=lambda t: t[1]["reward"])
             print(
-                f"seed {seed} gen 0 R={seed_best[1]['reward']:.3f} "
-                f"layout={seed_best[1]['layout']} correct={seed_best[1]['correct']}/2 "
-                f"iso={seed_best[1]['isolation_ok']}",
+                f"init R={top[1]['reward']:.3f} stage={top[1]['max_stage']} "
+                f"layout={top[1]['layout']} cells={len(archive.cells)}",
                 flush=True,
             )
 
-            for gen in range(1, generations + 1):
-                children: list[Candidate] = []
-                for _ in range(population):
-                    parent = rng.choice(hall or pop)
-                    other = rng.choice(pop)
-                    op = policy.select_operator(rng)
-                    child = mutate(
-                        parent,
-                        op,
-                        rng,
-                        hall=hall or None,
-                        other=other,
-                        max_len=256,
-                        operators=operators,
+        gen = 0
+        seed_i = 0
+        last_ckpt = time.time()
+        while time.time() - t0 < wall_seconds:
+            gen += 1
+            seed_i = (seed_i + 1) % len(seeds)
+            rng = random.Random(seeds[seed_i] * 10007 + gen)
+            stones = archive.stepping_stones()
+            children: list[Candidate] = []
+            for _ in range(population):
+                pick = rng.random()
+                if pick < 0.45 and archive.cells:
+                    parent = archive.curiosity_sample(rng)
+                elif pick < 0.7 and stones:
+                    parent = rng.choice(stones)
+                elif pick < 0.85:
+                    parent = rng.choice(seed_cands)
+                    parent = Candidate(instrs=parent.instrs, origin=parent.origin, id=next_id[0])
+                else:
+                    parent = Candidate(
+                        instrs=random_program(rng, rng.randint(20, 56), pack="gadgets"),
+                        origin="random",
+                        id=next_id[0],
                     )
-                    child = Candidate(
-                        instrs=child.instrs,
-                        origin=child.origin,
-                        parent_id=parent.id,
-                        id=next_id,
-                    )
-                    next_id += 1
-                    children.append(child)
-                scored = submit_all(children)
-                gen_rewards: list[float] = []
-                for c, rec in scored:
-                    consider(c, rec)
-                    gen_rewards.append(rec["reward"])
-                    policy.update(c.origin if c.origin in operators else "insert", rec["reward"])
-                    if rec["reward"] > 0.4 and rec.get("isolation_ok"):
-                        hall.append(c)
-                        pop.append(c)
-                if len(pop) > population * 4:
-                    pop = pop[-population * 3 :]
-                if len(hall) > 48:
-                    hall = hall[-48:]
-                top = max(scored, key=lambda t: t[1]["reward"])
-                history.append(
-                    {
-                        "seed": seed,
-                        "generation": gen,
-                        "best_reward": top[1]["reward"],
-                        "layout": top[1]["layout"],
-                        "correct": top[1]["correct"],
-                        "mean_reward": sum(gen_rewards) / max(len(gen_rewards), 1),
-                    }
+                    next_id[0] += 1
+                    children.append(parent)
+                    continue
+                assert parent is not None
+                other = archive.curiosity_sample(rng) or rng.choice(seed_cands)
+                op = policy.select_operator(rng)
+                child = mutate(
+                    parent,
+                    op,
+                    rng,
+                    hall=stones or None,
+                    other=other,
+                    max_len=256,
+                    operators=operators,
                 )
-                if gen == 1 or gen % 4 == 0:
-                    print(
-                        f"seed {seed} gen {gen} R={top[1]['reward']:.3f} "
-                        f"layout={top[1]['layout']} correct={top[1]['correct']}/2",
-                        flush=True,
-                    )
+                child = Candidate(
+                    instrs=child.instrs,
+                    origin=child.origin,
+                    parent_id=parent.id,
+                    id=next_id[0],
+                )
+                next_id[0] += 1
+                children.append(child)
+            scored = submit(children)
+            evals += len(scored)
+            rewards = []
+            for c, rec in scored:
+                consider(c, rec)
+                rewards.append(rec["reward"])
+                policy.update(c.origin if c.origin in operators else "insert", rec["reward"])
+            top = max(scored, key=lambda t: t[1]["reward"])
+            ev = {
+                "gen": gen,
+                "seed": seeds[seed_i],
+                "elapsed": time.time() - t0,
+                "evals": evals,
+                "best_batch": top[1]["reward"],
+                "mean_batch": sum(rewards) / max(len(rewards), 1),
+                "stage": top[1]["max_stage"],
+                "layout": top[1]["layout"],
+                "cells": len(archive.cells),
+                "origin": top[1].get("origin") or top[0].origin,
+            }
+            history.append(ev)
+            CURVE.parent.mkdir(parents=True, exist_ok=True)
+            with CURVE.open("a") as fh:
+                fh.write(json.dumps(ev) + "\n")
+            if gen == 1 or gen % 5 == 0:
+                be = archive.best_evolved()
+                br = be[1]["reward"] if be else None
+                print(
+                    f"gen {gen} t={ev['elapsed']:.0f}s evals={evals} batchR={top[1]['reward']:.3f} "
+                    f"stage={top[1]['max_stage']} layout={top[1]['layout']} "
+                    f"cells={len(archive.cells)} evolvedR={br}",
+                    flush=True,
+                )
+            if time.time() - last_ckpt >= 60:
+                _save_ckpt(ckpt_path, archive, history, evals, t0)
+                last_ckpt = time.time()
 
-    cells = []
+    _save_ckpt(ckpt_path, archive, history, evals, t0)
+
     QD_DIR.mkdir(parents=True, exist_ok=True)
-    for label, (r, c, rec) in archive.cells.items():
-        cells.append(
+    cells_out = []
+    for (x, y), (r, c, rec) in archive.cells.items():
+        layout = rec.get("layout") or (LAYOUTS[x] if x < len(LAYOUTS) else "other")
+        cells_out.append(
             {
-                "layout": label,
+                "cell": [x, y],
+                "layout": layout,
                 "reward": r,
                 "origin": c.origin,
-                "correct": rec["correct"],
-                "n_write": rec["n_write"],
+                "max_stage": rec.get("max_stage"),
+                "correct": rec.get("correct"),
                 "length": rec.get("length"),
             }
         )
-        (QD_DIR / f"{label}.txt").write_text(
-            f"# {c.origin} R={r:.4f} layout={label} correct={rec['correct']}\n"
+        (QD_DIR / f"{layout}-c{x}-{y}.txt").write_text(
+            f"# {c.origin} R={r:.4f} layout={layout} stage={rec.get('max_stage')} gated={rec.get('correct')}\n"
             + disassemble(c.instrs)
             + "\n"
         )
 
-    baseline_rr = eval_candidate_rows(_jsonable(persist_rr().instrs))
-    baseline_live = eval_candidate_rows(_jsonable(round_robin_live().instrs))
-
-    chosen: Candidate | None = None
-    chosen_rec: dict = {}
-    if best is not None and best[0] > 0.5 and best[2].get("correct", 0) == 2:
-        chosen, chosen_rec = best[1], best[2]
-        # Do not ship a human baseline as "the OS" if search only rediscovered it.
-        if chosen.origin.startswith("baseline_persist"):
-            chosen_rec = dict(chosen_rec)
-            chosen_rec["note"] = (
-                "best scoring program is still persist_rr (human slot table). "
-                "Not copied to persist_gadgets_elite as an evolved OS."
-            )
-        else:
+    baseline = eval_curriculum_rows(_jsonable(persist_rr().instrs))
+    evolved = archive.best_evolved()
+    note = ""
+    elite_path = ""
+    if evolved is None:
+        note = (
+            "no evolved program reached Condition A (persist_rr) on gated D. "
+            "persist_rr remains the comparison baseline, not the OS."
+        )
+    else:
+        c, rec = evolved
+        if rec.get("max_stage") == "D" and rec.get("correct", 0) >= 2:
             ELITE_DIR.mkdir(parents=True, exist_ok=True)
-            OUT_ELITE.write_text(
-                f"# {chosen.origin} R={best[0]:.4f} layout={chosen_rec.get('layout')}\n"
-                + disassemble(chosen.instrs)
-                + "\n"
+            header = (
+                f"# {c.origin} R={rec['reward']:.4f} layout={rec.get('layout')} "
+                f"stage=D gated={rec.get('correct')} isolation_ok={rec.get('isolation_ok')}\n"
+            )
+            OUT_ELITE.write_text(header + disassemble(c.instrs) + "\n")
+            elite_path = str(OUT_ELITE)
+            note = "wrote persist_gadgets_elite.txt (evolved, gated D 2/2)"
+        else:
+            note = (
+                f"best evolved is {c.origin} stage={rec.get('max_stage')} "
+                f"gated={rec.get('correct')} — not shipped (below persist_rr D)."
             )
 
     summary = {
-        "best_reward": None if best is None else best[0],
-        "best_origin": None if best is None else best[1].origin,
-        "best_layout": None if best is None else best[2].get("layout"),
-        "best_correct": None if best is None else best[2].get("correct"),
-        "best_note": chosen_rec.get("note", ""),
-        "qd_cells": cells,
-        "history": history,
-        "baseline_persist_rr": {k: v for k, v in baseline_rr.items() if k != "got"},
-        "baseline_rr_live": {k: v for k, v in baseline_live.items() if k != "got"},
-        "elite_path": str(OUT_ELITE) if OUT_ELITE.exists() else "",
+        "evals": evals,
+        "elapsed": time.time() - t0,
+        "cells": cells_out,
+        "history_tail": history[-30:],
+        "baseline_persist_rr": {
+            k: baseline[k]
+            for k in ("reward", "max_stage", "correct", "layout", "isolation_ok", "leak")
+        },
+        "best_evolved": None
+        if evolved is None
+        else {
+            "origin": evolved[0].origin,
+            "reward": evolved[1]["reward"],
+            "max_stage": evolved[1].get("max_stage"),
+            "correct": evolved[1].get("correct"),
+            "layout": evolved[1].get("layout"),
+            "isolation_ok": evolved[1].get("isolation_ok"),
+        },
+        "note": note,
+        "elite_path": elite_path,
+        "curve": str(CURVE),
+        "checkpoint": str(ckpt_path),
     }
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(summary, indent=2) + "\n")
-    print(json.dumps({k: summary[k] for k in summary if k != "history"}, indent=2))
+    print(json.dumps({k: summary[k] for k in summary if k != "history_tail"}, indent=2))
     return summary
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--generations", type=int, default=8)
-    p.add_argument("--population", type=int, default=16)
+    p.add_argument("--wall-seconds", type=float, default=3000.0)
+    p.add_argument("--population", type=int, default=24)
     p.add_argument("--workers", type=int, default=4)
-    p.add_argument("--seeds", default="1,7,99")
+    p.add_argument("--seeds", default="1,7,13,42,99,2024,8,33")
+    p.add_argument("--no-resume", action="store_true")
     args = p.parse_args(argv)
     seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
     run_search(
-        generations=args.generations,
+        wall_seconds=args.wall_seconds,
         population=args.population,
-        seeds=seeds,
         workers=args.workers,
+        seeds=seeds,
+        resume=not args.no_resume,
     )
     return 0
 

@@ -1,0 +1,64 @@
+# insert_gadget R=0.9000 layout=dense-table stage=C gated=1
+   0:  MOVI     a=1 b=0 c=0 imm=1
+   1:  CTXGET   a=2 b=1 c=0 imm=4
+   2:  CTXGET   a=3 b=1 c=0 imm=5
+   3:  RUNCTX   a=1 b=2 c=3 imm=0
+   4:  ADDI     a=1 b=1 c=0 imm=1
+   5:  CTXGET   a=7 b=0 c=0 imm=6
+   6:  BLT      a=1 b=7 c=0 imm=-6  # -> 1
+   7:  BLKRD    a=3 b=6 c=3 imm=-47
+   8:  BLKWR    a=0 b=1 c=2 imm=44
+   9:  CTXGET   a=2 b=0 c=0 imm=14
+  10:  MOVI     a=4 b=0 c=0 imm=2
+  11:  MOVI     a=7 b=0 c=0 imm=256
+  12:  BLKWR    a=4 b=7 c=0 imm=0
+  13:  BEQ      a=2 b=0 c=0 imm=30  # -> 44
+  14:  MUL      a=7 b=3 c=7 imm=28
+  15:  ADDPROT  a=5 b=1 c=7 imm=22
+  16:  CTXGET   a=3 b=0 c=0 imm=15
+  17:  MOVI     a=4 b=0 c=0 imm=1
+  18:  BEQ      a=2 b=4 c=0 imm=3  # -> 22
+  19:  CTXGET   a=2 b=0 c=0 imm=14
+  20:  BEQ      a=2 b=0 c=0 imm=30  # -> 51
+  21:  CTXGET   a=3 b=0 c=0 imm=15
+  22:  MOVI     a=4 b=0 c=0 imm=1
+  23:  BEQ      a=2 b=4 c=0 imm=3  # -> 27
+  24:  MOVI     a=4 b=0 c=0 imm=2
+  25:  BEQ      a=2 b=4 c=0 imm=12  # -> 38
+  26:  JMP      a=0 b=0 c=0 imm=22  # -> 49
+  27:  CTXGET   a=4 b=3 c=0 imm=4
+  28:  LOAD     a=5 b=4 c=0 imm=0
+  29:  ADDI     a=6 b=4 c=0 imm=2
+  30:  ADDI     a=7 b=3 c=0 imm=-1
+  31:  MOVI     a=2 b=0 c=0 imm=3
+  32:  SHL      a=7 b=7 c=2 imm=0
+  33:  MOVI     a=2 b=0 c=0 imm=7
+  34:  AND      a=5 b=5 c=2 imm=0
+  35:  ADD      a=5 b=5 c=7 imm=0
+  36:  BLKWR    a=5 b=6 c=0 imm=0
+  37:  JMP      a=0 b=0 c=0 imm=11  # -> 49
+  38:  CTXGET   a=4 b=3 c=0 imm=4
+  39:  LOAD     a=5 b=4 c=0 imm=0
+  40:  ADDI     a=6 b=4 c=0 imm=2
+  41:  ADDI     a=7 b=3 c=0 imm=-1
+  42:  MOVI     a=2 b=0 c=0 imm=3
+  43:  SHL      a=7 b=7 c=2 imm=0
+  44:  MOVI     a=2 b=0 c=0 imm=7
+  45:  AND      a=5 b=5 c=2 imm=0
+  46:  ADD      a=5 b=5 c=7 imm=4
+  47:  BLKRD    a=2 b=5 c=6 imm=0
+  48:  BGE      a=0 b=0 c=0 imm=-35  # -> 14
+  49:  MOVI     a=2 b=0 c=0 imm=0
+  50:  CTXSET   a=0 b=1 c=0 imm=14
+  51:  MOVI     a=1 b=0 c=0 imm=1
+  52:  CTXGET   a=2 b=1 c=0 imm=1
+  53:  STORE    a=2 b=5 c=3 imm=11
+  54:  BNE      a=2 b=0 c=0 imm=4  # -> 59
+  55:  CTXGET   a=2 b=1 c=0 imm=2
+  56:  BNE      a=2 b=0 c=0 imm=2  # -> 59
+  57:  RUNCTXI  a=1 b=0 c=0 imm=32
+  58:  JMP      a=0 b=0 c=0 imm=-39  # -> 20
+  59:  SVC      a=1 b=1 c=0 imm=1
+  60:  CTXGET   a=7 b=0 c=0 imm=6
+  61:  BLT      a=1 b=7 c=0 imm=-9  # -> 53
+  62:  JMP      a=0 b=0 c=0 imm=-43  # -> 20

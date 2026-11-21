@@ -765,7 +765,14 @@ static void poll_ps2(void) {
 }
 
 void evoos_firmware_after_runctx(int32_t cid, int32_t ran, int32_t fault, int32_t vector) {
+    static int in_persist;
     note_runctx(cid, ran, fault, vector);
+    /* Dispatch only. PUT/GET policy is the evolved persist blob. */
+    if ((hw.last_svc == 1 || hw.last_svc == 2) && !in_persist) {
+        in_persist = 1;
+        persist_storage_main();
+        in_persist = 0;
+    }
     poll_ps2();
     poll_serial();
     if (want_redraw || (hw.switch_count & 15) == 0) {
@@ -814,6 +821,9 @@ void kmain(void) {
     cons_puts("EvoOS hw ring0-aot\n");
     cons_puts("firmware is not a kernel; supervisor=");
     cons_puts(supervisor_origin);
+    cons_putc('\n');
+    cons_puts("storage=");
+    cons_puts(persist_storage_origin);
     cons_putc('\n');
     if (hw.has_disk) {
         cons_puts("device attached blocks=");
