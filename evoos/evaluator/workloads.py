@@ -328,6 +328,59 @@ def heldout_workloads() -> tuple[Workload, ...]:
     )
 
 
+def _slice_workload(name: str, split: str, guests: tuple) -> Workload:
+    return Workload(name=name, split=split, guests=guests)
+
+
+def curriculum_stages() -> tuple[dict, ...]:
+    """1 → 2 → 3 → 4 guests, then a harder 4-guest mix.
+
+    Each stage is a smaller *machine* (n_contexts = n_guests+1), not a
+    scheduler hint. Held-out for the stage uses the same guest count.
+    """
+    g1 = (guest_sum(0, 8),)
+    g2 = (guest_sum(0, 8), guest_fill(1, 5))
+    g3 = (guest_sum(0, 8), guest_fill(1, 5), guest_xor(2, (3, 5, 7, 9, 1)))
+    g4 = training_workloads()[0].guests
+    hard = training_workloads()[1].guests
+    h1 = (guest_sum(0, 11),)
+    h2 = (guest_sum(0, 11), guest_max(1, (4, 17, 2, 9, 9)))
+    h3 = (guest_sum(0, 11), guest_max(1, (4, 17, 2, 9, 9)), guest_mulacc(2, 7, 3))
+    h4 = heldout_workloads()[0].guests
+    return (
+        {
+            "name": "k1",
+            "n_guests": 1,
+            "train": [_slice_workload("curr_k1_train", "train", g1)],
+            "heldout": [_slice_workload("curr_k1_held", "heldout", h1)],
+        },
+        {
+            "name": "k2",
+            "n_guests": 2,
+            "train": [_slice_workload("curr_k2_train", "train", g2)],
+            "heldout": [_slice_workload("curr_k2_held", "heldout", h2)],
+        },
+        {
+            "name": "k3",
+            "n_guests": 3,
+            "train": [_slice_workload("curr_k3_train", "train", g3)],
+            "heldout": [_slice_workload("curr_k3_held", "heldout", h3)],
+        },
+        {
+            "name": "k4",
+            "n_guests": 4,
+            "train": [_slice_workload("curr_k4_train", "train", g4)],
+            "heldout": [_slice_workload("curr_k4_held", "heldout", h4)],
+        },
+        {
+            "name": "k4_hard",
+            "n_guests": 4,
+            "train": [_slice_workload("curr_k4h_train", "train", hard)],
+            "heldout": list(heldout_workloads()),
+        },
+    )
+
+
 def isolation_workload() -> Workload:
     victim = GUEST_SLOTS[1][0] + 2
     return Workload(

@@ -43,6 +43,35 @@ class MachineConfig:
     max_prot_regions: int = MAX_PROT_REGIONS
     # Safety cap so a runaway interpreter cannot hang a training loop.
     wall_steps: int = 12_000
+    # Generic hardware semantics (not OS conventions). Round-2 default is hostile.
+    # sticky_guest_fault: once a guest faults, further RUNCTX is a no-op until CTXSET.
+    # False = RUNCTX retries the faulting instruction (standard "resume after abort").
+    sticky_guest_fault: bool = True
+    # supervisor_halt_on_mem: out-of-range supervisor load/store halts the machine.
+    # False = post a sticky error code and skip the access (imprecise abort).
+    supervisor_halt_on_mem: bool = True
+    # runctx_posts_status: last RUNCTX step-count and guest fault are readable CSRs.
+    runctx_posts_status: bool = False
+
+    def substrate_name(self) -> str:
+        if self.sticky_guest_fault and self.supervisor_halt_on_mem and not self.runctx_posts_status:
+            return "hostile"
+        parts = []
+        if not self.sticky_guest_fault:
+            parts.append("resume")
+        if not self.supervisor_halt_on_mem:
+            parts.append("memerr")
+        if self.runctx_posts_status:
+            parts.append("status")
+        return "+".join(parts) or "hostile"
+
+
+def lenient_config(**kwargs) -> MachineConfig:
+    """All three generic-hardware relaxations on."""
+    kwargs.setdefault("sticky_guest_fault", False)
+    kwargs.setdefault("supervisor_halt_on_mem", False)
+    kwargs.setdefault("runctx_posts_status", True)
+    return MachineConfig(**kwargs)
 
 
 @dataclass
@@ -85,6 +114,9 @@ class Snapshot:
     switch_count: int
     isolation_hits: list[tuple[int, int]]
     runctx_log: list[tuple[int, int, int]]
+    last_run_steps: int = 0
+    last_run_fault: int = 0
+    last_run_ctx: int = 0
 
 
 class Machine:
@@ -105,6 +137,9 @@ class Machine:
         # Ground-truth store ranges for isolation detection (evaluator-owned).
         self.legal_store: list[tuple[int, int] | None] = [None] * self.config.n_contexts
         self._log_runctx = True
+        self.last_run_steps = 0
+        self.last_run_fault = 0
+        self.last_run_ctx = 0
 
     def snapshot(self) -> Snapshot:
         return Snapshot(
@@ -117,6 +152,9 @@ class Machine:
             switch_count=self.switch_count,
             isolation_hits=list(self.isolation_hits),
             runctx_log=list(self.runctx_log),
+            last_run_steps=self.last_run_steps,
+            last_run_fault=self.last_run_fault,
+            last_run_ctx=self.last_run_ctx,
         )
 
     def restore(self, snap: Snapshot) -> None:
@@ -129,6 +167,9 @@ class Machine:
         self.switch_count = snap.switch_count
         self.isolation_hits = list(snap.isolation_hits)
         self.runctx_log = list(snap.runctx_log)
+        self.last_run_steps = snap.last_run_steps
+        self.last_run_fault = snap.last_run_fault
+        self.last_run_ctx = snap.last_run_ctx
 
     def state_hash(self) -> tuple:
         ctx_part = []
@@ -152,6 +193,14 @@ class Machine:
         ctx.regs[rd] = wrap32(val)
 
     def _fault(self, cid: int, code: int) -> None:
+        if (
+            cid == 0
+            and (not self.config.supervisor_halt_on_mem)
+            and code in (Fault.MEM, Fault.PROT, Fault.CTX)
+        ):
+            # Sticky error CSR; do not latch context.fault or halt.
+            self.supervisor_fault = int(code)
+            return
         ctx = self.contexts[cid]
         ctx.fault = int(code)
         if cid == 0:
@@ -207,6 +256,12 @@ class Machine:
             return self.config.n_contexts
         if field == CtxField.STATUS:
             return (int(target.halted)) | (int(target.fault != 0) << 1)
+        if field == CtxField.LAST_RUN_STEPS:
+            return self.last_run_steps if self.config.runctx_posts_status else 0
+        if field == CtxField.LAST_RUN_FAULT:
+            return self.last_run_fault if self.config.runctx_posts_status else 0
+        if field == CtxField.LAST_RUN_CTX:
+            return self.last_run_ctx if self.config.runctx_posts_status else 0
         return 0
 
     def _ctx_field_set(self, target: Context, field: int, val: int) -> None:
@@ -225,14 +280,22 @@ class Machine:
         n_steps = max(0, min(int(n_steps), self.config.max_steps))
         ran = 0
         guest = self.contexts[cid]
+        if (not self.config.sticky_guest_fault) and guest.fault and not guest.halted:
+            # Resume: retry the faulting instruction after the supervisor returns.
+            guest.fault = 0
         for _ in range(n_steps):
             if self.halted or self.cycles >= self.config.max_steps:
                 break
-            if guest.halted or guest.fault:
+            if guest.halted:
+                break
+            if guest.fault:
                 break
             self._execute(cid)
             ran += 1
         self.switch_count += 1
+        self.last_run_steps = ran
+        self.last_run_fault = guest.fault
+        self.last_run_ctx = cid
         if self._log_runctx and len(self.runctx_log) < 4096:
             self.runctx_log.append((self.cycles, cid, ran))
         return ran
@@ -327,6 +390,8 @@ class Machine:
             addr = wrap32(regs[b] + imm)
             val = self._mem_load(cid, addr)
             if ctx.fault:
+                if cid == 0 and not self.halted:
+                    ctx.pc = next_pc
                 return
             self._write_reg(ctx, a, val if val is not None else 0)
             ctx.pc = next_pc
@@ -335,6 +400,8 @@ class Machine:
             addr = wrap32(regs[a] + imm)
             self._mem_store(cid, addr, regs[b])
             if ctx.fault:
+                if cid == 0 and not self.halted:
+                    ctx.pc = next_pc
                 return
             ctx.pc = next_pc
             return

@@ -99,6 +99,10 @@ class CtxField(IntEnum):
     DATA_BOUND = 5
     N_CONTEXTS = 6
     STATUS = 7
+    # Machine-wide result of the last RUNCTX (readable on any context id).
+    LAST_RUN_STEPS = 8
+    LAST_RUN_FAULT = 9
+    LAST_RUN_CTX = 10
 
 
 class Fault(IntEnum):

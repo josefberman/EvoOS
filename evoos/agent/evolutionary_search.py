@@ -35,6 +35,9 @@ class SearchConfig:
     log_every: int = 1
     operator_pack: str = "gadgets"
     keep_records: bool = True
+    shaping: bool = False
+    rich_efficiency: bool = False
+    early_stop_complete: bool = False
 
 
 @dataclass
@@ -56,11 +59,14 @@ class SearchState:
     history: list[dict] = field(default_factory=list)
     archive: MapElites = field(default_factory=MapElites)
     records: list[EvalRecord] = field(default_factory=list)
+    population: list[Candidate] = field(default_factory=list)
 
 
 def _weights(mode: str) -> RewardWeights:
     if mode == "correctness":
         return RewardWeights.correctness_only()
+    if mode == "condition_b":
+        return RewardWeights.condition_b()
     return RewardWeights.quality_diversity()
 
 
@@ -79,6 +85,8 @@ def evaluate_candidate(
     novelty: NoveltyArchive,
     weights: RewardWeights,
     compute_heldout: bool,
+    shaping: bool = False,
+    rich_efficiency: bool = False,
 ) -> tuple[RewardBreakdown, list[EvalResult], list[EvalResult], bool]:
     try:
         verify_supervisor(candidate.instrs, sandbox.config)
@@ -131,6 +139,8 @@ def evaluate_candidate(
         novelty=n_score,
         weights=weights,
         needed_cycles=_needed(train),
+        shaping=shaping,
+        rich_efficiency=rich_efficiency,
     )
     return breakdown, train_results, held_results, False
 
@@ -171,7 +181,15 @@ def run_search(
 
     def eval_one(cand: Candidate, gen: int, operator: str, compute_g: bool) -> EvalRecord:
         bd, tr, ho, invalid = evaluate_candidate(
-            sandbox, cand, train, heldout, novelty, weights, compute_g
+            sandbox,
+            cand,
+            train,
+            heldout,
+            novelty,
+            weights,
+            compute_g,
+            shaping=config.shaping,
+            rich_efficiency=config.rich_efficiency,
         )
         rec = EvalRecord(gen, cand, bd, tr, ho, operator, invalid)
         if config.keep_records:
@@ -269,7 +287,13 @@ def run_search(
         state.history.append(row)
         if on_generation is not None and gen % config.log_every == 0:
             on_generation(gen, state, row)
+        if config.early_stop_complete and state.best_record is not None:
+            rec = state.best_record
+            if rec.train and all(r.completed == r.n_guests and r.isolation_ok for r in rec.train):
+                row["promoted"] = True
+                break
 
+    state.population = pop
     state.replay = replay  # type: ignore[attr-defined]
     state.policy = policy  # type: ignore[attr-defined]
     return state

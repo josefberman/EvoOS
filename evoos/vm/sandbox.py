@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from evoos.vm.instruction_set import (
     FW_GUEST_STRIDE,
@@ -68,6 +68,8 @@ class EvalResult:
     mem_fingerprint: int
     invalid: bool = False
     invalid_reason: str = ""
+    prot_cover: list[bool] = field(default_factory=list)
+    entered: int = 0
 
     @property
     def isolation_ok(self) -> bool:
@@ -181,6 +183,8 @@ class Sandbox:
                 mem_fingerprint=0,
                 invalid=True,
                 invalid_reason=str(exc),
+                prot_cover=[False] * len(workload.guests),
+                entered=0,
             )
         machine, snap = self._prepare(workload)
         machine.restore(snap)
@@ -202,6 +206,12 @@ class Sandbox:
                         isolation_hits.append((w, addr))
         completed = sum(1 for o in outcomes if o.correct)
         progressed = sum(1 for o in outcomes if o.progressed)
+        prot_cover = []
+        for i, g in enumerate(workload.guests):
+            ctx = machine.contexts[i + 1]
+            covered = any(lo <= g.data_base and hi >= g.data_bound for lo, hi, _ in ctx.prot)
+            prot_cover.append(bool(covered))
+        entered = sum(1 for o in outcomes if o.cycles > 0)
         return EvalResult(
             workload=workload.name,
             split=workload.split,
@@ -219,6 +229,8 @@ class Sandbox:
             outcomes=outcomes,
             runctx_log=list(machine.runctx_log),
             mem_fingerprint=_fingerprint(machine.mem),
+            prot_cover=prot_cover,
+            entered=entered,
         )
 
     def clear_cache(self) -> None:

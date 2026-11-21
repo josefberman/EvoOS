@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from evoos.evaluator.correctness import summarize_correctness
+from evoos.evaluator.shaping import mean_shape
 from evoos.vm.sandbox import EvalResult
 
 
@@ -30,6 +31,15 @@ class RewardWeights:
     @classmethod
     def quality_diversity(cls) -> "RewardWeights":
         return cls()
+
+    @classmethod
+    def condition_b(cls) -> "RewardWeights":
+        """Correctness plus efficiency so quantum is identifiable."""
+        return cls(f=0.45, s=0.20, e=0.35, g=0.00, n=0.00)
+
+    @classmethod
+    def shaped_correctness(cls) -> "RewardWeights":
+        return cls(f=0.80, s=0.20, e=0.0, g=0.0, n=0.0)
 
     def normalized(self) -> "RewardWeights":
         tot = self.f + self.s + self.e + self.g + self.n
@@ -74,6 +84,8 @@ def score(
     novelty: float = 0.0,
     weights: RewardWeights | None = None,
     needed_cycles: list[int] | None = None,
+    shaping: bool = False,
+    rich_efficiency: bool = False,
 ) -> RewardBreakdown:
     w = (weights or RewardWeights()).normalized()
     if not train_results:
@@ -94,12 +106,15 @@ def score(
         c = summarize_correctness(r, needed_cycles)
         f_parts.append(c.functional)
         s_parts.append(c.stability)
-        e_parts.append(c.efficiency)
+        e_parts.append(c.rich_efficiency if rich_efficiency else c.efficiency)
         completed += r.completed
         n_guests += r.n_guests
     f = sum(f_parts) / len(f_parts)
     s = sum(s_parts) / len(s_parts)
     e = sum(e_parts) / len(e_parts)
+    shape = mean_shape(train_results)
+    if shaping:
+        f = shape.blended()
 
     g = 0.0
     if heldout_results:
@@ -124,7 +139,7 @@ def score(
             isolation_ok=False,
             completed=completed,
             n_guests=n_guests,
-            details={"reason": "isolation_or_corruption"},
+            details={"reason": "isolation_or_corruption", "shape": shape.as_dict()},
         )
 
     total = w.f * f + w.s * s + w.e * e + w.g * g + w.n * n
@@ -139,4 +154,5 @@ def score(
         isolation_ok=True,
         completed=completed,
         n_guests=n_guests,
+        details={"shape": shape.as_dict()},
     )

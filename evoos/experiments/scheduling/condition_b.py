@@ -47,8 +47,18 @@ def _eval(sandbox: Sandbox, quantum: int, train: list[Workload], heldout: list[W
     cand = skeleton(quantum)
     train_res = [sandbox.evaluate(cand.instrs, w) for w in train]
     held_res = [sandbox.evaluate(cand.instrs, w) for w in heldout]
-    train_bd = score(train_res, novelty=0.0, weights=RewardWeights.correctness_only())
-    held_bd = score(held_res, novelty=0.0, weights=RewardWeights.correctness_only())
+    train_bd = score(
+        train_res,
+        novelty=0.0,
+        weights=RewardWeights.condition_b(),
+        rich_efficiency=True,
+    )
+    held_bd = score(
+        held_res,
+        novelty=0.0,
+        weights=RewardWeights.condition_b(),
+        rich_efficiency=True,
+    )
     four = all(r.completed == r.n_guests and r.isolation_ok for r in train_res + held_res)
     return {
         "quantum": quantum,
@@ -61,6 +71,9 @@ def _eval(sandbox: Sandbox, quantum: int, train: list[Workload], heldout: list[W
         "four_of_four": four,
         "train_switches": [r.switch_count for r in train_res],
         "held_switches": [r.switch_count for r in held_res],
+        "train_E": train_bd.e,
+        "held_E": held_bd.e,
+        "train_F": train_bd.f,
     }
 
 
@@ -106,7 +119,7 @@ def bandit_search(
         bandit.update(arm, row["train_reward"])
         history.append({"pull": i, "quantum": q, "train_reward": row["train_reward"]})
     grid = [cache[q] if q in cache else _eval(sandbox, q, train, heldout) for q in quanta]
-    best = max(grid, key=lambda r: (r["train_reward"], r["held_reward"], -r["quantum"]))
+    best = max(grid, key=lambda r: (r["train_reward"], r["held_reward"], r.get("train_E", 0), -r["quantum"]))
     return ConditionBResult(
         best_quantum=int(best["quantum"]),
         best=best,

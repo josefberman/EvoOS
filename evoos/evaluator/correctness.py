@@ -17,6 +17,8 @@ class CorrectnessSummary:
     isolation_ok: bool
     all_complete: bool
     starvation: float
+    rich_efficiency: float = 0.0
+    switch_score: float = 0.0
 
 
 def _std(xs: list[float]) -> float:
@@ -65,9 +67,17 @@ def summarize_correctness(result: EvalResult, needed_cycles: list[int] | None = 
         if o.correct:
             useful += o.cycles
     if result.cycles <= 0 or not isolation_ok:
-        efficiency = 0.0
+        useful_ratio = 0.0
     else:
-        efficiency = min(1.0, useful / result.cycles)
+        useful_ratio = min(1.0, useful / result.cycles)
+    # Switch overhead: extra RUNCTX beyond one dispatch per guest.
+    extra = max(0, result.switch_count - n)
+    switch_score = 1.0 - min(1.0, extra / max(result.switch_count, n, 1))
+    # Rich efficiency (Condition B): throughput + fairness + latency + switch cost.
+    rich_efficiency = (
+        0.40 * useful_ratio + 0.25 * fairness + 0.20 * latency + 0.15 * switch_score
+    )
+    efficiency = useful_ratio
 
     return CorrectnessSummary(
         functional=functional,
@@ -78,4 +88,6 @@ def summarize_correctness(result: EvalResult, needed_cycles: list[int] | None = 
         isolation_ok=isolation_ok,
         all_complete=result.completed == n,
         starvation=starvation,
+        rich_efficiency=rich_efficiency,
+        switch_score=switch_score,
     )
