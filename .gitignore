@@ -26,3 +26,4 @@ native/supervisor_aot.c
 artifacts/*.ppm
 artifacts/ovmf_vars_live.fd
 artifacts/qmp*.sock
+experiments/scheduling/results/persist_curriculum_curve.jsonl

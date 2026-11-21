@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from evoos.evaluator.workloads import heldout_workloads, training_workloads
+
 from evoos.experiments.scheduling.baselines import persist_rr, round_robin, round_robin_live
 from evoos.vm.codec import ImageMeta, dumps_image
-from evoos.vm.instruction_set import Instr, dumps_program, parse_disassembly
+from evoos.vm.instruction_set import Instr, Op, dumps_program, parse_disassembly
 from evoos.vm.machine import Machine, MachineConfig
 from evoos.vm.sandbox import Workload, load_firmware
 
@@ -19,6 +21,14 @@ ELITE_PATH = (
 OPEN_ELITE_PATH = (
     Path(__file__).resolve().parents[2]
     / "experiments/scheduling/results/examples/open_arrival_gadgets_elite.txt"
+)
+PERSIST_ELITE_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "experiments/scheduling/results/examples/persist_gadgets_elite.txt"
+)
+PERSIST_HITL_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "experiments/scheduling/results/persist_hitl_ok.json"
 )
 
 
@@ -67,20 +77,85 @@ def select_supervisor(kind: str) -> tuple[tuple[Instr, ...], str]:
         cand = persist_rr()
         return cand.instrs, cand.origin
     if k in ("evolved_persist", "persist_elite"):
-        path = (
-            Path(__file__).resolve().parents[2]
-            / "experiments/scheduling/results/examples/persist_gadgets_elite.txt"
-        )
-        if not path.exists():
+        if not PERSIST_ELITE_PATH.exists():
             cand = persist_rr()
             return cand.instrs, cand.origin
-        instrs = parse_disassembly(path.read_text())
-        header = path.read_text().splitlines()[0].lstrip("# ").split()
+        instrs = parse_disassembly(PERSIST_ELITE_PATH.read_text())
+        header = PERSIST_ELITE_PATH.read_text().splitlines()[0].lstrip("# ").split()
         origin = header[0] if header else "evolved_persist"
         return instrs, origin
+    if k in ("evolved_open_persist", "composed"):
+        return compose_persist_and_open()
     raise ValueError(
-        f"unknown supervisor {kind!r} (use evolved_open|evolved|evolved_live|rr|rr_live|persist_rr)"
+        f"unknown supervisor {kind!r} "
+        "(use evolved_open|evolved|evolved_live|rr|rr_live|persist_rr|evolved_persist)"
     )
+
+
+def persist_oneshot_storage(instrs: tuple[Instr, ...] | list[Instr]) -> tuple[Instr, ...]:
+    """Keep evolved PUT/GET + BLK* then HALT; drop that blob's RUNCTX loop.
+
+    Firmware calls this after a guest SVC so s99 can keep scheduling.
+    """
+    cut = None
+    for i, ins in enumerate(instrs):
+        if ins.op == Op.CTXSET and ins.imm == 14:
+            cut = i + 1
+            break
+    if cut is None:
+        body: list[Instr] = []
+        for ins in instrs:
+            if ins.op in (Op.RUNCTX, Op.RUNCTXI):
+                break
+            body.append(ins)
+        body.append(Instr(op=int(Op.HALT), a=0, b=0, c=0, imm=0))
+        return tuple(body)
+    return tuple(list(instrs[:cut]) + [Instr(op=int(Op.HALT), a=0, b=0, c=0, imm=0)])
+
+
+def persist_iso_kind() -> str:
+    """Supervisor packed for make test-persist / w-r-z storage HITL."""
+    if PERSIST_ELITE_PATH.exists() and PERSIST_HITL_PATH.exists():
+        try:
+            data = json.loads(PERSIST_HITL_PATH.read_text())
+        except json.JSONDecodeError:
+            data = {}
+        if data.get("persist_ok") and data.get("kind") == "evolved_persist":
+            return "evolved_persist"
+    return "persist_rr"
+
+
+def default_live_kind() -> str:
+    """Default ISO: s99 scheduling unless a composed elite passed live HITL."""
+    if PERSIST_HITL_PATH.exists():
+        try:
+            data = json.loads(PERSIST_HITL_PATH.read_text())
+        except json.JSONDecodeError:
+            data = {}
+        if data.get("live_ok") and data.get("persist_ok") and PERSIST_ELITE_PATH.exists():
+            return "evolved_open_persist"
+    return "evolved_open"
+
+
+def compose_persist_and_open(
+    persist: tuple[Instr, ...] | None = None,
+    open_instrs: tuple[Instr, ...] | None = None,
+) -> tuple[tuple[Instr, ...], str]:
+    """Prefix persist elite; HALT becomes JMP into s99. Looping persist never reaches s99."""
+    if persist is None:
+        if PERSIST_ELITE_PATH.exists():
+            persist = parse_disassembly(PERSIST_ELITE_PATH.read_text())
+        else:
+            persist = persist_rr().instrs
+    if open_instrs is None:
+        open_instrs = parse_disassembly(OPEN_ELITE_PATH.read_text())
+    prefix = list(persist)
+    s99_pc = len(prefix)
+    for i, ins in enumerate(prefix):
+        if ins.op == 0:
+            prefix[i] = Instr(op=21, a=0, b=0, c=0, imm=s99_pc - (i + 1))
+    origin = "evolved_open_persist"
+    return tuple(prefix) + tuple(open_instrs), origin
 
 
 def pack_workload(

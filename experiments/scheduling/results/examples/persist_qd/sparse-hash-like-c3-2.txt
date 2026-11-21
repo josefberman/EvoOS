@@ -1,0 +1,57 @@
+# remove R=0.7156 layout=sparse-hash-like stage=B gated=1
+   0:  MOVI     a=1 b=0 c=0 imm=1
+   1:  CTXGET   a=2 b=1 c=0 imm=4
+   2:  CTXGET   a=3 b=1 c=0 imm=5
+   3:  RUNCTX   a=1 b=2 c=3 imm=0
+   4:  ADDI     a=1 b=1 c=0 imm=1
+   5:  BLT      a=1 b=7 c=0 imm=-6  # -> 0
+   6:  MOVI     a=7 b=0 c=0 imm=17
+   7:  MOVI     a=1 b=0 c=0 imm=256
+   8:  BLKWR    a=7 b=1 c=0 imm=0
+   9:  CTXGET   a=2 b=0 c=0 imm=14
+  10:  BEQ      a=2 b=0 c=0 imm=30  # -> 41
+  11:  CTXGET   a=3 b=0 c=0 imm=15
+  12:  MOVI     a=4 b=0 c=0 imm=1
+  13:  BEQ      a=2 b=4 c=0 imm=3  # -> 17
+  14:  MOVI     a=4 b=0 c=0 imm=2
+  15:  BEQ      a=2 b=4 c=0 imm=12  # -> 28
+  16:  JMP      a=0 b=0 c=0 imm=22  # -> 39
+  17:  CTXGET   a=4 b=3 c=0 imm=4
+  18:  LOAD     a=5 b=4 c=0 imm=0
+  19:  ADDI     a=6 b=4 c=0 imm=2
+  20:  ADDI     a=7 b=3 c=0 imm=-1
+  21:  MOVI     a=2 b=0 c=0 imm=3
+  22:  SHL      a=7 b=7 c=2 imm=0
+  23:  MOVI     a=2 b=0 c=0 imm=7
+  24:  AND      a=5 b=5 c=2 imm=0
+  25:  ADD      a=5 b=5 c=7 imm=0
+  26:  BLKWR    a=5 b=6 c=0 imm=0
+  27:  JMP      a=0 b=0 c=0 imm=11  # -> 39
+  28:  CTXGET   a=4 b=3 c=0 imm=4
+  29:  LOAD     a=5 b=4 c=0 imm=0
+  30:  ADDI     a=6 b=4 c=0 imm=2
+  31:  ADDI     a=7 b=3 c=0 imm=-1
+  32:  MOVI     a=2 b=0 c=0 imm=3
+  33:  SHL      a=7 b=7 c=2 imm=0
+  34:  MOVI     a=2 b=0 c=0 imm=7
+  35:  AND      a=5 b=5 c=2 imm=0
+  36:  ADD      a=5 b=5 c=7 imm=0
+  37:  BLKRD    a=2 b=5 c=6 imm=0
+  38:  JMP      a=0 b=0 c=0 imm=0  # -> 39
+  39:  MOVI     a=2 b=0 c=0 imm=0
+  40:  CTXSET   a=0 b=1 c=0 imm=14
+  41:  MOVI     a=1 b=0 c=0 imm=1
+  42:  CTXGET   a=2 b=1 c=0 imm=1
+  43:  STORE    a=2 b=5 c=3 imm=11
+  44:  BNE      a=2 b=0 c=0 imm=4  # -> 49
+  45:  CTXGET   a=2 b=1 c=0 imm=2
+  46:  BNE      a=2 b=0 c=0 imm=2  # -> 49
+  47:  RUNCTXI  a=1 b=0 c=0 imm=32
+  48:  JMP      a=0 b=0 c=0 imm=-39  # -> 10
+  49:  SVC      a=1 b=1 c=0 imm=1
+  50:  CTXGET   a=7 b=0 c=0 imm=6
+  51:  BLT      a=1 b=7 c=0 imm=-9  # -> 43
+  52:  JMP      a=0 b=0 c=0 imm=-43  # -> 10
+  53:  CTXGET   a=2 b=1 c=0 imm=1
+  54:  STORE    a=2 b=5 c=3 imm=11
+  55:  BNE      a=2 b=0 c=0 imm=4  # -> 60

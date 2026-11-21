@@ -4,6 +4,7 @@ BdsDxe: starting Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/Pci(0x1
 EvoOS live
 EvoOS hw ring0-aot
 firmware is not a kernel; supervisor=evolved_open_arrival_gadgets_s99
+storage=evolved_persist_crossover
 device absent
 keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit
 loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines
@@ -21,9 +22,9 @@ loader: slot 0 ctx 1 malicious malicious_store
 guest 1 malicious_store fault=1 vector=14 cr2=6295560 #PF isolation_n=0
 loader: slot 1 ctx 2 sum sum_8
 guest 2 sum_8 halted cycles=8
-inspect isolation_n=0 switches=146 cycles=961 disk=0 last_svc=0
+inspect isolation_n=0 switches=138 cycles=913 disk=0 last_svc=0
   ctx 1 malicious_store halt=0 fault=1 cyc=1 prot=4 vec=14
   ctx 2 sum_8 halt=1 fault=0 cyc=8 prot=1 vec=128
   ctx 3 xor_5 halt=1 fault=0 cyc=8 prot=1 vec=128
-  ctx 4 spin halt=0 fault=0 cyc=928 prot=4 vec=32
+  ctx 4 spin halt=0 fault=0 cyc=880 prot=4 vec=32
 EvoOS quit isolation_n=0 spawns=6

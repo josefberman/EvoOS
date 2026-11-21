@@ -1,7 +1,8 @@
 EvoOS firmware starting
 EvoOS live
 EvoOS hw ring0-aot
-firmware is not a kernel; supervisor=baseline_persist_rr_q32
+firmware is not a kernel; supervisor=evolved_persist_crossover
+storage=none
 device attached blocks=32
 keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit
 loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines

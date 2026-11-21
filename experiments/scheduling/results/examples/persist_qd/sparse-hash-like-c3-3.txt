@@ -1,0 +1,55 @@
+# insert_blk_gadget R=0.9156 layout=sparse-hash-like stage=C gated=1
+   0:  MOVI     a=1 b=0 c=0 imm=1
+   1:  MOVI     a=4 b=0 c=0 imm=21
+   2:  MOVI     a=3 b=0 c=0 imm=256
+   3:  BLKWR    a=4 b=3 c=0 imm=0
+   4:  CTXGET   a=2 b=1 c=0 imm=4
+   5:  CTXGET   a=3 b=1 c=0 imm=5
+   6:  RUNCTX   a=1 b=2 c=3 imm=0
+   7:  ADDI     a=1 b=1 c=0 imm=1
+   8:  CTXGET   a=7 b=0 c=0 imm=6
+   9:  BLT      a=1 b=7 c=0 imm=-6  # -> 4
+  10:  CTXGET   a=2 b=0 c=0 imm=14
+  11:  BEQ      a=2 b=0 c=0 imm=30  # -> 42
+  12:  CTXGET   a=3 b=0 c=0 imm=15
+  13:  MOVI     a=4 b=0 c=0 imm=1
+  14:  BEQ      a=2 b=4 c=0 imm=3  # -> 18
+  15:  MOVI     a=4 b=0 c=0 imm=2
+  16:  BEQ      a=2 b=4 c=0 imm=12  # -> 29
+  17:  JMP      a=0 b=0 c=0 imm=22  # -> 40
+  18:  CTXGET   a=4 b=3 c=0 imm=4
+  19:  LOAD     a=5 b=4 c=0 imm=0
+  20:  ADDI     a=6 b=4 c=0 imm=2
+  21:  ADDI     a=7 b=3 c=0 imm=-1
+  22:  MOVI     a=2 b=0 c=0 imm=3
+  23:  SHL      a=7 b=7 c=2 imm=0
+  24:  MOVI     a=2 b=0 c=0 imm=7
+  25:  AND      a=5 b=5 c=2 imm=0
+  26:  ADD      a=5 b=5 c=7 imm=0
+  27:  BLKWR    a=5 b=6 c=0 imm=0
+  28:  JMP      a=0 b=0 c=0 imm=11  # -> 40
+  29:  CTXGET   a=4 b=3 c=0 imm=4
+  30:  LOAD     a=5 b=4 c=0 imm=0
+  31:  ADDI     a=6 b=4 c=0 imm=2
+  32:  ADDI     a=7 b=3 c=0 imm=-1
+  33:  MOVI     a=2 b=0 c=0 imm=3
+  34:  SHL      a=7 b=7 c=2 imm=0
+  35:  MOVI     a=2 b=0 c=0 imm=7
+  36:  AND      a=5 b=5 c=2 imm=0
+  37:  ADD      a=5 b=5 c=7 imm=4
+  38:  BLKRD    a=2 b=5 c=6 imm=0
+  39:  BGE      a=0 b=0 c=0 imm=-35  # -> 5
+  40:  MOVI     a=2 b=0 c=0 imm=0
+  41:  CTXSET   a=0 b=1 c=0 imm=14
+  42:  MOVI     a=1 b=0 c=0 imm=1
+  43:  CTXGET   a=2 b=1 c=0 imm=1
+  44:  STORE    a=2 b=5 c=3 imm=11
+  45:  BNE      a=2 b=0 c=0 imm=4  # -> 50
+  46:  CTXGET   a=2 b=1 c=0 imm=2
+  47:  BNE      a=2 b=0 c=0 imm=2  # -> 50
+  48:  RUNCTXI  a=1 b=0 c=0 imm=32
+  49:  JMP      a=0 b=0 c=0 imm=-39  # -> 11
+  50:  SVC      a=1 b=1 c=0 imm=1
+  51:  CTXGET   a=7 b=0 c=0 imm=6
+  52:  BLT      a=1 b=7 c=0 imm=-9  # -> 44
+  53:  JMP      a=0 b=0 c=0 imm=-43  # -> 11

@@ -52,6 +52,40 @@ def test_select_persist_rr():
     assert any(i.op == Op.BLKWR for i in instrs)
 
 
+def test_default_live_kind_stays_s99_without_live_hitl():
+    from evoos.boot.pack import default_live_kind
+
+    assert default_live_kind() == "evolved_open"
+
+
+def test_persist_iso_kind_is_evolved_when_hitl_ok():
+    from evoos.boot.pack import persist_iso_kind, select_supervisor
+
+    assert persist_iso_kind() == "evolved_persist"
+    instrs, origin = select_supervisor("evolved_persist")
+    assert "evolved_persist" in origin
+    assert any(i.op == Op.BLKWR for i in instrs)
+
+
+def test_aot_live_iso_attaches_persist_oneshot():
+    from evoos.boot.aot import emit_c
+    from evoos.boot.pack import persist_oneshot_storage, select_supervisor
+    from evoos.experiments.scheduling.baselines import persist_rr
+
+    live, origin = select_supervisor("evolved_open")
+    handler = persist_oneshot_storage(persist_rr().instrs)
+    src = emit_c(
+        live,
+        origin=origin,
+        persist_handler=handler,
+        persist_origin="evolved_persist_crossover",
+    )
+    assert "void persist_storage_main(void)" in src
+    assert "evoos_hw_blkwr" in src
+    assert 'persist_storage_origin[] = "evolved_persist_crossover"' in src
+    assert origin == "evolved_open_arrival_gadgets_s99"
+
+
 def test_select_evolved_open_is_not_rr_live():
     instrs, origin = select_supervisor("evolved_open")
     assert origin == "evolved_open_arrival_gadgets_s99"

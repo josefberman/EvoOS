@@ -119,6 +119,43 @@ def hitl_boot_instrs(
     }
 
 
+def hitl_persist_reboot(kind: str) -> dict:
+    """AOT `kind`, attach a raw disk, store, kill QEMU, reboot, recall."""
+    instrs, origin = select_supervisor(kind)
+    aot = NATIVE / "supervisor_aot.c"
+    aot.write_text(emit_c(instrs, origin=origin, note="hitl-persist"))
+    subprocess.run(["make", "-C", str(NATIVE), "iso", "SKIP_AOT=1"], check=True)
+    BUILD.mkdir(parents=True, exist_ok=True)
+    disk = BUILD / "hitl-persist.img"
+    disk.write_bytes(b"\x00" * (512 * 2048))
+    serial = BUILD / "hitl-persist-serial.log"
+    proc = subprocess.run(
+        [
+            "python3",
+            str(NATIVE / "qemu_persist_test.py"),
+            "--iso",
+            str(BUILD / "evoos.iso"),
+            "--disk",
+            str(disk),
+            "--serial",
+            str(serial),
+        ],
+        cwd=str(ROOT),
+        env={**os.environ, "PYTHONPATH": str(ROOT)},
+        capture_output=True,
+        text=True,
+    )
+    text = serial.read_text(errors="replace") if serial.exists() else ""
+    return {
+        "origin": origin,
+        "ok": proc.returncode == 0 and "recall=123" in text,
+        "returncode": proc.returncode,
+        "serial": text[-4000:],
+        "stdout": (proc.stdout or "")[-2000:],
+        "stderr": (proc.stderr or "")[-2000:],
+    }
+
+
 def hitl_boot(kind: str, timeout: float = 8.0) -> dict:
     """Rebuild the ISO with a named supervisor and boot BIOS QEMU."""
     instrs, origin = select_supervisor(kind)

@@ -1,0 +1,10 @@
+{
+  "persist_ok": true,
+  "live_ok": false,
+  "kind": "evolved_persist",
+  "origin": "evolved_persist_crossover",
+  "note": "Crossover elite passed QEMU ATA kill/reboot (recall=123). It is persist_rr's stride table plus extra copies of 99. Default ISO scheduler stays s99; AOT emits the elite's SVC/BLK* oneshot as persist_storage_main for live w/r/z. make test-persist packs the full elite then rechecks the s99 ISO. LIVE_SUPERVISOR=persist_rr keeps Condition A.",
+  "python_gated": 2,
+  "layout": "other",
+  "hitl_recall": 123
+}
