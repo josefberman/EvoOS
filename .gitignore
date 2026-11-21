@@ -18,3 +18,10 @@ htmlcov/
 .tensorboard/
 .python-version
 .DS_Store
+native/boot.img
+native/*.o
+native/guest_catalogue.h
+*.ppm
+artifacts/*.ppm
+artifacts/ovmf_vars_live.fd
+artifacts/qmp*.sock
