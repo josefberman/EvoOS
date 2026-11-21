@@ -1,5 +1,4 @@
-#include "evoos_vm.h"
-#include "guest_catalogue.h"
+#include "hw.h"
 #include "limine.h"
 
 #include <stddef.h>
@@ -18,14 +17,24 @@ static volatile struct limine_hhdm_request hhdm_request = {
     .id = LIMINE_HHDM_REQUEST,
     .revision = 0};
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_kernel_address_request kernel_address_request = {
+    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+    .revision = 0};
+
 __attribute__((used, section(".limine_requests_start")))
 static volatile LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
-extern const uint8_t evoos_image[];
-extern const uint8_t evoos_image_end[];
+extern const uint8_t guest_sum[], guest_sum_end[];
+extern const uint8_t guest_fill[], guest_fill_end[];
+extern const uint8_t guest_xor[], guest_xor_end[];
+extern const uint8_t guest_copyinc[], guest_copyinc_end[];
+extern const uint8_t guest_max[], guest_max_end[];
+extern const uint8_t guest_malicious[], guest_malicious_end[];
+extern const uint8_t guest_spin[], guest_spin_end[];
 
 static struct limine_framebuffer *fb;
 static uint32_t fb_white, fb_bg, fb_accent, fb_ok, fb_bad, fb_idle, fb_dim;
@@ -268,8 +277,7 @@ static void qemu_exit(uint8_t code) {
 }
 
 #define HEAT_N 320
-static EvoOSMachine machine;
-static int32_t seen_halt[EVOOS_MAX_CTX];
+static int32_t seen_halt[HW_N_CTX];
 static uint8_t heat_cid[HEAT_N];
 static uint8_t heat_ran[HEAT_N];
 static int heat_i;
@@ -279,20 +287,16 @@ static int32_t key_seq;
 static int32_t fault_events;
 static int want_redraw = 1;
 static int rotating_kind;
+static int drawn;
 
-static const char *KINDS[] = {"sum", "fill", "xor", "copyinc", "max", "malicious"};
-#define N_KINDS 6
+static const char *KINDS[] = {"sum", "fill", "xor", "copyinc", "max", "malicious", "spin"};
+#define N_KINDS 7
 
-static void io_poke(int32_t off, int32_t val) {
-    int32_t addr = machine.io_base + off;
-    if (addr >= 0 && addr < machine.mem_words) {
-        machine.mem[addr] = val;
-    }
-}
+static void io_poke(int32_t off, int32_t val) { evoos_hw_store(1920 + off, val); }
 
-static void on_runctx(const EvoOSMachine *m, int32_t cid, int32_t ran) {
-    const EvoOSContext *g;
-    if (cid <= 0 || cid >= m->n_contexts) {
+static void note_runctx(int32_t cid, int32_t ran, int32_t fault, int32_t vector) {
+    HwContext *g;
+    if (cid <= 0 || cid >= hw.n_contexts) {
         return;
     }
     heat_cid[heat_i] = (uint8_t)cid;
@@ -301,18 +305,33 @@ static void on_runctx(const EvoOSMachine *m, int32_t cid, int32_t ran) {
     if (heat_fill < HEAT_N) {
         heat_fill++;
     }
-    g = &m->contexts[cid];
+    g = &hw.ctx[cid];
+    if (vector == HW_VEC_TIMER && g->preempts == 1) {
+        cons_puts("guest ");
+        cons_i32(cid);
+        cons_puts(" ");
+        cons_puts(g->name);
+        cons_puts(" preempt vector=32\n");
+        want_redraw = 1;
+    }
     if (g->fault && !seen_halt[cid]) {
         seen_halt[cid] = 1;
         fault_events++;
         cons_puts("guest ");
         cons_i32(cid);
         cons_puts(" ");
-        cons_puts(m->guest_name[cid - 1]);
+        cons_puts(g->name);
         cons_puts(" fault=");
-        cons_i32(g->fault);
+        cons_i32(fault);
+        cons_puts(" vector=");
+        cons_i32(vector);
+        cons_puts(" cr2=");
+        cons_i32((int32_t)g->last_cr2);
+        if (vector == HW_VEC_PF) {
+            cons_puts(" #PF");
+        }
         cons_puts(" isolation_n=");
-        cons_i32(m->isolation_n);
+        cons_i32(hw.isolation_n);
         cons_putc('\n');
         want_redraw = 1;
         return;
@@ -322,12 +341,13 @@ static void on_runctx(const EvoOSMachine *m, int32_t cid, int32_t ran) {
         cons_puts("guest ");
         cons_i32(cid);
         cons_puts(" ");
-        cons_puts(m->guest_name[cid - 1]);
+        cons_puts(g->name);
         cons_puts(" halted cycles=");
         cons_i32(g->cycles);
         cons_putc('\n');
         want_redraw = 1;
     }
+    (void)ran;
 }
 
 static void draw_logo(int x, int y) {
@@ -347,17 +367,17 @@ static void draw_logo(int x, int y) {
 
 static void dashboard(void) {
     int i, col, n;
-    int hx, hy, hw, hh;
+    int hx, hy, barw, hh;
     if (!fb) {
         return;
     }
     draw_logo(24, 16);
     fb_puts_at(170, 16, "EVOOS LIVE", fb_accent);
-    fb_puts_at(170, 36, machine.origin, fb_white);
-    fb_puts_at(24, 60, "FIRMWARE=I/O PLUMBING   POLICY=BYTECODE", fb_dim);
+    fb_puts_at(170, 36, supervisor_origin, fb_white);
+    fb_puts_at(24, 60, "FIRMWARE=I/O   POLICY=NATIVE AOT", fb_dim);
 
-    for (i = 1; i < machine.n_contexts && i <= 4; i++) {
-        EvoOSContext *g = &machine.contexts[i];
+    for (i = 1; i < hw.n_contexts && i <= 4; i++) {
+        HwContext *g = &hw.ctx[i];
         int y = 88 + (i - 1) * 36;
         uint32_t colr = fb_guest[i];
         const char *st = "RUN";
@@ -375,7 +395,7 @@ static void dashboard(void) {
         fb_puts_at(44, y, "CTX", fb_dim);
         fb_i32_at(96, y, i, fb_white);
         fb_puts_at(128, y, "                ", fb_dim);
-        fb_puts_at(128, y, machine.guest_name[i - 1], fb_white);
+        fb_puts_at(128, y, g->name, fb_white);
         fb_puts_at(400, y, "        ", fb_dim);
         fb_puts_at(400, y, st, colr);
         fb_puts_at(520, y, "CYC", fb_dim);
@@ -386,19 +406,19 @@ static void dashboard(void) {
 
     hx = 24;
     hy = 250;
-    hw = fb && fb->width > 80 ? (int)fb->width - 48 : 640;
-    if (hw > HEAT_N * 3) {
-        hw = HEAT_N * 3;
+    barw = fb && fb->width > 80 ? (int)fb->width - 48 : 640;
+    if (barw > HEAT_N * 3) {
+        barw = HEAT_N * 3;
     }
     hh = 48;
     fb_puts_at(hx, hy - 20, "RUNCTX HEATMAP (TIME ->)", fb_dim);
-    fb_rect(hx, hy, hw, hh, fb_idle);
+    fb_rect(hx, hy, barw, hh, fb_idle);
     n = heat_fill;
     for (col = 0; col < n; col++) {
         int idx = (heat_i - n + col + HEAT_N) % HEAT_N;
         int cid = heat_cid[idx];
-        int px = hx + (col * hw) / (n < 8 ? 8 : n);
-        int pw = hw / (n < 8 ? 8 : n);
+        int px = hx + (col * barw) / (n < 8 ? 8 : n);
+        int pw = barw / (n < 8 ? 8 : n);
         if (pw < 1) {
             pw = 1;
         }
@@ -406,37 +426,37 @@ static void dashboard(void) {
     }
 
     fb_puts_at(24, 314, "SWITCHES", fb_dim);
-    fb_i32_at(180, 314, machine.switch_count, fb_white);
+    fb_i32_at(180, 314, hw.switch_count, fb_white);
     fb_puts_at(320, 314, "ISOLATION", fb_dim);
-    fb_i32_at(500, 314, machine.isolation_n, machine.isolation_n ? fb_bad : fb_ok);
+    fb_i32_at(500, 314, hw.isolation_n, hw.isolation_n ? fb_bad : fb_ok);
     fb_puts_at(24, 336, "SPAWNS", fb_dim);
     fb_i32_at(180, 336, spawn_count, fb_white);
     fb_puts_at(320, 336, "FAULTS", fb_dim);
     fb_i32_at(500, 336, fault_events, fault_events ? fb_bad : fb_white);
-    fb_puts_at(24, 368, "1-4 SLOT  S F X C M KIND  I INSPECT  H HELP  Q QUIT", fb_accent);
+    fb_puts_at(24, 368, "1-4 SLOT  S F X C M P KIND  I INSPECT  H HELP  Q QUIT", fb_accent);
     want_redraw = 0;
 }
 
 static void print_help(void) {
-    cons_puts("keys: 1-4 spawn into slot  s/f/x/c/m kind  space next  i inspect  h help  q quit\n");
-    cons_puts("loader is firmware; ADDPROT/RUNCTX stay in supervisor bytecode\n");
+    cons_puts("keys: 1-4 spawn  s/f/x/c/m/p kind  space next  i inspect  h help  q quit\n");
+    cons_puts("loader is firmware; ADDPROT/RUNCTX are native AOT trampolines (MMU + iretq)\n");
 }
 
 static void inspect(void) {
     int32_t i;
     cons_puts("inspect isolation_n=");
-    cons_i32(machine.isolation_n);
+    cons_i32(hw.isolation_n);
     cons_puts(" switches=");
-    cons_i32(machine.switch_count);
+    cons_i32(hw.switch_count);
     cons_puts(" cycles=");
-    cons_i32(machine.cycles);
+    cons_i32(hw.cycles);
     cons_putc('\n');
-    for (i = 1; i < machine.n_contexts; i++) {
-        EvoOSContext *g = &machine.contexts[i];
+    for (i = 1; i < hw.n_contexts; i++) {
+        HwContext *g = &hw.ctx[i];
         cons_puts("  ctx ");
         cons_i32(i);
         cons_puts(" ");
-        cons_puts(machine.guest_name[i - 1]);
+        cons_puts(g->name);
         cons_puts(" halt=");
         cons_i32(g->halted);
         cons_puts(" fault=");
@@ -445,44 +465,113 @@ static void inspect(void) {
         cons_i32(g->cycles);
         cons_puts(" prot=");
         cons_i32(g->n_prot);
+        cons_puts(" vec=");
+        cons_i32(g->last_vector);
         cons_putc('\n');
     }
 }
 
+static int kind_eq(const char *a, const char *b) {
+    while (*a && *b && *a == *b) {
+        a++;
+        b++;
+    }
+    return *a == 0 && *b == 0;
+}
+
 static void loader_spawn(int slot, const char *kind) {
-    int idx;
-    const CatProg *p;
-    int cid;
+    const uint8_t *code;
+    const uint8_t *end;
+    const char *name = kind;
+    int32_t init_off[16];
+    int32_t init_val[16];
+    int n_init = 0;
+    int i;
     if (slot < 0 || slot > 3) {
         return;
     }
-    idx = cat_find(kind, slot);
-    if (idx < 0) {
+    if (kind_eq(kind, "sum")) {
+        code = guest_sum;
+        end = guest_sum_end;
+        name = "sum_8";
+        init_off[0] = 0;
+        init_val[0] = 8;
+        n_init = 1;
+    } else if (kind_eq(kind, "fill")) {
+        code = guest_fill;
+        end = guest_fill_end;
+        name = "fill_5";
+        init_off[0] = 0;
+        init_val[0] = 5;
+        n_init = 1;
+    } else if (kind_eq(kind, "xor")) {
+        static const int32_t xv[] = {3, 5, 7, 9, 1};
+        code = guest_xor;
+        end = guest_xor_end;
+        name = "xor_5";
+        init_off[0] = 0;
+        init_val[0] = 5;
+        n_init = 1;
+        for (i = 0; i < 5; i++) {
+            init_off[n_init] = 10 + i;
+            init_val[n_init] = xv[i];
+            n_init++;
+        }
+    } else if (kind_eq(kind, "copyinc")) {
+        static const int32_t cv[] = {4, 8, 2, 6};
+        code = guest_copyinc;
+        end = guest_copyinc_end;
+        name = "copyinc_4";
+        init_off[0] = 0;
+        init_val[0] = 4;
+        n_init = 1;
+        for (i = 0; i < 4; i++) {
+            init_off[n_init] = 10 + i;
+            init_val[n_init] = cv[i];
+            n_init++;
+        }
+    } else if (kind_eq(kind, "max")) {
+        static const int32_t mv[] = {4, 17, 2, 9, 9};
+        code = guest_max;
+        end = guest_max_end;
+        name = "max_5";
+        init_off[0] = 0;
+        init_val[0] = 5;
+        n_init = 1;
+        for (i = 0; i < 5; i++) {
+            init_off[n_init] = 10 + i;
+            init_val[n_init] = mv[i];
+            n_init++;
+        }
+    } else if (kind_eq(kind, "malicious")) {
+        code = guest_malicious;
+        end = guest_malicious_end;
+        name = "malicious_store";
+    } else if (kind_eq(kind, "spin")) {
+        code = guest_spin;
+        end = guest_spin_end;
+        name = "spin";
+    } else {
         cons_puts("loader: unknown kind\n");
         return;
     }
-    p = &CAT_PROGS[idx];
-    cid = slot + 1;
-    if (evoos_install_guest(&machine, cid, p->code, p->n_code, p->data_base, p->data_bound, p->init_addr,
-                            p->init_val, p->n_init, p->name) != 0) {
+    if (evoos_hw_install_guest(slot, code, (uint64_t)(end - code), name, init_off, init_val, n_init) != 0) {
         cons_puts("loader: install failed\n");
         return;
     }
-    seen_halt[cid] = 0;
+    seen_halt[slot + 1] = 0;
     spawn_count++;
-    io_poke(EVOOS_IO_SPAWNS, spawn_count);
-    io_poke(EVOOS_IO_LAST_SLOT, slot);
+    io_poke(3, spawn_count);
+    io_poke(4, slot);
     cons_puts("loader: slot ");
     cons_i32(slot);
     cons_puts(" ctx ");
-    cons_i32(cid);
+    cons_i32(slot + 1);
     cons_puts(" ");
     cons_puts(kind);
     cons_puts(" ");
-    cons_puts(p->name);
+    cons_puts(name);
     cons_putc('\n');
-    /* Install only. Who runs is still RUNCTX in supervisor bytecode.
-       Re-entry happens in kmain if the supervisor HALTed. */
     want_redraw = 1;
 }
 
@@ -508,6 +597,8 @@ static char scancode_to_ascii(uint8_t sc) {
         return 'c';
     case 0x32:
         return 'm';
+    case 0x19:
+        return 'p';
     case 0x17:
         return 'i';
     case 0x23:
@@ -526,9 +617,9 @@ static void handle_key(char ch, uint8_t scan) {
         return;
     }
     key_seq++;
-    io_poke(EVOOS_IO_KEY_ASCII, (int32_t)(uint8_t)ch);
-    io_poke(EVOOS_IO_KEY_SEQ, key_seq);
-    io_poke(EVOOS_IO_KEY_SCAN, scan);
+    io_poke(0, (int32_t)(uint8_t)ch);
+    io_poke(1, key_seq);
+    io_poke(2, scan);
     if (ch >= '1' && ch <= '4') {
         loader_spawn(ch - '1', KINDS[rotating_kind % N_KINDS]);
         rotating_kind++;
@@ -539,7 +630,8 @@ static void handle_key(char ch, uint8_t scan) {
     case 'f':
     case 'x':
     case 'c':
-    case 'm': {
+    case 'm':
+    case 'p': {
         const char *kind = "sum";
         if (ch == 'f') {
             kind = "fill";
@@ -549,6 +641,8 @@ static void handle_key(char ch, uint8_t scan) {
             kind = "copyinc";
         } else if (ch == 'm') {
             kind = "malicious";
+        } else if (ch == 'p') {
+            kind = "spin";
         }
         slot = next_slot % 4;
         next_slot++;
@@ -568,11 +662,11 @@ static void handle_key(char ch, uint8_t scan) {
         break;
     case 'q':
         cons_puts("EvoOS quit isolation_n=");
-        cons_i32(machine.isolation_n);
+        cons_i32(hw.isolation_n);
         cons_puts(" spawns=");
         cons_i32(spawn_count);
         cons_putc('\n');
-        qemu_exit(machine.isolation_n == 0 ? 0 : 1);
+        qemu_exit(hw.isolation_n == 0 ? 0 : 1);
         break;
     default:
         break;
@@ -602,12 +696,19 @@ static void poll_ps2(void) {
     handle_key(scancode_to_ascii(sc), sc);
 }
 
+void evoos_firmware_after_runctx(int32_t cid, int32_t ran, int32_t fault, int32_t vector) {
+    note_runctx(cid, ran, fault, vector);
+    poll_ps2();
+    poll_serial();
+    if (want_redraw || (hw.switch_count & 15) == 0) {
+        dashboard();
+    }
+}
+
 void kmain(void) {
-    size_t img_len;
-    int rc;
-    int32_t i;
-    int slices = 0;
+    uint64_t hhdm = 0, kphys = 0, kvirt = 0;
     static volatile uint32_t keep_data = 0x45564F53;
+    int32_t z = 0;
 
     (void)keep_data;
     serial_init();
@@ -632,39 +733,46 @@ void kmain(void) {
         }
     }
 
-    img_len = (size_t)(evoos_image_end - evoos_image);
-    rc = evoos_load_image(&machine, evoos_image, img_len);
-    if (rc != 0) {
-        cons_puts("image load failed: ");
-        cons_i32(rc);
-        cons_putc('\n');
-        qemu_exit(1);
+    if (hhdm_request.response) {
+        hhdm = hhdm_request.response->offset;
     }
+    if (kernel_address_request.response) {
+        kphys = kernel_address_request.response->physical_base;
+        kvirt = kernel_address_request.response->virtual_base;
+    }
+    evoos_hw_init(hhdm, kphys, kvirt);
 
     cons_puts("EvoOS live\n");
+    cons_puts("EvoOS hw ring0-aot\n");
     cons_puts("firmware is not a kernel; supervisor=");
-    cons_puts(machine.origin);
+    cons_puts(supervisor_origin);
     cons_putc('\n');
     print_help();
 
-    evoos_runctx_hook = on_runctx;
+    loader_spawn(0, "sum");
+    loader_spawn(1, "fill");
+    loader_spawn(2, "xor");
+    loader_spawn(3, "spin");
+
     if (fb) {
         fb_fill(fb_bg);
     }
     dashboard();
+    drawn = 1;
 
+    /* Policy: the AOT supervisor. Firmware never chooses a guest. */
+    supervisor_main();
+
+    cons_puts("supervisor returned isolation_n=");
+    cons_i32(hw.isolation_n);
+    cons_puts(" switches=");
+    cons_i32(hw.switch_count);
+    cons_putc('\n');
     for (;;) {
         poll_ps2();
         poll_serial();
-        if (machine.contexts[0].halted || machine.halted) {
-            evoos_reenter_supervisor(&machine);
-        }
-        evoos_run_slice(&machine, 64);
-        slices++;
-        if (want_redraw || (slices & 15) == 0) {
-            dashboard();
-        }
-        io_poke(EVOOS_IO_LAST_FAULT, fault_events);
-        (void)i;
+        dashboard();
+        (void)z;
+        __asm__ volatile("hlt");
     }
 }

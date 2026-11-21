@@ -133,16 +133,14 @@ The evolved supervisor *is* the OS. A tiny host stub (C interpreter of the froze
 
 ## Booting EvoOS
 
-The OS is the evolved bytecode blob. Firmware in `native/` interprets the frozen 5-word ISA (`docs/isa.md`). It is not a kernel: it does device I/O (PS/2, serial, GOP framebuffer) and a Harvard loader for a built-in guest catalogue. Who runs, and which protection windows apply, stay in supervisor bytecode (`RUNCTX` / `ADDPROT`).
-
-The ISO is a **live** system. The supervisor is sliced forever; guests halt, get replaced from the catalogue, and isolation is demonstrated while it is running. There is no `[halt]` after the first workload.
+The OS is AOT-compiled supervisor bytecode running in **ring 0**. Firmware is boot + a trap trampoline + a dashboard/keyboard. It does not schedule and does not decide protection windows. `ADDPROT` writes real page tables; `RUNCTX` is `iretq` into ring-3 x86-64 user code with the PIT armed; `#PF` / IRQ0 / `int $0x80` return to the supervisor.
 
 **Build the ISO** (needs `gcc`, `xorriso`, Python 3.11+):
 
 ```bash
 pip install -e ".[dev]"
-make iso                          # live edition of gadgets elite s42
-make iso LIVE_SUPERVISOR=rr_live  # never-HALT human round-robin
+make iso                          # AOT of never-HALT RR-live (default)
+make iso LIVE_SUPERVISOR=evolved  # gadgets elite s42 (HALTs after one wave)
 ```
 
 Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t evoos . && docker run --rm evoos make iso test-qemu`.
@@ -152,13 +150,13 @@ Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t e
 | key | action |
 | --- | --- |
 | `1`–`4` | install next catalogue kind into that slot |
-| `s` `f` `x` `c` `m` | sum / fill / xor / copyinc / **malicious** into the next slot |
+| `s` `f` `x` `c` `m` `p` | sum / fill / xor / copyinc / **malicious** / **spin** |
 | space | next kind into the next slot |
 | `i` | inspect contexts on serial |
 | `h` | help |
 | `q` | quit (isa-debug-exit; isolation_n==0 → QEMU status 1) |
 
-`m` installs a guest that stores into another slot. The evolved ADDPROT window should fault it (`fault=1`, `isolation_n=0`).
+`m` installs a guest that stores into another slot's page. The MMU delivers `#PF` (`vector=14`, `isolation_n=0`). Slot 4 boots a spinner that is preempted by IRQ0 (`preempt vector=32`).
 
 **QEMU live test** (BIOS + UEFI, QMP `send-key`, screendump):
 
@@ -166,7 +164,7 @@ Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t e
 make test-qemu
 ```
 
-Success: serial contains `EvoOS live`, a `malicious` spawn, `inspect isolation_n=`, `EvoOS quit`. Screenshot: `artifacts/dashboard.png`.
+Success: serial contains `EvoOS hw ring0-aot`, `preempt vector=32`, `#PF`, `inspect isolation_n=0`, `EvoOS quit`. Screenshot: `artifacts/dashboard.png`.
 
 **QEMU interactive:**
 
@@ -175,7 +173,9 @@ qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -serial mon:stdio \
   -device isa-debug-exit,iobase=0xf4,iosize=0x04
 ```
 
-**Live supervisor.** The round-2 elite HALTs at instruction 70 (fine for one-shot eval). The live ISO embeds `evolved_gadgets_s42_live`: that HALT is JMP back into the evolved RUNCTX loop. Same opcodes, same bytes 0..69. Open-arrival eval (`evoos/evaluator/open_arrival.py`) injects guests after t=0 without new opcodes; RR-live (`JMP main`) is the human never-HALT baseline. `--supervisor evolved` still packs the original HALT blob for differential tests.
+**Live supervisor.** Default ISO AOT-compiles `rr_live` (`JMP main`, no HALT) so open arrivals work without a human HALT→JMP patch of the gadgets elite. A 6-gen gadgets search did not beat `rr_live` (already R=1.0, never-HALT, 4/4 train + open-arrival). The gadgets elite still 4/4 on the Python VM (`isolation_ok`, completed=4) and is selectable with `LIVE_SUPERVISOR=evolved`. HITL: `python -m evoos.evaluator.hitl --supervisor rr_live`.
+
+**Still simulated:** PIT counts vs instruction retirement; QEMU; firmware framebuffer/keyboard; no disk/SMP; `int $0x80` as the only guest trap. See `docs/isa.md` hardware profile.
 
 **VirtualBox**
 
@@ -194,7 +194,7 @@ Headless attempt on this Cloud Agent VM: `VBoxManage` 7.0.16 installed from Ubun
 
 ```bash
 make test-diff
-pytest tests/test_codec.py tests/test_differential.py tests/test_open_arrival.py
+pytest tests/test_codec.py tests/test_differential.py tests/test_open_arrival.py tests/test_aot.py
 ```
 
 **Select supervisor at pack time:** `--supervisor evolved` / `evolved_live` / `rr` / `rr_live`. `--live` raises max_steps so firmware can slice indefinitely.
@@ -206,11 +206,11 @@ evoos/vm/           instruction_set, codec (frozen 5-word encoding), machine, sa
 evoos/evaluator/    workloads, correctness, reward, novelty
 evoos/agent/        mutations (packs), policy, MAP-Elites, search
 evoos/experiments/scheduling/  baselines, Condition B, sweep, results/
-evoos/boot/         pack EVS0 images, catalogue, Python vs C traces
-evoos/evaluator/    workloads, correctness, open_arrival, reward, novelty
+evoos/boot/         pack EVS0 images, AOT compiler, catalogue
+evoos/evaluator/    workloads, open_arrival, hitl, reward
 evoos/placeholders/ stages 2–4 stubs
-native/             freestanding C interpreter, Limine firmware, live ISO recipe
-docs/isa.md         frozen binary ISA + live IO window
+native/             ring-0 trampoline (hw.c), AOT supervisor, Limine ISO; C interpreter still for test-diff
+docs/isa.md         frozen binary ISA + hardware profile v2
 artifacts/          evoos.iso, dashboard.png, serial-bios.log
 train.py
 ```
@@ -221,7 +221,8 @@ train.py
 | --- | --- | --- |
 | 1 | Discover multiplexing + isolation for four competing guests | done (search) |
 | boot-1 | Frozen ISA + C interpreter + one-shot Limine ISO | `native/`, `docs/isa.md` |
-| boot-2 | Live ISO: open arrivals, PS/2+serial events, framebuffer dashboard | this milestone |
+| boot-2 | Live ISO: open arrivals, PS/2+serial events, framebuffer dashboard | done |
+| boot-3 | AOT ring-0 supervisor, MMU ADDPROT, ring-3 RUNCTX, HITL | this milestone |
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
 | 3 | Persistence / a block device, not a VFS opcode | `evoos/placeholders/persistence.py` |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |

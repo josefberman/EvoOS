@@ -3,7 +3,7 @@
 ROOT := $(abspath ..)
 PYTHON ?= python3
 SUPERVISOR ?= evolved
-LIVE_SUPERVISOR ?= evolved_live
+LIVE_SUPERVISOR ?= rr_live
 WORKLOAD ?= train_small
 BUILD := $(ROOT)/build
 LIMINE := third_party/limine
@@ -53,14 +53,16 @@ host: $(BUILD)/evoos_host
 $(BUILD)/evoos_host: evoos_vm.c evoos_host.c evoos_vm.h | $(BUILD)
 	$(HOST_CC) $(HOST_CFLAGS) -o $@ evoos_vm.c evoos_host.c
 
-boot.img: $(BUILD)/boot_live.img
-	cp $(BUILD)/boot_live.img boot.img
+supervisor_aot.c: ../evoos/boot/aot.py ../evoos/boot/pack.py
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.aot --supervisor $(LIVE_SUPERVISOR) -o native/supervisor_aot.c
 
-$(BUILD)/kernel.elf: evoos_boot.c evoos_vm.c evoos_image.S evoos_vm.h linker.ld limine.h boot.img guest_catalogue.h | $(BUILD)
+$(BUILD)/kernel.elf: evoos_boot.c hw.c hw.h hw_entry.S guests.S supervisor_aot.c linker.ld limine.h | $(BUILD)
 	$(CC) $(KERN_CFLAGS) -I. -c evoos_boot.c -o $(BUILD)/evoos_boot.o
-	$(CC) $(KERN_CFLAGS) -I. -c evoos_vm.c -o $(BUILD)/evoos_vm_boot.o
-	$(CC) $(KERN_CFLAGS) -c evoos_image.S -o $(BUILD)/evoos_image.o
-	$(CC) $(KERN_CFLAGS) $(KERN_LDFLAGS) -o $@ $(BUILD)/evoos_boot.o $(BUILD)/evoos_vm_boot.o $(BUILD)/evoos_image.o
+	$(CC) $(KERN_CFLAGS) -I. -c hw.c -o $(BUILD)/hw.o
+	$(CC) $(KERN_CFLAGS) -I. -c supervisor_aot.c -o $(BUILD)/supervisor_aot.o
+	$(CC) $(KERN_CFLAGS) -c hw_entry.S -o $(BUILD)/hw_entry.o
+	$(CC) $(KERN_CFLAGS) -c guests.S -o $(BUILD)/guests.o
+	$(CC) $(KERN_CFLAGS) $(KERN_LDFLAGS) -o $@ $(BUILD)/evoos_boot.o $(BUILD)/hw.o $(BUILD)/supervisor_aot.o $(BUILD)/hw_entry.o $(BUILD)/guests.o
 
 kernel: $(BUILD)/kernel.elf
 
