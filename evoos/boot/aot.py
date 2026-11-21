@@ -174,6 +174,15 @@ def emit_c(instrs: tuple[Instr, ...] | list[Instr], origin: str = "", note: str 
         elif op == Op.RDFAULT:
             lines.append(f"    {_wreg(a, '0')};")
             lines.append(f"    {nxt}")
+        elif op == Op.BLKRD:
+            lines.append(f"    {_wreg(a, f'(uint32_t)evoos_hw_blkrd((int32_t){rb}, (int32_t){rc})')};")
+            lines.append(f"    {nxt}")
+        elif op == Op.BLKWR:
+            lines.append(f"    evoos_hw_blkwr((int32_t){ra}, (int32_t){rb});")
+            lines.append(f"    {nxt}")
+        elif op == Op.SVC:
+            lines.append(f"    evoos_hw_svc((int32_t){ra});")
+            lines.append(f"    {nxt}")
         else:
             lines.append("    return;")
 

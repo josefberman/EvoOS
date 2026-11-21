@@ -111,3 +111,20 @@ guest_spin:
 1:
     jmp 1b
 guest_spin_end:
+
+    /* rax=1 PUT / rax=2 GET then rax=0 halt. Window: [0]=key [1]=n [2]=payload. */
+    .global guest_put, guest_put_end
+guest_put:
+    movl $1, %eax
+    int $0x80
+    xorl %eax, %eax
+    int $0x80
+guest_put_end:
+
+    .global guest_get, guest_get_end
+guest_get:
+    movl $2, %eax
+    int $0x80
+    xorl %eax, %eax
+    int $0x80
+guest_get_end:

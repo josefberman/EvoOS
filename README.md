@@ -175,7 +175,15 @@ qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -serial mon:stdio \
 
 **Live supervisor.** Default ISO AOT-compiles `evolved_open`: gadgets elite **s99** (no HALT). Open-arrival scoring treats supervisor HALT before the horizon as failure. s99 is `other` on held-out / train_medium and `round-robin-like` on train_small. A search mutant labeled batched/priority-like matched on Python 4/4 but failed the live `#PF` keyboard test (never RUNCTX'd the new guest); it is kept in the QD set, not the ISO. `LIVE_SUPERVISOR=rr_live` is the human baseline only. One-shot s42 remains `--supervisor evolved` for `make test-diff`. HITL: `python -m evoos.evaluator.hitl --supervisor evolved_open --boot`. Search: `python -m evoos.experiments.scheduling.search_open_live`.
 
-**Still simulated:** PIT counts vs instruction retirement; QEMU; firmware framebuffer/keyboard; no disk/SMP; `int $0x80` as the only guest trap. See `docs/isa.md` hardware profile.
+**Still simulated:** PIT counts vs instruction retirement; QEMU; firmware framebuffer/keyboard; no SMP. Disk is a QEMU IDE image; firmware only copies ATA bytes. See `docs/isa.md` encoding v2 (BLKRD/BLKWR/SVC).
+
+**Persistence (stage 3).** Python models a 32-block device, power cuts, and bad blocks. Guests PUT/GET via `SVC` / `int $0x80` (`rax` 1/2). Default ISO remains **s99** so `make test-qemu` stays a live scheduler test. Persist HITL:
+
+```bash
+make test-persist
+```
+
+Rebuilds the ISO with `LIVE_SUPERVISOR=persist_rr` (human Condition A slot table: `block = (ctx-1)*8 + (key & 7)`), attaches `build/persist.img`, stores `key=7 val=123`, kills QEMU, reboots the same image, recalls 123. Then restores the s99 ISO. Search: `python -m evoos.experiments.scheduling.search_persist`. An evolved persist elite is used only if search beats persist_rr without leaking.
 
 **VirtualBox**
 
@@ -197,7 +205,7 @@ make test-diff
 pytest tests/test_codec.py tests/test_differential.py tests/test_open_arrival.py tests/test_aot.py
 ```
 
-**Select supervisor at pack time:** `--supervisor evolved_open` (default ISO) / `evolved` (oneshot s42) / `evolved_live` (human HALT→JMP, not the ISO) / `rr` / `rr_live`.
+**Select supervisor at pack time:** `--supervisor evolved_open` (default ISO) / `evolved` (oneshot s42) / `evolved_live` (human HALT→JMP, not the ISO) / `rr` / `rr_live` / `persist_rr`.
 
 ## Layout
 
@@ -210,7 +218,7 @@ evoos/boot/         pack EVS0 images, AOT compiler, catalogue
 evoos/evaluator/    workloads, open_arrival, hitl, reward
 evoos/placeholders/ stages 2–4 stubs
 native/             ring-0 trampoline (hw.c), AOT supervisor, Limine ISO; C interpreter still for test-diff
-docs/isa.md         frozen binary ISA + hardware profile v2
+docs/isa.md         frozen binary ISA + hardware profile (v1 ops 0–31, v2 ops 32–34)
 artifacts/          evoos.iso, dashboard.png, serial-bios.log
 train.py
 ```
@@ -225,7 +233,7 @@ train.py
 | boot-3 | AOT ring-0 supervisor, MMU ADDPROT, ring-3 RUNCTX, HITL | done |
 | boot-3b | Evolved never-HALT ISO (open-arrival elite, not rr_live) | this milestone |
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
-| 3 | Persistence / a block device, not a VFS opcode | `evoos/placeholders/persistence.py` |
+| 3 | Persistence / a block device, not a VFS opcode | model + HITL (`BLKRD`/`BLKWR`/`SVC`); persist_rr is Condition A |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |
 
 Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral).

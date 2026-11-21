@@ -19,7 +19,7 @@ KERN_CFLAGS ?= -g -O2 -pipe -Wall -Wextra -std=gnu11 -ffreestanding \
 KERN_LDFLAGS ?= -nostdlib -static -no-pie -Wl,-melf_x86_64 -Wl,-z,max-page-size=0x1000 \
 	-Wl,-z,noexecstack -T linker.ld -Wl,--build-id=none
 
-.PHONY: all host iso kernel images test-diff test-qemu test-live clean limine-tool catalogue
+.PHONY: all host iso kernel images test-diff test-qemu test-live test-persist clean limine-tool catalogue
 
 all: host iso
 
@@ -129,6 +129,24 @@ test-live: iso
 		&& cp $(BUILD)/serial-uefi.log $(ROOT)/artifacts/serial-uefi.log \
 		&& echo "UEFI QEMU live test OK" || echo "UEFI QEMU live test failed"; \
 	else echo "OVMF not found; UEFI test skipped"; fi
+
+$(BUILD)/persist.img: | $(BUILD)
+	dd if=/dev/zero of=$@ bs=512 count=2048 status=none
+
+# persist_rr is Condition A (human slot table). Force AOT rebuild; default
+# ISO remains evolved_open (s99). Restore LIVE_SUPERVISOR afterwards.
+test-persist: $(BUILD)/persist.img
+	rm -f supervisor_aot.c $(BUILD)/kernel.elf $(BUILD)/evoos.iso
+	$(MAKE) iso LIVE_SUPERVISOR=persist_rr
+	mkdir -p $(ROOT)/artifacts
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_persist_test.py \
+		--iso $(BUILD)/evoos.iso \
+		--disk $(BUILD)/persist.img \
+		--serial $(BUILD)/serial-persist.log
+	cp $(BUILD)/serial-persist.log $(ROOT)/artifacts/serial-persist.log
+	rm -f supervisor_aot.c $(BUILD)/kernel.elf $(BUILD)/evoos.iso
+	$(MAKE) iso LIVE_SUPERVISOR=$(LIVE_SUPERVISOR)
+	@echo "persist QEMU reboot test OK"
 
 clean:
 	rm -rf $(BUILD) boot.img

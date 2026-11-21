@@ -37,6 +37,21 @@ def test_select_evolved_oneshot_still_halts():
     assert any(i.op == Op.HALT for i in instrs)
 
 
+def test_aot_persist_rr_emits_blk_trampolines():
+    from evoos.experiments.scheduling.baselines import persist_rr
+
+    src = emit_c(persist_rr().instrs, origin="baseline_persist_rr_q32")
+    assert "evoos_hw_blkrd" in src
+    assert "evoos_hw_blkwr" in src
+    assert "evoos_hw_runctx" in src
+
+
+def test_select_persist_rr():
+    instrs, origin = select_supervisor("persist_rr")
+    assert origin.startswith("baseline_persist")
+    assert any(i.op == Op.BLKWR for i in instrs)
+
+
 def test_select_evolved_open_is_not_rr_live():
     instrs, origin = select_supervisor("evolved_open")
     assert origin == "evolved_open_arrival_gadgets_s99"

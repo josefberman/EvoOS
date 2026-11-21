@@ -14,6 +14,7 @@
 
 #define EVOOS_PROG_MAGIC 0x000E2015u
 #define EVOOS_PROG_VERSION 1
+#define EVOOS_PROG_VERSION_MAX 2
 #define EVOOS_IMAGE_MAGIC 0x30535645u
 #define EVOOS_IMAGE_VERSION 1
 #define EVOOS_IMAGE_HEADER 160
@@ -66,7 +67,10 @@ enum {
     EVOOS_ADDPROT = 28,
     EVOOS_CLRPROT = 29,
     EVOOS_RDTIME = 30,
-    EVOOS_RDFAULT = 31
+    EVOOS_RDFAULT = 31,
+    EVOOS_BLKRD = 32,
+    EVOOS_BLKWR = 33,
+    EVOOS_SVC = 34
 };
 
 enum {
@@ -80,8 +84,16 @@ enum {
     EVOOS_FLD_STATUS = 7,
     EVOOS_FLD_LAST_RUN_STEPS = 8,
     EVOOS_FLD_LAST_RUN_FAULT = 9,
-    EVOOS_FLD_LAST_RUN_CTX = 10
+    EVOOS_FLD_LAST_RUN_CTX = 10,
+    EVOOS_FLD_LAST_BLK_STATUS = 11,
+    EVOOS_FLD_N_BLOCKS = 12,
+    EVOOS_FLD_BLK_WORDS = 13,
+    EVOOS_FLD_LAST_SVC = 14,
+    EVOOS_FLD_LAST_SVC_CTX = 15
 };
+
+#define EVOOS_N_BLOCKS 32
+#define EVOOS_BLK_WORDS 16
 
 enum {
     EVOOS_FAULT_NONE = 0,
@@ -114,6 +126,7 @@ typedef struct {
     int32_t prot_hi[EVOOS_MAX_PROT];
     int32_t prot_fl[EVOOS_MAX_PROT];
     int32_t n_prot;
+    int32_t svc;
 } EvoOSContext;
 
 typedef struct {
@@ -139,6 +152,12 @@ typedef struct {
     int32_t last_run_steps;
     int32_t last_run_fault;
     int32_t last_run_ctx;
+    int32_t last_svc;
+    int32_t last_svc_ctx;
+    int32_t last_blk_status;
+    int32_t n_blocks;
+    int32_t block_words;
+    int32_t disk[EVOOS_N_BLOCKS][EVOOS_BLK_WORDS];
 
     int32_t legal_lo[EVOOS_MAX_CTX];
     int32_t legal_hi[EVOOS_MAX_CTX];

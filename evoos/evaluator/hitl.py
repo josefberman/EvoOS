@@ -44,6 +44,7 @@ def hitl_boot_instrs(
     instrs: tuple[Instr, ...] | list[Instr],
     origin: str,
     timeout: float = 8.0,
+    disk: Path | None = None,
 ) -> dict:
     """AOT `instrs`, rebuild the ISO, boot BIOS QEMU, parse serial."""
     aot = NATIVE / "supervisor_aot.c"
@@ -73,6 +74,8 @@ def hitl_boot_instrs(
         "-qmp",
         f"unix:{BUILD / 'hitl.qmp'},server,nowait",
     ]
+    if disk is not None:
+        qemu[3:3] = ["-drive", f"file={disk},if=ide,format=raw,index=0,media=disk"]
     try:
         os.unlink(BUILD / "hitl.qmp")
     except OSError:

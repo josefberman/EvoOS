@@ -1,0 +1,51 @@
+# random R=0.2656 layout=empty correct=0
+   0:  MOVI     a=2 b=0 c=0 imm=4
+   1:  RUNCTXI  a=2 b=0 c=0 imm=128
+   2:  MOVI     a=6 b=0 c=0 imm=15
+   3:  MOVI     a=5 b=0 c=0 imm=512
+   4:  BLKWR    a=6 b=5 c=0 imm=0
+   5:  BLT      a=4 b=4 c=4 imm=4  # -> 10
+   6:  BLT      a=5 b=7 c=6 imm=2  # -> 9
+   7:  OR       a=6 b=3 c=4 imm=64
+   8:  AND      a=1 b=0 c=4 imm=-58
+   9:  BLT      a=2 b=1 c=5 imm=256  # -> 266
+  10:  CTXGET   a=5 b=5 c=0 imm=47
+  11:  OR       a=5 b=4 c=6 imm=20
+  12:  JAL      a=7 b=1 c=6 imm=256  # -> 269
+  13:  RUNCTXI  a=4 b=3 c=7 imm=-8
+  14:  RUNCTXI  a=4 b=2 c=7 imm=40
+  15:  RUNCTX   a=5 b=0 c=6 imm=3
+  16:  ADDPROT  a=5 b=1 c=7 imm=17
+  17:  CMP      a=4 b=0 c=6 imm=256
+  18:  BLKRD    a=4 b=2 c=1 imm=17
+  19:  RUNCTXI  a=6 b=4 c=2 imm=8
+  20:  RDTIME   a=2 b=7 c=0 imm=60
+  21:  BNE      a=6 b=1 c=5 imm=29  # -> 51
+  22:  SUB      a=2 b=2 c=1 imm=0
+  23:  CTXGET   a=4 b=3 c=3 imm=4
+  24:  CMP      a=1 b=1 c=5 imm=4
+  25:  RDTIME   a=2 b=4 c=4 imm=-5
+  26:  JR       a=6 b=6 c=2 imm=3
+  27:  RDFAULT  a=5 b=3 c=4 imm=640
+  28:  RUNCTX   a=0 b=6 c=5 imm=640
+  29:  ADDPROT  a=4 b=3 c=1 imm=-1
+  30:  BLKRD    a=7 b=2 c=4 imm=640
+  31:  RDTIME   a=2 b=7 c=5 imm=0
+  32:  BGE      a=1 b=3 c=4 imm=3  # -> 36
+  33:  SUB      a=5 b=7 c=1 imm=17
+  34:  NOT      a=0 b=3 c=0 imm=30
+  35:  BLKRD    a=7 b=5 c=4 imm=640
+  36:  OR       a=1 b=3 c=6 imm=2
+  37:  STORE    a=2 b=3 c=3 imm=16
+  38:  BLT      a=6 b=3 c=7 imm=29  # -> 68
+  39:  BEQ      a=1 b=3 c=1 imm=29  # -> 69
+  40:  MOVI     a=7 b=5 c=6 imm=-8
+  41:  ADDPROT  a=6 b=2 c=2 imm=4
+  42:  MOV      a=0 b=6 c=4 imm=1
+  43:  XOR      a=0 b=0 c=0 imm=11
+  44:  SVC      a=4 b=1 c=6 imm=-54
+  45:  MUL      a=2 b=4 c=3 imm=23
+  46:  SVC      a=4 b=4 c=3 imm=13
+  47:  CMP      a=2 b=5 c=6 imm=29
+  48:  RUNCTXI  a=0 b=5 c=6 imm=256
+  49:  HALT     a=0 b=0 c=0 imm=0

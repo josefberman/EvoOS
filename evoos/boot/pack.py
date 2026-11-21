@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 from evoos.evaluator.workloads import heldout_workloads, training_workloads
-from evoos.experiments.scheduling.baselines import round_robin, round_robin_live
+from evoos.experiments.scheduling.baselines import persist_rr, round_robin, round_robin_live
 from evoos.vm.codec import ImageMeta, dumps_image
 from evoos.vm.instruction_set import Instr, dumps_program, parse_disassembly
 from evoos.vm.machine import Machine, MachineConfig
@@ -63,8 +63,23 @@ def select_supervisor(kind: str) -> tuple[tuple[Instr, ...], str]:
         header = OPEN_ELITE_PATH.read_text().splitlines()[0].lstrip("# ").split()
         origin = header[0] if header else "evolved_open_arrival_gadgets"
         return instrs, origin
+    if k in ("persist_rr", "persist", "baseline_persist"):
+        cand = persist_rr()
+        return cand.instrs, cand.origin
+    if k in ("evolved_persist", "persist_elite"):
+        path = (
+            Path(__file__).resolve().parents[2]
+            / "experiments/scheduling/results/examples/persist_gadgets_elite.txt"
+        )
+        if not path.exists():
+            cand = persist_rr()
+            return cand.instrs, cand.origin
+        instrs = parse_disassembly(path.read_text())
+        header = path.read_text().splitlines()[0].lstrip("# ").split()
+        origin = header[0] if header else "evolved_persist"
+        return instrs, origin
     raise ValueError(
-        f"unknown supervisor {kind!r} (use evolved_open|evolved|evolved_live|rr|rr_live)"
+        f"unknown supervisor {kind!r} (use evolved_open|evolved|evolved_live|rr|rr_live|persist_rr)"
     )
 
 

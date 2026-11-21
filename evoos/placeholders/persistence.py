@@ -7,4 +7,4 @@ buffering, naming, and crash-consistent order.
 """
 
 STAGE = 3
-STATUS = "placeholder"
+STATUS = "model+hitl"  # BLKRD/BLKWR/SVC; persist_rr is Condition A, not the OS

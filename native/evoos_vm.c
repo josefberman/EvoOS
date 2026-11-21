@@ -23,7 +23,7 @@ static void e_memset(void *s, int c, size_t n) {
 
 static int privileged_op(int32_t op) {
     return op == EVOOS_RUNCTX || op == EVOOS_RUNCTXI || op == EVOOS_CTXGET || op == EVOOS_CTXSET ||
-           op == EVOOS_ADDPROT || op == EVOOS_CLRPROT;
+           op == EVOOS_ADDPROT || op == EVOOS_CLRPROT || op == EVOOS_BLKRD || op == EVOOS_BLKWR;
 }
 
 static void write_reg(EvoOSContext *ctx, int32_t rd, int32_t val) {
@@ -135,6 +135,21 @@ static int32_t ctx_field_get(EvoOSMachine *m, EvoOSContext *target, int32_t fiel
     if (field == EVOOS_FLD_LAST_RUN_CTX) {
         return m->runctx_posts_status ? m->last_run_ctx : 0;
     }
+    if (field == EVOOS_FLD_LAST_BLK_STATUS) {
+        return m->last_blk_status;
+    }
+    if (field == EVOOS_FLD_N_BLOCKS) {
+        return m->n_blocks;
+    }
+    if (field == EVOOS_FLD_BLK_WORDS) {
+        return m->block_words;
+    }
+    if (field == EVOOS_FLD_LAST_SVC) {
+        return m->last_svc;
+    }
+    if (field == EVOOS_FLD_LAST_SVC_CTX) {
+        return m->last_svc_ctx;
+    }
     return 0;
 }
 
@@ -176,6 +191,9 @@ static int32_t run_context(EvoOSMachine *m, int32_t cid, int32_t n_steps) {
         }
         execute(m, cid);
         ran++;
+        if (guest->svc) {
+            break;
+        }
     }
     m->switch_count += 1;
     m->last_run_steps = ran;
@@ -376,7 +394,15 @@ static void execute(EvoOSMachine *m, int cid) {
         return;
     case EVOOS_CTXSET:
         tid = regs[a];
-        if (tid >= 0 && tid < m->n_contexts) {
+        if (imm == EVOOS_FLD_LAST_SVC) {
+            m->last_svc = regs[b];
+            if (regs[b] == 0) {
+                int k;
+                for (k = 0; k < m->n_contexts; k++) {
+                    m->contexts[k].svc = 0;
+                }
+            }
+        } else if (tid >= 0 && tid < m->n_contexts) {
             ctx_field_set(&m->contexts[tid], imm, regs[b]);
         }
         ctx->pc = next_pc;
@@ -412,6 +438,51 @@ static void execute(EvoOSMachine *m, int cid) {
         return;
     case EVOOS_RDFAULT:
         write_reg(ctx, a, ctx->fault);
+        ctx->pc = next_pc;
+        return;
+    case EVOOS_BLKRD: {
+        int32_t blk = regs[b];
+        int32_t dest = regs[c];
+        int32_t st = 0;
+        int i;
+        if (blk < 0 || blk >= m->n_blocks) {
+            st = 2;
+        }
+        m->cycles += 4;
+        for (i = 0; i < m->block_words; i++) {
+            int32_t addr = dest + i;
+            if (addr >= 0 && addr < m->mem_words) {
+                m->mem[addr] = st ? 0 : m->disk[blk][i];
+            }
+        }
+        m->last_blk_status = st;
+        write_reg(ctx, a, st);
+        ctx->pc = next_pc;
+        return;
+    }
+    case EVOOS_BLKWR: {
+        int32_t blk = regs[a];
+        int32_t src = regs[b];
+        int i;
+        int32_t st = 0;
+        if (blk < 0 || blk >= m->n_blocks) {
+            st = 2;
+        }
+        m->cycles += 4;
+        if (st == 0) {
+            for (i = 0; i < m->block_words; i++) {
+                int32_t addr = src + i;
+                m->disk[blk][i] = (addr >= 0 && addr < m->mem_words) ? m->mem[addr] : 0;
+            }
+        }
+        m->last_blk_status = st;
+        ctx->pc = next_pc;
+        return;
+    }
+    case EVOOS_SVC:
+        ctx->svc = regs[a];
+        m->last_svc = ctx->svc;
+        m->last_svc_ctx = cid;
         ctx->pc = next_pc;
         return;
     default:
@@ -573,6 +644,12 @@ int evoos_load_image(EvoOSMachine *m, const uint8_t *data, size_t len) {
     m->runctx_posts_status = (flags & EVOOS_FLAG_RUNCTX_STATUS) ? 1 : 0;
     m->io_base = (int32_t)io_base;
     m->io_bound = (int32_t)io_bound;
+    m->n_blocks = EVOOS_N_BLOCKS;
+    m->block_words = EVOOS_BLK_WORDS;
+    m->last_svc = 0;
+    m->last_svc_ctx = 0;
+    m->last_blk_status = 0;
+    e_memset(m->disk, 0, sizeof(m->disk));
     copy_cstr32(m->origin, data + 80);
     copy_cstr32(m->workload, data + 112);
     for (i = 0; i < mem_words; i++) {

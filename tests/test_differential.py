@@ -104,6 +104,29 @@ def test_diff_rr_heldout(host: Path):
     _compare(host, blob, "rr_heldout_mixed")
 
 
+def test_diff_blk_svc_roundtrip(host: Path):
+    src = """
+        MOVI r1, 256
+        MOVI r2, 42
+        STORE r1, r2, 0
+        MOVI r3, 3
+        BLKWR r3, r1
+        MOVI r4, 384
+        BLKRD r5, r3, r4
+        LOAD r6, r4, 0
+        HALT
+    """
+    m = Machine(MachineConfig(max_steps=1000, n_contexts=1))
+    m.install_supervisor(assemble(src))
+    _compare(host, dumps_image(m), "blk_svc")
+
+
+def test_diff_persist_rr_train_small(host: Path):
+    instrs, origin = select_supervisor("persist_rr")
+    blob = pack_workload(instrs, training_workloads()[0], origin=origin)
+    _compare(host, blob, "persist_rr_train_small")
+
+
 def test_python_format_trace_stable():
     instrs, origin = select_supervisor("rr")
     cfg = MachineConfig()

@@ -1,6 +1,6 @@
 import random
 
-from evoos.agent.mutations import OPERATOR_PACKS, ctx_scan_gadget, mutate, random_program
+from evoos.agent.mutations import OPERATOR_PACKS, blk_gadget, ctx_scan_gadget, mutate, random_program
 from evoos.agent.program import Candidate
 from evoos.evaluator.workloads import heldout_workloads, training_workloads
 from evoos.experiments.scheduling.condition_b import QUANTA, grid_search
@@ -21,6 +21,15 @@ def test_ctx_scan_is_an_id_loop_not_a_scheduler():
     # No skip-if-halted / until-idle wrapper in the gadget itself.
     names = [Op(i.op).name for i in g]
     assert "RUNCTXI" not in names or names.count("RUNCTXI") <= 1
+    verify_supervisor(g, MachineConfig(max_supervisor_len=16))
+
+
+def test_blk_gadget_is_device_access_not_a_namespace():
+    rng = random.Random(2)
+    g = blk_gadget(rng)
+    names = [Op(i.op).name for i in g]
+    assert "BLKRD" in names or "BLKWR" in names
+    assert "SVC" not in names
     verify_supervisor(g, MachineConfig(max_supervisor_len=16))
 
 

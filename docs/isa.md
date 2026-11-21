@@ -12,9 +12,11 @@ plus a trap trampoline.
 ## Version
 
 Encoding version **1** (five `i32` words, opcodes 0–31) is unchanged.
-**ISA profile 2** (this document's hardware section) grounds privileged
-ops in real x86-64. Search still mutates version-1 programs; the AOT
-compiler and HITL evaluator consume the same blob.
+**ISA profile 2** grounds privileged ops 0–31 in real x86-64.
+**Encoding version 2 / ISA profile 3** adds opcodes **32–34** only.
+`dumps_program` writes version 2 iff any instruction has `op >= 32`.
+`loads_program` accepts versions 1..2. Parallel research on opcodes 0–31
+must not change those semantics.
 
 ## Instruction
 
@@ -22,7 +24,7 @@ Each instruction is five little-endian signed 32-bit integers:
 
 | word | name | meaning |
 | --- | --- | --- |
-| 0 | `op` | opcode, `0..31` |
+| 0 | `op` | opcode, `0..31` (v1) or `0..34` (v2) |
 | 1 | `a` | register 0..7 |
 | 2 | `b` | register 0..7 |
 | 3 | `c` | register 0..7 |
@@ -71,8 +73,28 @@ word-addressed signed 32-bit cells.
 | 29 | CLRPROT | ra |
 | 30 | RDTIME | rd |
 | 31 | RDFAULT | rd |
+| 32 | BLKRD | rd, rb, rc ; copy device block `regs[b]` into `mem[regs[c]..]` ; rd = status |
+| 33 | BLKWR | ra, rb ; write `mem[regs[b]..]` to device block `regs[a]` |
+| 34 | SVC | ra ; unprivileged trap, request code in `regs[a]`, yield to supervisor |
 
-Privileged (supervisor only): RUNCTX, RUNCTXI, CTXGET, CTXSET, ADDPROT, CLRPROT.
+Privileged (supervisor only): RUNCTX, RUNCTXI, CTXGET, CTXSET, ADDPROT, CLRPROT, BLKRD, BLKWR.
+SVC is unprivileged. Guests that execute privileged ops take `PRIV` and do not advance PC.
+
+BLKRD/BLKWR are generic device copies. They are not a namespace, not a
+layout, and not a journal. Block index and payload meaning are supervisor
+policy. Status: `OK=0`, `BAD=1` (corrupt/unreadable), `OOB=2`.
+
+Guest request codes (Python `Svc`, hardware `rax` of `int $0x80`):
+
+| code | name | contract |
+| --- | --- | --- |
+| 0 | NONE / halt | hardware: `int $0x80` with `rax=0` (or any code other than 1/2) halts the guest |
+| 1 | PUT | window `[0]=key, [1]=n, [2..]=payload` ; yield ; do not halt |
+| 2 | GET | same window shape ; supervisor fills payload ; yield ; do not halt |
+
+Behavioral contract only: a value stored under a name by a guest is
+returned to that guest after RAM is wiped. Concurrent guests are isolated.
+How names map to blocks is discovered, not encoded.
 Guests that execute them take `PRIV` and do not advance PC.
 
 Branches and JMP/JAL are PC-relative to the **next** instruction:
@@ -93,8 +115,14 @@ Branches and JMP/JAL are PC-relative to the **next** instruction:
 | 8 | LAST_RUN_STEPS | 0 unless `runctx_posts_status` |
 | 9 | LAST_RUN_FAULT | |
 | 10 | LAST_RUN_CTX | |
+| 11 | LAST_BLK_STATUS | last BLKRD/BLKWR status (machine-wide) |
+| 12 | N_BLOCKS | get only, machine-wide |
+| 13 | BLK_WORDS | get only, machine-wide (Python/C: 16 words) |
+| 14 | LAST_SVC | last guest SVC code (machine-wide). CTXSET 0 clears latched codes |
+| 15 | LAST_SVC_CTX | context id that issued LAST_SVC |
 
-CTXSET only writes PC, HALTED, FAULT. Other fields are ignored.
+CTXSET writes PC, HALTED, FAULT, LAST_SVC. Other fields are ignored.
+Fields 11–15 are appended; 0–10 are unchanged.
 
 ## Fault codes
 
@@ -115,7 +143,7 @@ Little-endian:
 
 ```
 u32 magic = 0x0E2015
-u32 version = 1
+u32 version = 1  (opcodes 0–31) or 2 (may include 32–34)
 u32 n_instrs
 u32 reserved = 0
 n_instrs × (i32 op, i32 a, i32 b, i32 c, i32 imm)
@@ -172,11 +200,13 @@ from AOT-compiled supervisor code:
 | --- | --- |
 | ADDPROT / CLRPROT | Per-context page tables. Each guest slot is a 4 KiB user page. ADDPROT `[lo,hi)` maps any slot whose word window overlaps that range (U+RW, NX). CLRPROT unmaps those data pages. Code and stack pages stay mapped. Region cap is still 4 (extra ADDPROT is a no-op, not `PROT_FULL` halt). |
 | RUNCTX / RUNCTXI | `iretq` into ring 3 with that context's CR3. PIT channel 0 mode-0 is armed for `N * 80` counts (~1–17 ms). Return to the supervisor on IRQ0 (preempt), `int $0x80` (halt), `#PF`, or `#GP`. |
-| CTXGET / CTXSET | Saved host register state (RIP/RSP/RFLAGS + GPRs) plus HALTED/FAULT/DATA_*/N_CONTEXTS. `PC` is the low 32 bits of RIP; guests live at `0x400000` so CTXSET PC is not useful. |
+| CTXGET / CTXSET | Saved host register state (RIP/RSP/RFLAGS + GPRs) plus HALTED/FAULT/DATA_*/N_CONTEXTS plus LAST_BLK_*/LAST_SVC_*. `PC` is the low 32 bits of RIP; guests live at `0x400000` so CTXSET PC is not useful. |
+| BLKRD / BLKWR | ATA PIO primary (`0x1F0`), LBA = block index, 512-byte sectors. Firmware copies the first 64 bytes (16 words) to/from the word window. Remaining 448 bytes are zeroed on write. Policy/layout stay in bytecode. |
+| SVC | Unprivileged. Hardware: `int $0x80` with `rax` 1 or 2 latches LAST_SVC and returns to the supervisor **without** halting. Other `rax` values halt (same as before). |
 
 **Guests are real x86-64 user code**, not ISA bytecode. They signal completion
-with `int $0x80`. Isolation is a `#PF` on an unmapped user page, never a
-store check in C.
+with `int $0x80` (`rax=0`). PUT/GET use `rax=1/2`. Isolation is a `#PF` on an
+unmapped user page, never a store check in C.
 
 ### Divergences from the Python VM (documented, search still matches on outcomes)
 
@@ -192,7 +222,15 @@ store check in C.
    returns 0 (nop), matching `docs/isa.md` opcode table.
 5. **Sticky #PF.** Further RUNCTX of a faulted guest is a nop until CTXSET
    FAULT=0 (hostile substrate).
+6. **Block size.** Python/C search device is 32 blocks × 16 words (64 bytes).
+   Hardware sectors are 512 bytes; only the first 64 bytes carry the payload.
+   HITL agreement is store/recall outcomes, not byte-identical images.
+7. **SVC vs HALT.** Python `SVC` is an opcode. Hardware PUT/GET are `int $0x80`
+   with `rax` 1/2. Guest x86 PUT must `xor eax,eax` before the second `int $0x80`
+   or `rax=1` would re-PUT instead of halt.
 
 Still simulated / not claimed as hardware: the PIT quantum vs retirement
 count, QEMU as the machine, firmware-drawn dashboard, serial as a debug
-console, no disk, no SMP, `int $0x80` as the only "syscall".
+console, no SMP. The disk is a real QEMU IDE image; firmware plumbs bytes
+only. `insert_blk_gadget` is a documented calling-convention prior, not a
+filesystem.

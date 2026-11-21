@@ -27,6 +27,7 @@ BARE_OPS = (
 GADGET_OPS = BARE_OPS + (
     "insert_mmu_gadget",
     "insert_runctx_gadget",
+    "insert_blk_gadget",
 )
 FULL_OPS = GADGET_OPS + ("insert_ctx_scan",)
 
@@ -59,6 +60,10 @@ OPERATOR_DOCS = {
         "ISA calling convention for RUNCTXI: MOVI ctx; RUNCTXI steps. "
         "One context, one burst. Not round-robin / not a run queue."
     ),
+    "insert_blk_gadget": (
+        "ISA calling convention for the block device: MOVI block; MOVI addr; "
+        "BLKRD or BLKWR. Not a namespace, not a journal."
+    ),
     "insert_ctx_scan": (
         "Hardware enumeration: MOVI r,1; <one body instr>; ADDI r,1; "
         "CTXGET N_CONTEXTS; BLT r, n, body. Encodes 'the machine reports how "
@@ -80,6 +85,9 @@ _BIASED_OPS = _OPS + (
     int(Op.ADDPROT),
     int(Op.RUNCTXI),
     int(Op.RUNCTX),
+    int(Op.BLKRD),
+    int(Op.BLKWR),
+    int(Op.SVC),
     int(Op.BLT),
     int(Op.JMP),
 )
@@ -97,6 +105,25 @@ def mmu_gadget(rng: random.Random) -> tuple[Instr, ...]:
         Instr(int(Op.CTXGET), rb, ra, 0, int(CtxField.DATA_BASE)),
         Instr(int(Op.CTXGET), rc, ra, 0, int(CtxField.DATA_BOUND)),
         Instr(int(Op.ADDPROT), ra, rb, rc, 0),
+    )
+
+
+def blk_gadget(rng: random.Random) -> tuple[Instr, ...]:
+    rb = rng.randint(1, N_REGS - 1)
+    rm = rng.choice([x for x in range(1, N_REGS) if x != rb])
+    blk = rng.randint(0, 31)
+    addr = rng.choice([256, 384, 512, 640])
+    if rng.random() < 0.5:
+        return (
+            Instr(int(Op.MOVI), rb, 0, 0, blk),
+            Instr(int(Op.MOVI), rm, 0, 0, addr),
+            Instr(int(Op.BLKWR), rb, rm, 0, 0),
+        )
+    rs = rng.choice([x for x in range(1, N_REGS) if x not in (rb, rm)])
+    return (
+        Instr(int(Op.MOVI), rb, 0, 0, blk),
+        Instr(int(Op.MOVI), rm, 0, 0, addr),
+        Instr(int(Op.BLKRD), rs, rb, rm, 0),
     )
 
 
@@ -154,6 +181,8 @@ def random_program(
         body.extend(mmu_gadget(rng))
     if "insert_runctx_gadget" in ops and rng.random() < 0.55:
         body.extend(runctx_gadget(rng))
+    if "insert_blk_gadget" in ops and rng.random() < 0.4:
+        body.extend(blk_gadget(rng))
     if "insert_ctx_scan" in ops and rng.random() < 0.35:
         body.extend(ctx_scan_gadget(rng))
     body.extend(random_instr(rng) for _ in range(length))
@@ -225,6 +254,10 @@ def mutate(
         i = rng.randrange(n + 1) if n else 0
         seq = _splice(seq, i, i, runctx_gadget(rng))
         origin = "insert_runctx_gadget"
+    elif op == "insert_blk_gadget":
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, blk_gadget(rng))
+        origin = "insert_blk_gadget"
     elif op == "insert_ctx_scan":
         body = seq[rng.randrange(n)] if n and rng.random() < 0.5 else None
         i = rng.randrange(n + 1) if n else 0

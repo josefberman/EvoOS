@@ -81,6 +81,10 @@ class Op(IntEnum):
     CLRPROT = 29  # clear protection ranges on context regs[a]
     RDTIME = 30  # rd = global cycle counter
     RDFAULT = 31  # rd = last fault code of current context
+    # Encoding version 2 (ISA profile 3). Opcodes 0–31 are unchanged.
+    BLKRD = 32  # rd = status; copy device block regs[b] into mem[regs[c]..]
+    BLKWR = 33  # write mem[regs[b]..] to device block regs[a]
+    SVC = 34  # unprivileged trap; request code in regs[a]; yield to supervisor
 
 
 PRIVILEGED = frozenset(
@@ -91,8 +95,24 @@ PRIVILEGED = frozenset(
         Op.CTXSET,
         Op.ADDPROT,
         Op.CLRPROT,
+        Op.BLKRD,
+        Op.BLKWR,
     }
 )
+
+
+class Svc(IntEnum):
+    """Guest trap codes. Not opcodes. Hardware int 0x80 uses the same numbers in rax."""
+
+    NONE = 0
+    PUT = 1
+    GET = 2
+
+
+class BlkStatus(IntEnum):
+    OK = 0
+    BAD = 1
+    OOB = 2
 
 
 class CtxField(IntEnum):
@@ -108,6 +128,11 @@ class CtxField(IntEnum):
     LAST_RUN_STEPS = 8
     LAST_RUN_FAULT = 9
     LAST_RUN_CTX = 10
+    LAST_BLK_STATUS = 11
+    N_BLOCKS = 12
+    BLK_WORDS = 13
+    LAST_SVC = 14
+    LAST_SVC_CTX = 15
 
 
 class Fault(IntEnum):
@@ -219,7 +244,7 @@ def assemble(source: str) -> tuple[Instr, ...]:
 
         if op in (Op.HALT, Op.NOP):
             pass
-        elif op in (Op.RDTIME, Op.RDFAULT, Op.CLRPROT):
+        elif op in (Op.RDTIME, Op.RDFAULT, Op.CLRPROT, Op.SVC):
             a = _parse_reg(args[0])
         elif op == Op.MOV:
             a, b = _parse_reg(args[0]), _parse_reg(args[1])
@@ -236,9 +261,10 @@ def assemble(source: str) -> tuple[Instr, ...]:
             Op.SHR,
             Op.CMP,
             Op.ADDPROT,
+            Op.BLKRD,
         ):
             a, b, c = _parse_reg(args[0]), _parse_reg(args[1]), _parse_reg(args[2])
-        elif op in (Op.NOT, Op.RUNCTX):
+        elif op in (Op.NOT, Op.RUNCTX, Op.BLKWR):
             a, b = _parse_reg(args[0]), _parse_reg(args[1])
         elif op in (Op.ADDI, Op.LOAD, Op.STORE):
             a, b, imm = _parse_reg(args[0]), _parse_reg(args[1]), _parse_int(args[2], labels)
@@ -313,17 +339,23 @@ def instrs_from_jsonable(rows: Sequence[Sequence[int]]) -> tuple[Instr, ...]:
 
 
 # Frozen program blob: little-endian u32 header then 5×i32 per instruction.
-# Layout: magic=MAGIC, version=1, n_instrs, reserved, then n_instrs*(op,a,b,c,imm).
+# Layout: magic=MAGIC, version, n_instrs, reserved, then n_instrs*(op,a,b,c,imm).
+# version 1: opcodes 0–31. version 2: may include BLKRD/BLKWR/SVC (32–34).
 PROG_VERSION = 1
+PROG_VERSION_MAX = 2
 _PROG_HDR = struct.Struct("<IIII")
 _INSTR_LE = struct.Struct("<iiiii")
 INSTR_WORDS = 5  # op, a, b, c, imm
 
 
+def program_version(instrs: Sequence[Instr]) -> int:
+    return 2 if any(ins.op >= 32 for ins in instrs) else 1
+
+
 def dumps_program(instrs: Sequence[Instr]) -> bytes:
     """Serialize a program as integer words. Inverse of `loads_program`."""
     body = b"".join(_INSTR_LE.pack(ins.op, ins.a, ins.b, ins.c, ins.imm) for ins in instrs)
-    return _PROG_HDR.pack(MAGIC, PROG_VERSION, len(instrs), 0) + body
+    return _PROG_HDR.pack(MAGIC, program_version(instrs), len(instrs), 0) + body
 
 
 def loads_program(data: bytes) -> tuple[Instr, ...]:
@@ -333,7 +365,7 @@ def loads_program(data: bytes) -> tuple[Instr, ...]:
     magic, version, n, _res = _PROG_HDR.unpack_from(data, 0)
     if magic != MAGIC:
         raise ValueError(f"bad program magic {magic:#x}")
-    if version != PROG_VERSION:
+    if version < 1 or version > PROG_VERSION_MAX:
         raise ValueError(f"unsupported program version {version}")
     need = _PROG_HDR.size + n * _INSTR_LE.size
     if len(data) < need:

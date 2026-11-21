@@ -35,6 +35,8 @@ extern const uint8_t guest_copyinc[], guest_copyinc_end[];
 extern const uint8_t guest_max[], guest_max_end[];
 extern const uint8_t guest_malicious[], guest_malicious_end[];
 extern const uint8_t guest_spin[], guest_spin_end[];
+extern const uint8_t guest_put[], guest_put_end[];
+extern const uint8_t guest_get[], guest_get_end[];
 
 static struct limine_framebuffer *fb;
 static uint32_t fb_white, fb_bg, fb_accent, fb_ok, fb_bad, fb_idle, fb_dim;
@@ -344,6 +346,14 @@ static void note_runctx(int32_t cid, int32_t ran, int32_t fault, int32_t vector)
         cons_puts(g->name);
         cons_puts(" halted cycles=");
         cons_i32(g->cycles);
+        if (g->name[0] == 'p' && g->name[1] == 'u') {
+            cons_puts(" put=");
+            cons_i32(evoos_hw_word(cid - 1, 2));
+        }
+        if (g->name[0] == 'g' && g->name[1] == 'e') {
+            cons_puts(" recall=");
+            cons_i32(evoos_hw_word(cid - 1, 2));
+        }
         cons_putc('\n');
         want_redraw = 1;
     }
@@ -433,13 +443,25 @@ static void dashboard(void) {
     fb_i32_at(180, 336, spawn_count, fb_white);
     fb_puts_at(320, 336, "FAULTS", fb_dim);
     fb_i32_at(500, 336, fault_events, fault_events ? fb_bad : fb_white);
-    fb_puts_at(24, 368, "1-4 SLOT  S F X C M P KIND  I INSPECT  H HELP  Q QUIT", fb_accent);
+    fb_puts_at(24, 368, "1-4 SLOT  S F X C M P KIND  W PUT  R GET  Z PLUG  I INSPECT  Q QUIT", fb_accent);
+    if (hw.has_disk && want_redraw) {
+        int b;
+        fb_puts_at(24, 392, "DEVICE BLOCKS", fb_dim);
+        for (b = 0; b < 32 && b < hw.n_blocks; b++) {
+            int32_t st = evoos_hw_blkrd(b, 1700);
+            int32_t w0 = st ? 0 : evoos_hw_load(1700);
+            uint32_t colr = w0 ? fb_accent : fb_idle;
+            int bx = 24 + (b % 16) * 18;
+            int by = 412 + (b / 16) * 18;
+            fb_rect(bx, by, 14, 14, colr);
+        }
+    }
     want_redraw = 0;
 }
 
 static void print_help(void) {
-    cons_puts("keys: 1-4 spawn  s/f/x/c/m/p kind  space next  i inspect  h help  q quit\n");
-    cons_puts("loader is firmware; ADDPROT/RUNCTX are native AOT trampolines (MMU + iretq)\n");
+    cons_puts("keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit\n");
+    cons_puts("loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines\n");
 }
 
 static void inspect(void) {
@@ -450,6 +472,10 @@ static void inspect(void) {
     cons_i32(hw.switch_count);
     cons_puts(" cycles=");
     cons_i32(hw.cycles);
+    cons_puts(" disk=");
+    cons_i32(hw.has_disk);
+    cons_puts(" last_svc=");
+    cons_i32(hw.last_svc);
     cons_putc('\n');
     for (i = 1; i < hw.n_contexts; i++) {
         HwContext *g = &hw.ctx[i];
@@ -551,6 +577,28 @@ static void loader_spawn(int slot, const char *kind) {
         code = guest_spin;
         end = guest_spin_end;
         name = "spin";
+    } else if (kind_eq(kind, "put")) {
+        code = guest_put;
+        end = guest_put_end;
+        name = "put";
+        init_off[0] = 0;
+        init_val[0] = 7;
+        init_off[1] = 1;
+        init_val[1] = 1;
+        init_off[2] = 2;
+        init_val[2] = 123;
+        n_init = 3;
+    } else if (kind_eq(kind, "get")) {
+        code = guest_get;
+        end = guest_get_end;
+        name = "get";
+        init_off[0] = 0;
+        init_val[0] = 7;
+        init_off[1] = 1;
+        init_val[1] = 1;
+        init_off[2] = 2;
+        init_val[2] = 0;
+        n_init = 3;
     } else {
         cons_puts("loader: unknown kind\n");
         return;
@@ -587,6 +635,12 @@ static char scancode_to_ascii(uint8_t sc) {
         return '4';
     case 0x10:
         return 'q';
+    case 0x11:
+        return 'w';
+    case 0x13:
+        return 'r';
+    case 0x2c:
+        return 'z';
     case 0x1f:
         return 's';
     case 0x21:
@@ -653,6 +707,20 @@ static void handle_key(char ch, uint8_t scan) {
         loader_spawn(next_slot % 4, KINDS[rotating_kind % N_KINDS]);
         next_slot++;
         rotating_kind++;
+        break;
+    case 'w':
+        slot = next_slot % 4;
+        next_slot++;
+        loader_spawn(slot, "put");
+        break;
+    case 'r':
+        slot = next_slot % 4;
+        next_slot++;
+        loader_spawn(slot, "get");
+        break;
+    case 'z':
+        cons_puts("pull the plug (reset)\n");
+        outb(0xCF9, 0x06);
         break;
     case 'i':
         inspect();
@@ -747,6 +815,13 @@ void kmain(void) {
     cons_puts("firmware is not a kernel; supervisor=");
     cons_puts(supervisor_origin);
     cons_putc('\n');
+    if (hw.has_disk) {
+        cons_puts("device attached blocks=");
+        cons_i32(hw.n_blocks);
+        cons_putc('\n');
+    } else {
+        cons_puts("device absent\n");
+    }
     print_help();
 
     loader_spawn(0, "sum");

@@ -38,6 +38,14 @@ static inline uint8_t inb(uint16_t port) {
     __asm__ volatile("inb %1, %0" : "=a"(r) : "Nd"(port));
     return r;
 }
+static inline void outw(uint16_t port, uint16_t val) {
+    __asm__ volatile("outw %0, %1" : : "a"(val), "Nd"(port));
+}
+static inline uint16_t inw(uint16_t port) {
+    uint16_t r;
+    __asm__ volatile("inw %1, %0" : "=a"(r) : "Nd"(port));
+    return r;
+}
 static inline void wcr3(uint64_t v) { __asm__ volatile("mov %0, %%cr3" : : "r"(v) : "memory"); }
 static inline uint64_t rcr3(void) {
     uint64_t v;
@@ -383,6 +391,16 @@ int32_t evoos_hw_ctxget(int32_t cid, int32_t field) {
         return hw.last_run_fault;
     case HW_FLD_LAST_RUN_CTX:
         return hw.last_run_ctx;
+    case HW_FLD_LAST_BLK_STATUS:
+        return hw.last_blk_status;
+    case HW_FLD_N_BLOCKS:
+        return hw.n_blocks;
+    case HW_FLD_BLK_WORDS:
+        return HW_BLK_WORDS;
+    case HW_FLD_LAST_SVC:
+        return hw.last_svc;
+    case HW_FLD_LAST_SVC_CTX:
+        return hw.last_svc_ctx;
     default:
         return 0;
     }
@@ -400,6 +418,8 @@ void evoos_hw_ctxset(int32_t cid, int32_t field, int32_t val) {
         c->halted = val;
     } else if (field == HW_FLD_FAULT) {
         c->fault = val;
+    } else if (field == HW_FLD_LAST_SVC) {
+        hw.last_svc = val;
     }
 }
 
@@ -423,6 +443,111 @@ void evoos_hw_store(int32_t addr, int32_t val) {
     if (addr >= 0 && addr < HW_MEM_WORDS) {
         hw.extra[addr] = val;
     }
+}
+
+static int ata_ready(void) {
+    int i;
+    for (i = 0; i < 100000; i++) {
+        uint8_t s = inb(0x1F7);
+        if (s == 0xFF) {
+            return -1;
+        }
+        if ((s & 0x80) == 0) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int ata_wait_drq(void) {
+    int i;
+    for (i = 0; i < 100000; i++) {
+        uint8_t s = inb(0x1F7);
+        if (s == 0xFF) {
+            return -1;
+        }
+        if (s & 1) {
+            return -1;
+        }
+        if (s & 0x08) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int ata_xfer(int32_t blk, uint8_t *buf, int wr) {
+    int i;
+    if (!hw.has_disk || blk < 0 || blk >= HW_N_BLOCKS) {
+        return 2;
+    }
+    if (ata_ready() < 0) {
+        return 1;
+    }
+    outb(0x1F2, 1);
+    outb(0x1F3, (uint8_t)blk);
+    outb(0x1F4, 0);
+    outb(0x1F5, 0);
+    outb(0x1F6, 0xE0);
+    outb(0x1F7, wr ? 0x30 : 0x20);
+    if (ata_wait_drq() < 0) {
+        return 1;
+    }
+    if (wr) {
+        for (i = 0; i < 256; i++) {
+            uint16_t w = (uint16_t)buf[i * 2] | ((uint16_t)buf[i * 2 + 1] << 8);
+            outw(0x1F0, w);
+        }
+        if (ata_ready() < 0) {
+            return 1;
+        }
+    } else {
+        for (i = 0; i < 256; i++) {
+            uint16_t w = inw(0x1F0);
+            buf[i * 2] = (uint8_t)w;
+            buf[i * 2 + 1] = (uint8_t)(w >> 8);
+        }
+    }
+    return 0;
+}
+
+int32_t evoos_hw_blkrd(int32_t blk, int32_t dest) {
+    uint8_t sec[512];
+    int i, st;
+    for (i = 0; i < 512; i++) {
+        sec[i] = 0;
+    }
+    st = ata_xfer(blk, sec, 0);
+    hw.last_blk_status = st;
+    if (st == 0) {
+        for (i = 0; i < HW_BLK_WORDS; i++) {
+            int32_t w = (int32_t)((uint32_t)sec[i * 4] | ((uint32_t)sec[i * 4 + 1] << 8) |
+                                  ((uint32_t)sec[i * 4 + 2] << 16) | ((uint32_t)sec[i * 4 + 3] << 24));
+            evoos_hw_store(dest + i, w);
+        }
+    }
+    return st;
+}
+
+void evoos_hw_blkwr(int32_t blk, int32_t src) {
+    uint8_t sec[512];
+    int i;
+    for (i = 0; i < 512; i++) {
+        sec[i] = 0;
+    }
+    for (i = 0; i < HW_BLK_WORDS; i++) {
+        uint32_t w = (uint32_t)evoos_hw_load(src + i);
+        sec[i * 4] = (uint8_t)w;
+        sec[i * 4 + 1] = (uint8_t)(w >> 8);
+        sec[i * 4 + 2] = (uint8_t)(w >> 16);
+        sec[i * 4 + 3] = (uint8_t)(w >> 24);
+    }
+    hw.last_blk_status = ata_xfer(blk, sec, 1);
+}
+
+void evoos_hw_svc(int32_t code) {
+    hw.last_svc = code;
+    hw.last_svc_ctx = 0;
 }
 
 int32_t evoos_hw_word(int slot, int off) {
@@ -608,10 +733,16 @@ void evoos_hw_trap(TrapFrame *f) {
     c->last_cr2 = rcr2();
     ran = 1;
     if (f->vec == HW_VEC_HALT) {
-        c->halted = 1;
         c->syscalls++;
         c->rip = f->rip; /* after int */
-        ran = 8;
+        if (f->rax == 1 || f->rax == 2) {
+            hw.last_svc = (int32_t)f->rax;
+            hw.last_svc_ctx = cid;
+            ran = 8;
+        } else {
+            c->halted = 1;
+            ran = 8;
+        }
     } else if (f->vec == HW_VEC_TIMER) {
         c->preempts++;
         ran = 16;
@@ -641,6 +772,21 @@ void evoos_hw_init(uint64_t hhdm, uint64_t kphys, uint64_t kvirt) {
     g_kcr3 = rcr3();
     hw.n_contexts = HW_N_CTX;
     hw.io_base = 1920;
+    hw.n_blocks = HW_N_BLOCKS;
+    hw.last_svc = 0;
+    hw.last_svc_ctx = 0;
+    hw.last_blk_status = 0;
+    {
+        uint8_t sec[512];
+        int i;
+        for (i = 0; i < 512; i++) {
+            sec[i] = 0;
+        }
+        hw.has_disk = 1;
+        if (ata_xfer(0, sec, 0) != 0) {
+            hw.has_disk = 0;
+        }
+    }
     for (s = 0; s < HW_N_CTX; s++) {
         uint64_t *pml4 = clone_kernel_pml4();
         hw.ctx[s].cr3 = v2p(pml4);

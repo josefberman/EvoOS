@@ -1,0 +1,235 @@
+{
+  "best_reward": 1.1500000000000001,
+  "best_origin": "baseline_persist_rr_q32",
+  "best_layout": "sparse-hash-like",
+  "best_correct": 2,
+  "best_note": "best scoring program is still persist_rr (human slot table). Not copied to persist_gadgets_elite as an evolved OS.",
+  "qd_cells": [
+    {
+      "layout": "empty",
+      "reward": 0.265625,
+      "origin": "random",
+      "correct": 0,
+      "n_write": 1,
+      "length": 50
+    },
+    {
+      "layout": "append-log-like",
+      "reward": 0.7250000000000001,
+      "origin": "modify_operand",
+      "correct": 1,
+      "n_write": 2,
+      "length": 50
+    },
+    {
+      "layout": "sparse-hash-like",
+      "reward": 1.1500000000000001,
+      "origin": "baseline_persist_rr_q32",
+      "correct": 2,
+      "n_write": 2,
+      "length": 50
+    }
+  ],
+  "history": [
+    {
+      "seed": 1,
+      "generation": 0,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2
+    },
+    {
+      "seed": 1,
+      "generation": 1,
+      "best_reward": 0.6625000000000001,
+      "layout": "append-log-like",
+      "correct": 1,
+      "mean_reward": 0.16197916666666667
+    },
+    {
+      "seed": 1,
+      "generation": 2,
+      "best_reward": 0.690625,
+      "layout": "append-log-like",
+      "correct": 1,
+      "mean_reward": 0.24765625
+    },
+    {
+      "seed": 1,
+      "generation": 3,
+      "best_reward": 0.690625,
+      "layout": "append-log-like",
+      "correct": 1,
+      "mean_reward": 0.3263020833333334
+    },
+    {
+      "seed": 1,
+      "generation": 4,
+      "best_reward": 0.7250000000000001,
+      "layout": "append-log-like",
+      "correct": 1,
+      "mean_reward": 0.40625
+    },
+    {
+      "seed": 1,
+      "generation": 5,
+      "best_reward": 0.690625,
+      "layout": "append-log-like",
+      "correct": 1,
+      "mean_reward": 0.5015625
+    },
+    {
+      "seed": 1,
+      "generation": 6,
+      "best_reward": 0.690625,
+      "layout": "append-log-like",
+      "correct": 1,
+      "mean_reward": 0.23177083333333334
+    },
+    {
+      "seed": 7,
+      "generation": 0,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2
+    },
+    {
+      "seed": 7,
+      "generation": 1,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.2859375
+    },
+    {
+      "seed": 7,
+      "generation": 2,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.2638020833333334
+    },
+    {
+      "seed": 7,
+      "generation": 3,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.32526041666666666
+    },
+    {
+      "seed": 7,
+      "generation": 4,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.8854166666666669
+    },
+    {
+      "seed": 7,
+      "generation": 5,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.5195312500000001
+    },
+    {
+      "seed": 7,
+      "generation": 6,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.30911458333333336
+    },
+    {
+      "seed": 99,
+      "generation": 0,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2
+    },
+    {
+      "seed": 99,
+      "generation": 1,
+      "best_reward": 0.265625,
+      "layout": "append-log-like",
+      "correct": 0,
+      "mean_reward": 0.21614583333333334
+    },
+    {
+      "seed": 99,
+      "generation": 2,
+      "best_reward": 0.265625,
+      "layout": "append-log-like",
+      "correct": 0,
+      "mean_reward": 0.2421875
+    },
+    {
+      "seed": 99,
+      "generation": 3,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.3328125
+    },
+    {
+      "seed": 99,
+      "generation": 4,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.5906250000000001
+    },
+    {
+      "seed": 99,
+      "generation": 5,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.4739583333333333
+    },
+    {
+      "seed": 99,
+      "generation": 6,
+      "best_reward": 1.1500000000000001,
+      "layout": "sparse-hash-like",
+      "correct": 2,
+      "mean_reward": 0.4114583333333333
+    }
+  ],
+  "baseline_persist_rr": {
+    "invalid": false,
+    "reward": 1.1500000000000001,
+    "isolation_ok": true,
+    "correct": 2,
+    "leak": false,
+    "layout": "sparse-hash-like",
+    "n_write": 2,
+    "crash_correct": 1,
+    "crash_isolation": true,
+    "corrupt_correct": 2,
+    "supervisor_fault": 0,
+    "n_halt": 0,
+    "length": 50,
+    "n_blk": 2,
+    "n_svc": 0
+  },
+  "baseline_rr_live": {
+    "invalid": false,
+    "reward": 0.0,
+    "isolation_ok": true,
+    "correct": 0,
+    "leak": false,
+    "layout": "empty",
+    "n_write": 0,
+    "crash_correct": 0,
+    "crash_isolation": true,
+    "corrupt_correct": 0,
+    "supervisor_fault": 0,
+    "n_halt": 0,
+    "length": 17,
+    "n_blk": 0,
+    "n_svc": 0
+  },
+  "elite_path": ""
+}

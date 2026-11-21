@@ -49,6 +49,15 @@
 #define HW_FLD_LAST_RUN_STEPS 8
 #define HW_FLD_LAST_RUN_FAULT 9
 #define HW_FLD_LAST_RUN_CTX 10
+#define HW_FLD_LAST_BLK_STATUS 11
+#define HW_FLD_N_BLOCKS 12
+#define HW_FLD_BLK_WORDS 13
+#define HW_FLD_LAST_SVC 14
+#define HW_FLD_LAST_SVC_CTX 15
+
+#define HW_N_BLOCKS 32
+#define HW_BLK_WORDS 16
+#define HW_BLK_BYTES (HW_BLK_WORDS * 4)
 
 typedef struct {
     uint64_t rip, rsp, rflags, rdi, rsi, rax, rbx, rcx, rdx, rbp;
@@ -84,6 +93,11 @@ typedef struct {
     int32_t extra[HW_MEM_WORDS];
     uint8_t slot_page[HW_N_GUESTS][4096];
     int32_t isolation_n;
+    int32_t last_svc;
+    int32_t last_svc_ctx;
+    int32_t last_blk_status;
+    int32_t n_blocks;
+    int32_t has_disk;
 } HwMachine;
 
 extern HwMachine hw;
@@ -98,6 +112,9 @@ int evoos_hw_addprot(int32_t cid, int32_t lo, int32_t hi);
 void evoos_hw_clrprot(int32_t cid);
 int32_t evoos_hw_load(int32_t addr);
 void evoos_hw_store(int32_t addr, int32_t val);
+int32_t evoos_hw_blkrd(int32_t blk, int32_t dest);
+void evoos_hw_blkwr(int32_t blk, int32_t src);
+void evoos_hw_svc(int32_t code);
 int evoos_hw_install_guest(int slot, const uint8_t *code, uint64_t n_code, const char *name,
                            const int32_t *init_off, const int32_t *init_val, int n_init);
 int32_t evoos_hw_word(int slot, int off);
