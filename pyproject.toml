@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evoos"
+version = "0.1.0"
+description = "Can an RL/evolutionary agent discover a functional OS from behavioral objectives alone?"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "EvoOS"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+torch = ["torch"]
+tracking = ["tensorboard"]
+
+[project.scripts]
+evoos-train = "evoos.train:main"
+evoos-analyze = "evoos.experiments.scheduling.analyze:main"
+
+[tool.setuptools.packages.find]
+include = ["evoos*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
