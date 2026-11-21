@@ -332,7 +332,7 @@ def write_reports(out: Path, a_rows, c_rows, elapsed, meta: dict) -> None:
         )
     lines.append(
         _md_table(
-            ["curriculum", "shaping", "n", "search R mean", "std", "best", "4/4 train+held", "stall stages", "labels"],
+            ["curriculum", "gate", "n", "search R mean", "std", "best", "4/4 train+held", "stall stages", "labels"],
             sum_rows,
         )
     )
@@ -408,6 +408,17 @@ def write_reports(out: Path, a_rows, c_rows, elapsed, meta: dict) -> None:
             "Every 4/4 elite is labeled round-robin-like or run-to-completion-like. "
             "Nothing structurally non-RR/RTC appeared at this budget."
         )
+    lines.append("")
+    lines.append(
+        "Gated vs ungated: ungated still sits on the round-3 **R=0.52** RUNCTX-without-MPU "
+        "plateau (curr mean 0.523); two ungated curriculum seeds reach 2/4 complete on the "
+        "4-guest split but never promote k1. Gated **removes that plateau** (flat gated 0/6 "
+        "at R=0.000, all `no-dispatch`). The only gated nonzero is curr seed 99 (R=0.400, "
+        "1/4 complete, `entered_protected=1`, prot_cover on one slot, archive size 6) — "
+        "cover then run, the intended stepping stone, not 4/4. Most gated archives have "
+        "size 1 (idle cell): random bytecode almost never installs a covering MPU range, "
+        "and once unprotected RUNCTX scores 0 there is no remaining gradient except cover."
+    )
     lines.append("")
     (out / "summary.md").write_text("\n".join(lines) + "\n")
 

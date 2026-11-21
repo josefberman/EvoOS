@@ -66,6 +66,8 @@ python -m evoos.experiments.scheduling.analyze --db runs/correctness/evoos.sqlit
 python -m evoos.experiments.scheduling.sweep --out experiments/scheduling/results
 # Round 3: bare-only curriculum + shaping + substrate ablations:
 python -m evoos.experiments.scheduling.sweep_round3 --out experiments/scheduling/results/round3
+# Round 4: gated vs ungated shaping + milestone MAP-Elites (bare, lenient):
+python -m evoos.experiments.scheduling.sweep_round4 --out experiments/scheduling/results/round4
 ```
 
 ## Scaled results (measured)
@@ -152,4 +154,24 @@ train.py
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |
 | 5 | Bootable x86_64 ISO in QEMU then VirtualBox (BIOS, then UEFI); stub interprets evolved bytecode | `evoos/placeholders/qemu_boot.py`, `fuzzing.py` |
 
-Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral); a C/Rust interpreter with golden traces against this Python VM; Limine ISO.
+## Round 4 (gated shaping + stepping stones)
+
+Same machine, **24.4 min**, 6 seeds, bare pack, **lenient** substrate. Tables: [`experiments/scheduling/results/round4/summary.md`](experiments/scheduling/results/round4/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round4 \
+  --gens-per-stage 120 --generations 500 --population 56 --workers 4
+```
+
+Gated: entered/progress/complete for a guest count only if that guest retired ≥1 instruction while its window was already covered. MAP-Elites cells are `(n_prot, n_entered_protected, n_progressed_protected, n_completed, n_guests)` with curiosity parent selection and elite crossover. **ISA frozen** (opcodes 0–31 unchanged); `ran_protected` is evaluator telemetry, not a CSR.
+
+| curriculum | gate | search R mean ± std (best) | 4/4 |
+| --- | --- | --- | --- |
+| flat | ungated | 0.387 ± 0.100 (0.520) | **0/6** |
+| flat | gated | 0.000 ± 0.000 (0.000) | **0/6** |
+| curr | ungated | 0.523 ± 0.170 (0.760) | **0/6** (two seeds 2/4) |
+| curr | gated | 0.067 ± 0.149 (0.400) | **0/6** (seed 99: 1/4 protected complete) |
+
+**0/24** 4/4. Gated kills the R=0.52 trap (flat gated is all `no-dispatch`). It does not compose ADDPROT-then-RUNCTX at this budget except one curriculum seed that covers and completes a single guest. Nothing non-RR/RTC at 4/4 because nothing reached 4/4. Round 3's one flat 4/4 did not replicate under the milestone archive (ungated flat 0/6).
+
+Next: a C/Rust interpreter with golden traces against this Python VM; Limine ISO. The remaining search gap is covering the guest window from random 5-tuples, not ISA design.

@@ -1,0 +1,23 @@
+# bare_curr_gated_s42 4/4=False stall=k1 R=0.0 label=no-dispatch
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=no-dispatch
+
+   0:  MOV      a=3 b=2 c=1 imm=3
+   1:  ADDPROT  a=0 b=0 c=1 imm=19
+   2:  LOAD     a=0 b=3 c=6 imm=30
+   3:  STORE    a=0 b=2 c=6 imm=9
+   4:  JAL      a=5 b=1 c=1 imm=5  # -> 10
+   5:  RUNCTXI  a=4 b=0 c=7 imm=14
+   6:  ADDPROT  a=1 b=4 c=5 imm=16
+   7:  RUNCTX   a=0 b=3 c=4 imm=-4
+   8:  MUL      a=6 b=4 c=7 imm=-39
+   9:  RUNCTX   a=3 b=4 c=1 imm=14
+  10:  JMP      a=3 b=2 c=7 imm=32  # -> 43
+  11:  RUNCTXI  a=3 b=5 c=0 imm=32
+  12:  STORE    a=6 b=4 c=1 imm=16
+  13:  LOAD     a=5 b=3 c=7 imm=81
+  14:  CTXGET   a=7 b=2 c=4 imm=100
+  15:  XOR      a=4 b=6 c=6 imm=27
+  16:  RUNCTX   a=7 b=1 c=0 imm=0
+  17:  OR       a=6 b=1 c=6 imm=2
+  18:  RUNCTXI  a=4 b=0 c=1 imm=16
+  19:  HALT     a=0 b=0 c=0 imm=0

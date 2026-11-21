@@ -1,0 +1,55 @@
+# bare_curr_ungated_s13 4/4=False stall=k1 R=0.76 label=batched/priority-like
+# diagnose: train completed [2, 2] held [2, 2]; near-zero-cycle guests (train idx) [[], []]; label=batched/priority-like
+
+   0:  BLT      a=2 b=3 c=2 imm=256  # -> 257
+   1:  STORE    a=2 b=1 c=3 imm=2
+   2:  BLT      a=0 b=4 c=2 imm=0  # -> 3
+   3:  XOR      a=3 b=7 c=3 imm=512
+   4:  MUL      a=7 b=6 c=2 imm=3
+   5:  BEQ      a=7 b=6 c=5 imm=6  # -> 12
+   6:  ADDPROT  a=1 b=5 c=4 imm=256
+   7:  CLRPROT  a=2 b=7 c=7 imm=384
+   8:  MUL      a=2 b=5 c=4 imm=4
+   9:  RUNCTX   a=4 b=6 c=2 imm=30
+  10:  RUNCTX   a=3 b=3 c=5 imm=7
+  11:  SUB      a=7 b=7 c=3 imm=5
+  12:  XOR      a=7 b=6 c=5 imm=32
+  13:  ADDPROT  a=3 b=2 c=7 imm=-53
+  14:  CLRPROT  a=6 b=4 c=5 imm=2
+  15:  ADDI     a=5 b=2 c=3 imm=256
+  16:  MOVI     a=0 b=0 c=5 imm=31
+  17:  BLT      a=2 b=4 c=3 imm=5  # -> 23
+  18:  SHR      a=1 b=3 c=2 imm=32
+  19:  MUL      a=7 b=6 c=2 imm=3
+  20:  BEQ      a=7 b=6 c=5 imm=6  # -> 27
+  21:  ADDPROT  a=1 b=5 c=4 imm=256
+  22:  CLRPROT  a=2 b=7 c=7 imm=384
+  23:  ADDPROT  a=3 b=2 c=7 imm=-53
+  24:  MUL      a=2 b=5 c=4 imm=4
+  25:  RUNCTX   a=4 b=6 c=2 imm=30
+  26:  RUNCTX   a=3 b=3 c=5 imm=7
+  27:  MOVI     a=5 b=0 c=2 imm=0
+  28:  MOVI     a=6 b=6 c=7 imm=2
+  29:  MOV      a=5 b=2 c=4 imm=12
+  30:  OR       a=5 b=2 c=1 imm=0
+  31:  XOR      a=7 b=6 c=5 imm=32
+  32:  RUNCTX   a=3 b=2 c=7 imm=-53
+  33:  CLRPROT  a=6 b=4 c=5 imm=6
+  34:  ADDI     a=5 b=2 c=3 imm=256
+  35:  MOVI     a=0 b=0 c=5 imm=31
+  36:  BLT      a=2 b=4 c=3 imm=5  # -> 42
+  37:  SHR      a=1 b=3 c=2 imm=32
+  38:  SUB      a=0 b=7 c=5 imm=30
+  39:  MUL      a=4 b=1 c=6 imm=0
+  40:  BGE      a=1 b=7 c=5 imm=80  # -> 121
+  41:  MOVI     a=2 b=7 c=7 imm=13
+  42:  STORE    a=0 b=6 c=2 imm=4
+  43:  SHL      a=4 b=6 c=3 imm=5
+  44:  CMP      a=3 b=5 c=3 imm=-14
+  45:  JR       a=4 b=6 c=3 imm=64
+  46:  JR       a=6 b=7 c=1 imm=12
+  47:  ADDI     a=4 b=6 c=7 imm=2
+  48:  SUB      a=0 b=4 c=3 imm=64
+  49:  CLRPROT  a=6 b=5 c=0 imm=27
+  50:  BLT      a=2 b=0 c=1 imm=0  # -> 51
+  51:  HALT     a=0 b=0 c=0 imm=0

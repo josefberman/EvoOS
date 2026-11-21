@@ -1,0 +1,44 @@
+# bare_curr_gated_s99 4/4=False stall=k1 R=0.4 label=starving
+# diagnose: train completed [1, 1] held [1, 1]; near-zero-cycle guests (train idx) [[0, 1, 2], [0, 1, 2]]; label=starving
+
+   0:  RUNCTXI  a=3 b=3 c=2 imm=3
+   1:  MUL      a=6 b=5 c=5 imm=1
+   2:  LOAD     a=6 b=1 c=1 imm=1
+   3:  SUB      a=0 b=3 c=7 imm=2
+   4:  MUL      a=1 b=7 c=3 imm=16
+   5:  CTXSET   a=3 b=5 c=6 imm=64
+   6:  LOAD     a=5 b=1 c=1 imm=3
+   7:  RDFAULT  a=4 b=0 c=6 imm=-6
+   8:  LOAD     a=1 b=7 c=3 imm=30
+   9:  BEQ      a=5 b=2 c=3 imm=30  # -> 40
+  10:  SHR      a=2 b=2 c=0 imm=16
+  11:  OR       a=6 b=1 c=6 imm=22
+  12:  MUL      a=0 b=6 c=5 imm=31
+  13:  XOR      a=0 b=3 c=7 imm=4
+  14:  BEQ      a=5 b=7 c=0 imm=0  # -> 15
+  15:  XOR      a=2 b=6 c=1 imm=384
+  16:  AND      a=2 b=2 c=6 imm=10
+  17:  SHL      a=5 b=7 c=3 imm=79
+  18:  BEQ      a=2 b=1 c=4 imm=15  # -> 34
+  19:  NOP      a=5 b=3 c=6 imm=0
+  20:  CTXGET   a=6 b=6 c=5 imm=17
+  21:  ADDPROT  a=5 b=6 c=7 imm=-6
+  22:  STORE    a=4 b=1 c=5 imm=6
+  23:  LOAD     a=3 b=6 c=4 imm=384
+  24:  CLRPROT  a=7 b=6 c=4 imm=1
+  25:  SUB      a=7 b=2 c=4 imm=12
+  26:  ADDPROT  a=2 b=4 c=6 imm=40
+  27:  BNE      a=7 b=3 c=6 imm=10  # -> 38
+  28:  JAL      a=0 b=5 c=4 imm=24  # -> 53
+  29:  ADDI     a=2 b=4 c=6 imm=106
+  30:  STORE    a=6 b=0 c=1 imm=14
+  31:  ADDI     a=4 b=2 c=7 imm=-8
+  32:  LOAD     a=7 b=4 c=3 imm=18
+  33:  MOV      a=1 b=0 c=0 imm=14
+  34:  CTXSET   a=4 b=3 c=1 imm=27
+  35:  CTXGET   a=4 b=7 c=5 imm=3
+  36:  ADDI     a=4 b=2 c=7 imm=-8
+  37:  XOR      a=6 b=6 c=2 imm=50
+  38:  RUNCTX   a=7 b=6 c=2 imm=9
+  39:  RDFAULT  a=7 b=2 c=1 imm=256
+  40:  ADDPROT  a=0 b=1 c=5 imm=21
