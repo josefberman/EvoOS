@@ -62,8 +62,10 @@ pip install -e ".[dev]"
 pytest
 python train.py --generations 40 --population 24 --seed 42 --mode correctness --operator-pack gadgets
 python -m evoos.experiments.scheduling.analyze --db runs/correctness/evoos.sqlite
-# Multi-seed A/B/C + ablation (minutes–tens of minutes, uses all CPU cores):
+# Round 2: gadgets vs bare (minutes–tens of minutes):
 python -m evoos.experiments.scheduling.sweep --out experiments/scheduling/results
+# Round 3: bare-only curriculum + shaping + substrate ablations:
+python -m evoos.experiments.scheduling.sweep_round3 --out experiments/scheduling/results/round3
 ```
 
 ## Scaled results (measured)
@@ -96,6 +98,39 @@ python -m evoos.experiments.scheduling.sweep \
 
 **A vs B vs C (best held-out correctness R):** all three can reach 1.000 and 4/4. A and B do it with a human RR/RTC; C does it only when MMU/RUNCTX gadgets are enabled, and the resulting programs are messy bytecode whose *behavior* is often RR-like or RTC-like rather than a copy of the baseline source.
 
+## Round 3 (bare ISA: curriculum, shaping, substrate)
+
+Same machine, **23.6 min**, 6 seeds, **bare pack only**. Tables: [`experiments/scheduling/results/round3/summary.md`](experiments/scheduling/results/round3/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round3 \
+  --gens-per-stage 100 --population 36 --workers 4
+```
+
+Curriculum stages: 1 → 2 → 3 → 4 guests, then a harder 4-guest mix. Promote when the stage's train guests all complete with isolation. Shaping replaces sparse F with behavioral observables (`entered`, `prot_cover`, `progress`, `complete`) — not opcode bonuses. Lenient substrate: RUNCTX retries a faulting guest instruction, supervisor mem errors post a CSR instead of halting, RUNCTX writes LAST_RUN_* CSRs.
+
+**Condition B with efficiency.** R = 0.45F + 0.20S + 0.35E. Grid E rises with quantum (`q=1` E=0.444 / 228+322 switches → `q=128` E=0.781 / 4+4 switches). UCB1 6/6 seeds pick **q=192** (tied with the large-q plateau; 4/4, held R≈0.93). The identifiable quantum is “almost RTC.”
+
+**Condition C, 4/4 on full 4-guest train AND held-out:**
+
+| curriculum | shaping | substrate | search R mean ± std (best) | 4/4 |
+| --- | --- | --- | --- | --- |
+| flat | yes | lenient | 0.607 ± 0.285 (1.000) | **1/6** (seed 7, RR-like). Seed 2024: train 4/4, held `[4, 3]` |
+| curr | yes | lenient | 0.533 ± 0.142 (0.760) | **0/6** |
+| curr | no | lenient | 0.307 ± 0.050 (0.360) | **0/6** |
+| curr | yes | hostile | 0.427 ± 0.126 (0.600) | **0/6** |
+| curr | yes | lenient, no resume | 0.487 ± 0.139 (0.720) | **0/6** |
+| curr | yes | lenient, no memerr | 0.440 ± 0.146 (0.680) | **0/6** |
+| curr | yes | lenient, no status | 0.530 ± 0.153 (0.760) | **0/6** |
+
+**1/42** bare runs hit 4/4. That one is **flat + shaping + lenient**, not the curriculum. All 36 curriculum jobs **stalled at k1** (0/36 completed the single guest; 0/36 had `prot_cover`; 24/36 entered). Recurring R=**0.52** is `entered+progress` without an MPU window: RUNCTX lets the guest retire 1–2 ops then fault, which outscores ADDPROT without RUNCTX. Later stages of a few shaped+lenient seeds still reach 2/4 on the 4-guest eval (prot_cover appears after k1). Status CSRs are not load-bearing; resume and imprecise mem abort move the mean a little and do not unblock k1.
+
+Round 2 said bare is 0/12 at 400×40 with gadgets off. Round 3 shows a **single** bare 4/4 when the substrate is lenient, shaping is on, and the 500-gen budget is spent on four guests rather than gated by a 1-guest promotion. That is not a reliable discovery procedure. The ISA is still integer 5-tuples (`op,a,b,c,imm`); nothing Python-only is required to interpret it on a later boot stub.
+
+## Path to a bootable x86_64 ISO
+
+The evolved supervisor *is* the OS. A tiny host stub (C or Rust interpreter/JIT of the frozen word encoding) plus Limine or a Multiboot2 `boot.asm` (BIOS first, UEFI next) is firmware, not a kernel. Embed `supervisor.bin` in the ISO; map serial/VGA as a STORE window. Test in QEMU (`qemu-system-x86_64 -cdrom evoos.iso -nographic -serial mon:stdio`) before VirtualBox. Do not grow a Unix process table, page allocator, or POSIX VFS in the stub — aim for a **single address-space capability machine** whose multiplexing is whatever bytecode search found. Details: the ISO section of the round-3 summary.
+
 ## Layout
 
 ```
@@ -115,6 +150,6 @@ train.py
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
 | 3 | Persistence / a block device, not a VFS opcode | `evoos/placeholders/persistence.py` |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |
-| 5 | QEMU/initramfs boot; AFL++ on the VM and on supervisors | `evoos/placeholders/qemu_boot.py`, `fuzzing.py` |
+| 5 | Bootable x86_64 ISO in QEMU then VirtualBox (BIOS, then UEFI); stub interprets evolved bytecode | `evoos/placeholders/qemu_boot.py`, `fuzzing.py` |
 
-Next: score Condition B with efficiency so quantum is identifiable; harsher held-out mixes; drop gadgets and spend more compute on `bare`; stages 2–5.
+Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral); a C/Rust interpreter with golden traces against this Python VM; Limine ISO.

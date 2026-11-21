@@ -1,0 +1,57 @@
+# bare_curr_shape_hostile_s13 4/4=False stall=k1 R=0.6000000000000001
+# diagnose: train completed [1, 1] held [1, 1]; near-zero-cycle guests (train idx) [[1, 2, 3], [1, 2, 3]]; label=round-robin-like
+
+   0:  JAL      a=2 b=3 c=3 imm=12  # -> 13
+   1:  BEQ      a=0 b=4 c=1 imm=70  # -> 72
+   2:  AND      a=4 b=1 c=7 imm=31
+   3:  RDTIME   a=1 b=4 c=6 imm=22
+   4:  SHL      a=2 b=5 c=1 imm=512
+   5:  BGE      a=1 b=2 c=1 imm=19  # -> 25
+   6:  RUNCTXI  a=6 b=7 c=4 imm=55
+   7:  LOAD     a=7 b=6 c=5 imm=32
+   8:  MOV      a=4 b=3 c=5 imm=31
+   9:  JR       a=5 b=6 c=0 imm=4
+  10:  BLT      a=4 b=2 c=0 imm=-31  # -> -20
+  11:  RUNCTXI  a=7 b=2 c=1 imm=10
+  12:  MOVI     a=4 b=1 c=1 imm=43
+  13:  SUB      a=5 b=6 c=1 imm=-14
+  14:  ADD      a=2 b=5 c=4 imm=512
+  15:  LOAD     a=4 b=2 c=4 imm=384
+  16:  MOVI     a=6 b=4 c=7 imm=1
+  17:  ADDPROT  a=1 b=5 c=4 imm=14
+  18:  RUNCTX   a=5 b=5 c=5 imm=8
+  19:  LOAD     a=2 b=1 c=5 imm=2
+  20:  BLT      a=2 b=7 c=0 imm=5  # -> 26
+  21:  MUL      a=0 b=7 c=4 imm=-6
+  22:  OR       a=0 b=2 c=6 imm=4
+  23:  STORE    a=3 b=0 c=2 imm=5
+  24:  ADD      a=7 b=0 c=6 imm=14
+  25:  RUNCTXI  a=2 b=0 c=0 imm=5
+  26:  CLRPROT  a=5 b=6 c=2 imm=4
+  27:  ADDPROT  a=5 b=3 c=1 imm=8
+  28:  NOT      a=1 b=1 c=2 imm=25
+  29:  ADDPROT  a=7 b=4 c=2 imm=6
+  30:  JR       a=5 b=1 c=3 imm=24
+  31:  BLT      a=5 b=2 c=7 imm=7  # -> 39
+  32:  XOR      a=1 b=5 c=0 imm=27
+  33:  LOAD     a=6 b=1 c=3 imm=1
+  34:  RDTIME   a=5 b=4 c=2 imm=8
+  35:  RUNCTX   a=2 b=0 c=3 imm=10
+  36:  SHR      a=1 b=6 c=5 imm=55
+  37:  BLT      a=3 b=6 c=3 imm=11  # -> 49
+  38:  MOVI     a=5 b=7 c=6 imm=0
+  39:  XOR      a=4 b=5 c=5 imm=32
+  40:  RDFAULT  a=5 b=3 c=2 imm=14
+  41:  RUNCTXI  a=1 b=5 c=7 imm=24
+  42:  SHR      a=2 b=6 c=0 imm=11
+  43:  SHL      a=0 b=6 c=6 imm=496
+  44:  MUL      a=2 b=5 c=2 imm=10
+  45:  ADDPROT  a=4 b=1 c=5 imm=-3
+  46:  JAL      a=2 b=6 c=5 imm=512  # -> 559
+  47:  CTXGET   a=6 b=3 c=1 imm=4
+  48:  AND      a=4 b=3 c=4 imm=29
+  49:  BGE      a=4 b=0 c=3 imm=60  # -> 110
+  50:  STORE    a=0 b=0 c=7 imm=26
+  51:  CTXGET   a=5 b=3 c=6 imm=0
+  52:  ADDPROT  a=6 b=7 c=7 imm=29
+  53:  HALT     a=0 b=0 c=0 imm=0

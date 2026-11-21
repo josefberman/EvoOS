@@ -1,0 +1,56 @@
+# bare_curr_shape_lenient_no_status_s1 4/4=False stall=k1 R=0.76
+# diagnose: train completed [2, 2] held [2, 2]; near-zero-cycle guests (train idx) [[3], [3]]; label=other
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  RDTIME   a=3 b=1 c=7 imm=16
+   2:  MOV      a=6 b=0 c=7 imm=35
+   3:  BNE      a=1 b=5 c=0 imm=3  # -> 7
+   4:  LOAD     a=2 b=6 c=3 imm=1
+   5:  BLT      a=6 b=0 c=7 imm=16  # -> 22
+   6:  CMP      a=6 b=2 c=5 imm=8
+   7:  RUNCTXI  a=2 b=1 c=7 imm=108
+   8:  MOV      a=0 b=6 c=3 imm=26
+   9:  ADDI     a=6 b=1 c=7 imm=-8
+  10:  ADDPROT  a=5 b=1 c=6 imm=10
+  11:  ADDPROT  a=3 b=7 c=7 imm=32
+  12:  OR       a=5 b=4 c=1 imm=32
+  13:  CLRPROT  a=7 b=2 c=2 imm=32
+  14:  CLRPROT  a=7 b=2 c=2 imm=32
+  15:  CMP      a=2 b=6 c=3 imm=16
+  16:  OR       a=3 b=5 c=3 imm=-6
+  17:  SUB      a=5 b=0 c=2 imm=3
+  18:  CTXGET   a=6 b=0 c=7 imm=-1
+  19:  CTXSET   a=5 b=7 c=0 imm=26
+  20:  ADDPROT  a=3 b=7 c=7 imm=32
+  21:  CLRPROT  a=7 b=2 c=2 imm=32
+  22:  CMP      a=2 b=6 c=3 imm=16
+  23:  SUB      a=5 b=0 c=2 imm=3
+  24:  ADDPROT  a=3 b=7 c=7 imm=32
+  25:  MOV      a=2 b=2 c=4 imm=27
+  26:  OR       a=6 b=3 c=4 imm=384
+  27:  LOAD     a=2 b=6 c=3 imm=1
+  28:  BLT      a=6 b=0 c=7 imm=16  # -> 45
+  29:  CMP      a=6 b=2 c=5 imm=8
+  30:  RUNCTXI  a=5 b=1 c=7 imm=108
+  31:  ADDI     a=6 b=5 c=7 imm=-3
+  32:  MOV      a=6 b=2 c=2 imm=11
+  33:  ADDPROT  a=3 b=7 c=2 imm=32
+  34:  NOT      a=1 b=7 c=3 imm=8
+  35:  ADDPROT  a=5 b=1 c=6 imm=10
+  36:  CLRPROT  a=7 b=2 c=2 imm=32
+  37:  CMP      a=2 b=6 c=3 imm=16
+  38:  CTXSET   a=5 b=0 c=2 imm=15
+  39:  ADDPROT  a=3 b=7 c=7 imm=32
+  40:  RUNCTXI  a=3 b=7 c=4 imm=6
+  41:  MOV      a=1 b=2 c=4 imm=27
+  42:  OR       a=6 b=3 c=4 imm=384
+  43:  BLT      a=6 b=0 c=7 imm=16  # -> 60
+  44:  CMP      a=6 b=2 c=5 imm=8
+  45:  RUNCTXI  a=3 b=1 c=7 imm=108
+  46:  BNE      a=6 b=5 c=7 imm=-41  # -> 6
+  47:  MOV      a=6 b=2 c=2 imm=11
+  48:  ADDI     a=3 b=3 c=6 imm=-8
+  49:  ADDI     a=5 b=7 c=4 imm=29
+  50:  RUNCTXI  a=0 b=6 c=2 imm=384
+  51:  CTXGET   a=6 b=0 c=7 imm=-1
+  52:  CTXSET   a=5 b=7 c=0 imm=26

@@ -1,0 +1,71 @@
+# bare_curr_shape_lenient_no_status_s42 4/4=False stall=k1 R=0.44
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[1, 2], [1, 2]]; label=starving
+
+   0:  JAL      a=3 b=2 c=1 imm=2  # -> 3
+   1:  JMP      a=3 b=2 c=7 imm=32  # -> 34
+   2:  LOAD     a=0 b=3 c=6 imm=30
+   3:  STORE    a=0 b=2 c=6 imm=9
+   4:  JAL      a=5 b=1 c=1 imm=5  # -> 10
+   5:  RUNCTXI  a=4 b=0 c=7 imm=14
+   6:  ADDPROT  a=1 b=4 c=5 imm=16
+   7:  RUNCTX   a=0 b=3 c=4 imm=-4
+   8:  MUL      a=6 b=4 c=7 imm=-39
+   9:  RUNCTX   a=3 b=4 c=1 imm=14
+  10:  ADDPROT  a=0 b=0 c=1 imm=19
+  11:  RUNCTXI  a=3 b=5 c=0 imm=16
+  12:  LOAD     a=5 b=3 c=7 imm=81
+  13:  CTXGET   a=7 b=2 c=4 imm=100
+  14:  RUNCTX   a=3 b=4 c=1 imm=14
+  15:  ADDPROT  a=0 b=0 c=1 imm=19
+  16:  RUNCTXI  a=3 b=5 c=0 imm=16
+  17:  RUNCTX   a=0 b=3 c=4 imm=-4
+  18:  MUL      a=6 b=4 c=7 imm=-39
+  19:  RUNCTX   a=3 b=4 c=1 imm=14
+  20:  RUNCTX   a=0 b=3 c=4 imm=-4
+  21:  MUL      a=6 b=4 c=7 imm=-39
+  22:  RUNCTX   a=3 b=4 c=1 imm=14
+  23:  ADDPROT  a=0 b=0 c=1 imm=19
+  24:  RUNCTXI  a=3 b=5 c=0 imm=16
+  25:  STORE    a=6 b=4 c=1 imm=16
+  26:  LOAD     a=5 b=3 c=7 imm=81
+  27:  CTXGET   a=7 b=2 c=4 imm=100
+  28:  RUNCTX   a=3 b=4 c=1 imm=14
+  29:  ADDPROT  a=0 b=0 c=1 imm=19
+  30:  RUNCTXI  a=3 b=5 c=0 imm=16
+  31:  RUNCTX   a=0 b=3 c=4 imm=-4
+  32:  MUL      a=6 b=4 c=7 imm=-39
+  33:  RUNCTX   a=3 b=4 c=1 imm=14
+  34:  ADDPROT  a=0 b=0 c=1 imm=19
+  35:  RUNCTXI  a=3 b=5 c=0 imm=16
+  36:  STORE    a=6 b=4 c=1 imm=16
+  37:  CTXGET   a=7 b=2 c=4 imm=100
+  38:  XOR      a=4 b=6 c=6 imm=27
+  39:  RUNCTX   a=7 b=1 c=0 imm=0
+  40:  MOV      a=4 b=5 c=5 imm=32
+  41:  MUL      a=1 b=5 c=5 imm=-21
+  42:  LOAD     a=3 b=7 c=3 imm=1
+  43:  CMP      a=1 b=4 c=7 imm=22
+  44:  CLRPROT  a=5 b=6 c=4 imm=-4
+  45:  RUNCTX   a=3 b=4 c=1 imm=14
+  46:  OR       a=6 b=1 c=6 imm=2
+  47:  LOAD     a=4 b=0 c=7 imm=20
+  48:  RUNCTX   a=3 b=6 c=5 imm=22
+  49:  BNE      a=0 b=7 c=6 imm=2  # -> 52
+  50:  RUNCTX   a=0 b=3 c=4 imm=-4
+  51:  MUL      a=6 b=4 c=7 imm=-39
+  52:  RUNCTX   a=3 b=4 c=1 imm=14
+  53:  ADDPROT  a=0 b=0 c=1 imm=19
+  54:  RUNCTXI  a=3 b=5 c=0 imm=16
+  55:  STORE    a=6 b=4 c=1 imm=16
+  56:  CTXGET   a=7 b=2 c=4 imm=100
+  57:  XOR      a=4 b=6 c=6 imm=27
+  58:  RUNCTX   a=7 b=1 c=0 imm=0
+  59:  RUNCTX   a=3 b=4 c=1 imm=14
+  60:  OR       a=6 b=1 c=6 imm=2
+  61:  LOAD     a=4 b=0 c=7 imm=20
+  62:  RUNCTX   a=3 b=6 c=5 imm=22
+  63:  BNE      a=0 b=7 c=6 imm=2  # -> 66
+  64:  LOAD     a=0 b=6 c=1 imm=27
+  65:  RDFAULT  a=6 b=1 c=1 imm=-15
+  66:  RUNCTXI  a=4 b=0 c=1 imm=16
+  67:  HALT     a=0 b=0 c=0 imm=0

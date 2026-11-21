@@ -1,0 +1,98 @@
+# bare_curr_shape_lenient_no_resume_s13 4/4=False stall=k1 R=0.52
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=round-robin-like
+
+   0:  JAL      a=2 b=3 c=3 imm=12  # -> 13
+   1:  BEQ      a=0 b=4 c=1 imm=70  # -> 72
+   2:  AND      a=4 b=1 c=7 imm=31
+   3:  RDTIME   a=1 b=4 c=6 imm=22
+   4:  SHL      a=2 b=5 c=1 imm=512
+   5:  BGE      a=1 b=2 c=1 imm=19  # -> 25
+   6:  RUNCTXI  a=6 b=7 c=4 imm=55
+   7:  LOAD     a=7 b=6 c=5 imm=32
+   8:  JR       a=4 b=3 c=5 imm=31
+   9:  JR       a=5 b=6 c=0 imm=4
+  10:  BLT      a=4 b=2 c=0 imm=-31  # -> -20
+  11:  RUNCTXI  a=7 b=2 c=1 imm=10
+  12:  RUNCTXI  a=7 b=2 c=1 imm=10
+  13:  STORE    a=0 b=0 c=7 imm=26
+  14:  CTXGET   a=5 b=6 c=6 imm=0
+  15:  ADDPROT  a=6 b=7 c=7 imm=29
+  16:  NOT      a=1 b=1 c=2 imm=25
+  17:  MOVI     a=4 b=1 c=1 imm=43
+  18:  SUB      a=5 b=6 c=1 imm=-14
+  19:  RUNCTX   a=2 b=5 c=4 imm=512
+  20:  MOVI     a=4 b=1 c=1 imm=43
+  21:  SUB      a=5 b=6 c=1 imm=-14
+  22:  RUNCTX   a=2 b=5 c=4 imm=512
+  23:  ADDPROT  a=4 b=1 c=5 imm=-3
+  24:  CTXSET   a=7 b=0 c=6 imm=14
+  25:  ADDPROT  a=1 b=5 c=4 imm=14
+  26:  OR       a=0 b=2 c=6 imm=4
+  27:  BLT      a=3 b=0 c=2 imm=-14  # -> 14
+  28:  STORE    a=6 b=4 c=7 imm=1
+  29:  RUNCTXI  a=2 b=0 c=0 imm=5
+  30:  CLRPROT  a=5 b=6 c=2 imm=4
+  31:  ADDPROT  a=1 b=3 c=1 imm=8
+  32:  NOT      a=1 b=1 c=2 imm=25
+  33:  OR       a=0 b=2 c=6 imm=4
+  34:  BLT      a=3 b=0 c=2 imm=-14  # -> 21
+  35:  STORE    a=6 b=4 c=7 imm=1
+  36:  RUNCTXI  a=2 b=0 c=0 imm=5
+  37:  CLRPROT  a=5 b=6 c=2 imm=4
+  38:  XOR      a=1 b=5 c=0 imm=27
+  39:  MOVI     a=5 b=7 c=6 imm=0
+  40:  XOR      a=4 b=5 c=5 imm=32
+  41:  RDTIME   a=2 b=0 c=3 imm=10
+  42:  RUNCTXI  a=1 b=5 c=7 imm=24
+  43:  BLT      a=5 b=2 c=7 imm=7  # -> 51
+  44:  JR       a=5 b=1 c=3 imm=24
+  45:  LOAD     a=6 b=1 c=3 imm=1
+  46:  RDTIME   a=5 b=4 c=2 imm=8
+  47:  RDFAULT  a=5 b=3 c=2 imm=14
+  48:  SHR      a=1 b=6 c=5 imm=55
+  49:  RUNCTX   a=3 b=6 c=3 imm=-6
+  50:  MOVI     a=5 b=7 c=6 imm=0
+  51:  XOR      a=4 b=5 c=5 imm=32
+  52:  RUNCTX   a=2 b=0 c=3 imm=10
+  53:  RUNCTXI  a=1 b=5 c=7 imm=24
+  54:  SHR      a=2 b=6 c=0 imm=11
+  55:  SHL      a=0 b=6 c=6 imm=512
+  56:  MUL      a=2 b=5 c=2 imm=10
+  57:  ADDPROT  a=4 b=1 c=5 imm=-3
+  58:  JAL      a=2 b=6 c=5 imm=-54  # -> 5
+  59:  CTXGET   a=6 b=3 c=1 imm=4
+  60:  AND      a=4 b=3 c=4 imm=29
+  61:  BGE      a=4 b=0 c=3 imm=60  # -> 122
+  62:  BNE      a=2 b=7 c=3 imm=88  # -> 151
+  63:  STORE    a=0 b=0 c=7 imm=26
+  64:  CTXGET   a=5 b=6 c=6 imm=0
+  65:  ADDPROT  a=6 b=7 c=7 imm=29
+  66:  NOT      a=1 b=1 c=2 imm=25
+  67:  BEQ      a=5 b=1 c=3 imm=-9  # -> 59
+  68:  BLT      a=5 b=2 c=7 imm=7  # -> 76
+  69:  XOR      a=1 b=5 c=0 imm=27
+  70:  LOAD     a=6 b=1 c=3 imm=1
+  71:  RDTIME   a=5 b=4 c=2 imm=8
+  72:  RDFAULT  a=5 b=3 c=2 imm=14
+  73:  SHR      a=1 b=6 c=5 imm=55
+  74:  RUNCTX   a=3 b=6 c=3 imm=-6
+  75:  MOVI     a=5 b=7 c=6 imm=0
+  76:  XOR      a=4 b=5 c=5 imm=32
+  77:  RUNCTX   a=2 b=0 c=3 imm=10
+  78:  RUNCTXI  a=1 b=5 c=7 imm=24
+  79:  BLT      a=4 b=2 c=0 imm=-31  # -> 49
+  80:  RUNCTXI  a=7 b=2 c=1 imm=10
+  81:  BLT      a=4 b=2 c=0 imm=-31  # -> 51
+  82:  SHR      a=2 b=6 c=0 imm=11
+  83:  SHL      a=0 b=6 c=6 imm=512
+  84:  MUL      a=2 b=5 c=2 imm=10
+  85:  LOAD     a=4 b=2 c=4 imm=384
+  86:  JAL      a=2 b=6 c=5 imm=512  # -> 599
+  87:  CTXGET   a=6 b=3 c=1 imm=4
+  88:  AND      a=4 b=3 c=4 imm=29
+  89:  BGE      a=4 b=0 c=3 imm=60  # -> 150
+  90:  BNE      a=2 b=7 c=3 imm=88  # -> 179
+  91:  STORE    a=0 b=0 c=7 imm=26
+  92:  CTXGET   a=5 b=6 c=6 imm=0
+  93:  ADDPROT  a=6 b=7 c=7 imm=29
+  94:  HALT     a=0 b=0 c=0 imm=0

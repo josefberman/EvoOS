@@ -1,0 +1,38 @@
+# bare_flat_shape_lenient_s99 4/4=False stall=None R=0.44
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 2, 3], [0, 2, 3]]; label=starving
+
+   0:  ADD      a=5 b=0 c=5 imm=384
+   1:  BLT      a=5 b=1 c=2 imm=30  # -> 32
+   2:  RDTIME   a=2 b=7 c=2 imm=22
+   3:  RUNCTXI  a=2 b=0 c=0 imm=18
+   4:  STORE    a=6 b=4 c=4 imm=32
+   5:  RDTIME   a=7 b=5 c=0 imm=-8
+   6:  BEQ      a=6 b=7 c=0 imm=98  # -> 105
+   7:  ADDI     a=2 b=7 c=0 imm=18
+   8:  LOAD     a=5 b=3 c=3 imm=20
+   9:  NOT      a=7 b=7 c=2 imm=16
+  10:  RUNCTX   a=5 b=2 c=7 imm=0
+  11:  JAL      a=7 b=3 c=4 imm=5  # -> 17
+  12:  SHR      a=5 b=0 c=3 imm=21
+  13:  JR       a=6 b=7 c=2 imm=26
+  14:  XOR      a=2 b=5 c=4 imm=64
+  15:  BEQ      a=2 b=7 c=4 imm=0  # -> 16
+  16:  RUNCTXI  a=4 b=2 c=6 imm=512
+  17:  NOP      a=6 b=5 c=0 imm=-2
+  18:  JMP      a=4 b=2 c=3 imm=3  # -> 22
+  19:  BLT      a=7 b=2 c=7 imm=64  # -> 84
+  20:  AND      a=5 b=6 c=7 imm=8
+  21:  MUL      a=7 b=0 c=0 imm=14
+  22:  AND      a=0 b=3 c=3 imm=39
+  23:  ADDI     a=7 b=1 c=1 imm=-3
+  24:  SUB      a=3 b=6 c=5 imm=-4
+  25:  RDFAULT  a=3 b=4 c=4 imm=28
+  26:  RUNCTXI  a=5 b=6 c=7 imm=22
+  27:  CMP      a=5 b=5 c=4 imm=-4
+  28:  LOAD     a=1 b=3 c=3 imm=5
+  29:  MOVI     a=2 b=2 c=1 imm=4
+  30:  RUNCTX   a=6 b=3 c=7 imm=32
+  31:  RUNCTXI  a=5 b=4 c=2 imm=1
+  32:  BNE      a=6 b=4 c=2 imm=-6  # -> 27
+  33:  MOVI     a=0 b=7 c=2 imm=56
+  34:  HALT     a=0 b=0 c=0 imm=0

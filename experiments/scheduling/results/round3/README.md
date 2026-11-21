@@ -1,0 +1,1 @@
+Round 3 tables: [`summary.md`](summary.md). CSVs: `condition_c.csv`, `condition_abc.csv`, `condition_b_grid.csv`, `curriculum_curves.csv`. Disassemblies: `examples/` (the 4/4 elite is `bare_flat_shape_lenient_s7.txt`).

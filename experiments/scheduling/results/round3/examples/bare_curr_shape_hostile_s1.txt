@@ -1,0 +1,48 @@
+# bare_curr_shape_hostile_s1 4/4=False stall=k1 R=0.52
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=other
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  RDTIME   a=3 b=2 c=6 imm=-4
+   2:  CLRPROT  a=3 b=1 c=7 imm=16
+   3:  MOV      a=6 b=0 c=7 imm=35
+   4:  BNE      a=1 b=5 c=0 imm=3  # -> 8
+   5:  MOV      a=0 b=6 c=3 imm=26
+   6:  ADDI     a=6 b=1 c=7 imm=-8
+   7:  ADDPROT  a=5 b=1 c=6 imm=10
+   8:  CTXGET   a=7 b=2 c=2 imm=32
+   9:  CMP      a=2 b=6 c=3 imm=16
+  10:  SUB      a=5 b=5 c=2 imm=19
+  11:  ADDPROT  a=3 b=7 c=7 imm=32
+  12:  RUNCTXI  a=3 b=7 c=4 imm=6
+  13:  RUNCTXI  a=5 b=1 c=7 imm=108
+  14:  ADDI     a=6 b=5 c=7 imm=2
+  15:  RUNCTXI  a=6 b=3 c=6 imm=384
+  16:  MOV      a=6 b=2 c=2 imm=11
+  17:  ADDI     a=6 b=1 c=7 imm=-8
+  18:  ADDPROT  a=5 b=1 c=6 imm=10
+  19:  MOV      a=1 b=2 c=4 imm=27
+  20:  OR       a=6 b=3 c=4 imm=384
+  21:  BLT      a=6 b=0 c=7 imm=16  # -> 38
+  22:  CMP      a=4 b=2 c=5 imm=8
+  23:  RUNCTXI  a=5 b=1 c=7 imm=108
+  24:  ADDI     a=6 b=5 c=7 imm=2
+  25:  RUNCTXI  a=6 b=3 c=6 imm=384
+  26:  BGE      a=6 b=2 c=2 imm=-27  # -> 0
+  27:  ADDI     a=6 b=1 c=7 imm=-8
+  28:  ADDPROT  a=5 b=1 c=6 imm=10
+  29:  CTXGET   a=7 b=2 c=2 imm=32
+  30:  CMP      a=2 b=6 c=3 imm=16
+  31:  SUB      a=5 b=0 c=2 imm=19
+  32:  ADDPROT  a=3 b=7 c=7 imm=32
+  33:  RUNCTXI  a=3 b=7 c=4 imm=6
+  34:  MOV      a=1 b=2 c=4 imm=27
+  35:  OR       a=6 b=3 c=4 imm=384
+  36:  BLT      a=6 b=0 c=7 imm=16  # -> 53
+  37:  CMP      a=6 b=2 c=5 imm=8
+  38:  RUNCTXI  a=5 b=1 c=7 imm=108
+  39:  ADDI     a=6 b=5 c=7 imm=2
+  40:  MOV      a=6 b=2 c=2 imm=11
+  41:  RUNCTXI  a=0 b=6 c=2 imm=384
+  42:  CTXGET   a=6 b=0 c=7 imm=3
+  43:  RUNCTX   a=6 b=7 c=5 imm=3
+  44:  CTXSET   a=5 b=7 c=0 imm=26

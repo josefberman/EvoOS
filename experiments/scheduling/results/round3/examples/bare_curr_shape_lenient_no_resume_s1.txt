@@ -1,0 +1,110 @@
+# bare_curr_shape_lenient_no_resume_s1 4/4=False stall=k1 R=0.72
+# diagnose: train completed [1, 1] held [1, 1]; near-zero-cycle guests (train idx) [[1, 2, 3], [1, 2, 3]]; label=round-robin-like
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  RDTIME   a=3 b=1 c=7 imm=16
+   2:  MOV      a=6 b=0 c=7 imm=35
+   3:  BNE      a=1 b=5 c=0 imm=3  # -> 7
+   4:  MOV      a=0 b=6 c=3 imm=26
+   5:  BLT      a=6 b=0 c=7 imm=16  # -> 22
+   6:  ADDPROT  a=5 b=1 c=6 imm=10
+   7:  CLRPROT  a=7 b=2 c=2 imm=32
+   8:  CMP      a=2 b=6 c=3 imm=16
+   9:  SUB      a=5 b=0 c=2 imm=19
+  10:  ADDPROT  a=3 b=7 c=7 imm=32
+  11:  RUNCTXI  a=3 b=7 c=4 imm=6
+  12:  CLRPROT  a=7 b=2 c=2 imm=32
+  13:  CMP      a=2 b=6 c=3 imm=16
+  14:  SUB      a=5 b=0 c=2 imm=19
+  15:  ADDPROT  a=3 b=7 c=7 imm=32
+  16:  MOV      a=2 b=5 c=4 imm=27
+  17:  OR       a=6 b=3 c=4 imm=384
+  18:  LOAD     a=2 b=6 c=3 imm=1
+  19:  ADDI     a=6 b=1 c=7 imm=-8
+  20:  CMP      a=6 b=2 c=5 imm=8
+  21:  NOP      a=5 b=1 c=7 imm=108
+  22:  XOR      a=1 b=5 c=2 imm=9
+  23:  BNE      a=6 b=5 c=7 imm=-3  # -> 21
+  24:  MOV      a=6 b=2 c=2 imm=11
+  25:  ADDPROT  a=3 b=7 c=7 imm=32
+  26:  CMP      a=2 b=6 c=3 imm=16
+  27:  OR       a=6 b=3 c=4 imm=384
+  28:  ADDPROT  a=5 b=1 c=6 imm=10
+  29:  CTXSET   a=5 b=0 c=2 imm=19
+  30:  OR       a=6 b=3 c=4 imm=384
+  31:  ADDPROT  a=5 b=1 c=6 imm=10
+  32:  CTXSET   a=5 b=0 c=2 imm=19
+  33:  ADDPROT  a=3 b=7 c=1 imm=32
+  34:  SHL      a=3 b=6 c=5 imm=1
+  35:  RUNCTXI  a=3 b=7 c=4 imm=6
+  36:  ADDPROT  a=3 b=7 c=1 imm=32
+  37:  CTXSET   a=5 b=0 c=2 imm=19
+  38:  ADDPROT  a=2 b=7 c=1 imm=28
+  39:  SHL      a=3 b=6 c=5 imm=1
+  40:  RUNCTXI  a=3 b=7 c=4 imm=6
+  41:  MOV      a=1 b=2 c=4 imm=27
+  42:  CLRPROT  a=7 b=2 c=2 imm=32
+  43:  BLT      a=6 b=0 c=7 imm=16  # -> 60
+  44:  CMP      a=6 b=2 c=5 imm=8
+  45:  RUNCTXI  a=5 b=1 c=7 imm=108
+  46:  CLRPROT  a=7 b=2 c=2 imm=32
+  47:  CMP      a=2 b=6 c=3 imm=16
+  48:  SUB      a=5 b=0 c=2 imm=19
+  49:  ADDPROT  a=3 b=7 c=1 imm=32
+  50:  BLT      a=3 b=6 c=5 imm=35  # -> 86
+  51:  RUNCTXI  a=3 b=7 c=4 imm=6
+  52:  ADDPROT  a=3 b=7 c=7 imm=32
+  53:  RUNCTXI  a=3 b=7 c=4 imm=6
+  54:  MOV      a=1 b=2 c=4 imm=27
+  55:  ADDPROT  a=5 b=1 c=6 imm=10
+  56:  CTXSET   a=5 b=0 c=2 imm=19
+  57:  ADDPROT  a=3 b=7 c=1 imm=32
+  58:  BLT      a=3 b=6 c=5 imm=35  # -> 94
+  59:  RUNCTXI  a=3 b=7 c=4 imm=6
+  60:  MOV      a=1 b=2 c=4 imm=27
+  61:  CLRPROT  a=7 b=2 c=2 imm=32
+  62:  BLT      a=6 b=0 c=7 imm=16  # -> 79
+  63:  CMP      a=6 b=2 c=5 imm=8
+  64:  RUNCTXI  a=5 b=1 c=7 imm=108
+  65:  CLRPROT  a=7 b=2 c=2 imm=32
+  66:  CMP      a=2 b=6 c=3 imm=16
+  67:  SUB      a=5 b=0 c=2 imm=19
+  68:  ADDPROT  a=3 b=7 c=7 imm=32
+  69:  RUNCTXI  a=3 b=7 c=4 imm=6
+  70:  MOV      a=1 b=2 c=4 imm=27
+  71:  OR       a=6 b=3 c=4 imm=384
+  72:  BLT      a=6 b=0 c=7 imm=16  # -> 89
+  73:  RUNCTXI  a=3 b=7 c=4 imm=6
+  74:  MOV      a=1 b=2 c=4 imm=27
+  75:  ADDPROT  a=5 b=1 c=6 imm=10
+  76:  ADDI     a=7 b=1 c=0 imm=26
+  77:  CTXSET   a=5 b=0 c=2 imm=19
+  78:  ADDPROT  a=5 b=1 c=6 imm=10
+  79:  CTXSET   a=5 b=0 c=2 imm=19
+  80:  ADDPROT  a=3 b=7 c=1 imm=32
+  81:  SUB      a=3 b=6 c=5 imm=35
+  82:  RUNCTXI  a=3 b=7 c=4 imm=6
+  83:  BGE      a=1 b=2 c=4 imm=-73  # -> 11
+  84:  CLRPROT  a=7 b=2 c=2 imm=32
+  85:  BLT      a=6 b=0 c=7 imm=16  # -> 102
+  86:  CMP      a=6 b=2 c=5 imm=8
+  87:  RUNCTXI  a=5 b=1 c=7 imm=108
+  88:  CLRPROT  a=7 b=2 c=2 imm=32
+  89:  CMP      a=2 b=6 c=3 imm=16
+  90:  SUB      a=5 b=0 c=2 imm=19
+  91:  ADDPROT  a=3 b=7 c=7 imm=32
+  92:  RUNCTXI  a=3 b=7 c=4 imm=6
+  93:  MOV      a=1 b=2 c=4 imm=27
+  94:  OR       a=6 b=3 c=4 imm=384
+  95:  BLT      a=6 b=0 c=7 imm=16  # -> 112
+  96:  CMP      a=6 b=2 c=5 imm=8
+  97:  RUNCTXI  a=5 b=1 c=7 imm=108
+  98:  BNE      a=6 b=2 c=7 imm=-3  # -> 96
+  99:  MOV      a=6 b=2 c=2 imm=11
+ 100:  ADDI     a=3 b=3 c=6 imm=-8
+ 101:  ADDI     a=5 b=7 c=4 imm=28
+ 102:  RUNCTXI  a=0 b=6 c=2 imm=384
+ 103:  CTXGET   a=6 b=0 c=7 imm=-1
+ 104:  RUNCTX   a=6 b=7 c=5 imm=3
+ 105:  CTXSET   a=5 b=7 c=0 imm=26
+ 106:  ADDI     a=5 b=7 c=4 imm=28

@@ -1,0 +1,17 @@
+# bare_curr_noshape_lenient_s99 4/4=False stall=k1 R=0.24000000000000002
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=starving
+
+   0:  SHR      a=4 b=4 c=5 imm=5
+   1:  MOVI     a=1 b=7 c=4 imm=-1
+   2:  CMP      a=4 b=7 c=2 imm=28
+   3:  BLT      a=2 b=2 c=5 imm=106  # -> 110
+   4:  ADD      a=2 b=2 c=6 imm=-3
+   5:  BLT      a=0 b=6 c=2 imm=-53  # -> -47
+   6:  SHR      a=7 b=0 c=6 imm=-4
+   7:  BNE      a=5 b=0 c=3 imm=9  # -> 17
+   8:  CMP      a=5 b=3 c=1 imm=5
+   9:  RUNCTX   a=1 b=0 c=5 imm=4
+  10:  RUNCTXI  a=5 b=7 c=3 imm=9
+  11:  NOT      a=7 b=7 c=4 imm=-5
+  12:  BNE      a=4 b=3 c=4 imm=-64  # -> -51
+  13:  HALT     a=0 b=0 c=0 imm=0

@@ -1,0 +1,72 @@
+# bare_curr_shape_lenient_s99 4/4=False stall=k1 R=0.52
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0], [0]]; label=round-robin-like
+
+   0:  SHR      a=4 b=4 c=5 imm=5
+   1:  MOVI     a=1 b=7 c=4 imm=-1
+   2:  CMP      a=4 b=7 c=2 imm=28
+   3:  BLT      a=2 b=2 c=5 imm=106  # -> 110
+   4:  ADD      a=2 b=2 c=6 imm=-3
+   5:  BLT      a=0 b=6 c=2 imm=-53  # -> -47
+   6:  SHR      a=7 b=0 c=6 imm=-4
+   7:  BNE      a=5 b=0 c=3 imm=9  # -> 17
+   8:  CMP      a=5 b=3 c=1 imm=5
+   9:  RUNCTX   a=1 b=0 c=5 imm=4
+  10:  RUNCTXI  a=5 b=7 c=3 imm=9
+  11:  NOT      a=7 b=7 c=4 imm=-5
+  12:  CTXGET   a=4 b=3 c=4 imm=-64
+  13:  MOVI     a=5 b=7 c=4 imm=4
+  14:  RUNCTX   a=7 b=3 c=1 imm=384
+  15:  ADDI     a=6 b=1 c=5 imm=19
+  16:  RUNCTX   a=1 b=0 c=5 imm=4
+  17:  RUNCTXI  a=5 b=7 c=3 imm=9
+  18:  NOT      a=7 b=7 c=4 imm=-5
+  19:  BNE      a=4 b=3 c=4 imm=-64  # -> -44
+  20:  RUNCTXI  a=5 b=7 c=4 imm=3
+  21:  RUNCTX   a=7 b=3 c=1 imm=384
+  22:  RUNCTXI  a=5 b=7 c=3 imm=9
+  23:  NOT      a=7 b=7 c=6 imm=-5
+  24:  BNE      a=4 b=3 c=4 imm=-64  # -> -39
+  25:  MOVI     a=5 b=7 c=4 imm=3
+  26:  RUNCTX   a=7 b=3 c=1 imm=384
+  27:  ADDI     a=6 b=1 c=5 imm=19
+  28:  RUNCTX   a=1 b=0 c=5 imm=4
+  29:  BNE      a=5 b=0 c=3 imm=9  # -> 39
+  30:  CMP      a=5 b=3 c=1 imm=5
+  31:  RUNCTX   a=1 b=0 c=5 imm=4
+  32:  RUNCTXI  a=5 b=7 c=3 imm=9
+  33:  NOT      a=7 b=7 c=4 imm=-5
+  34:  BNE      a=4 b=3 c=7 imm=-64  # -> -29
+  35:  MOVI     a=5 b=4 c=4 imm=3
+  36:  RUNCTX   a=7 b=3 c=1 imm=384
+  37:  ADDI     a=6 b=1 c=5 imm=19
+  38:  RUNCTX   a=1 b=0 c=5 imm=4
+  39:  RUNCTXI  a=5 b=7 c=4 imm=3
+  40:  BLT      a=5 b=7 c=3 imm=19  # -> 60
+  41:  RUNCTXI  a=5 b=7 c=3 imm=9
+  42:  NOT      a=7 b=7 c=4 imm=-5
+  43:  CTXGET   a=4 b=3 c=4 imm=-64
+  44:  MOVI     a=5 b=7 c=4 imm=4
+  45:  RUNCTX   a=7 b=3 c=1 imm=384
+  46:  ADDI     a=6 b=1 c=5 imm=19
+  47:  RUNCTX   a=1 b=0 c=5 imm=4
+  48:  RUNCTXI  a=5 b=7 c=3 imm=9
+  49:  NOT      a=7 b=7 c=4 imm=-5
+  50:  BNE      a=4 b=3 c=4 imm=-64  # -> -13
+  51:  RUNCTXI  a=5 b=7 c=4 imm=3
+  52:  RUNCTX   a=7 b=3 c=1 imm=384
+  53:  RUNCTXI  a=5 b=7 c=3 imm=9
+  54:  NOT      a=7 b=7 c=6 imm=-5
+  55:  BNE      a=4 b=3 c=4 imm=-64  # -> -8
+  56:  MOVI     a=5 b=7 c=4 imm=3
+  57:  RUNCTX   a=7 b=3 c=1 imm=384
+  58:  ADDI     a=6 b=1 c=5 imm=19
+  59:  RUNCTX   a=1 b=0 c=5 imm=4
+  60:  RUNCTXI  a=5 b=7 c=3 imm=9
+  61:  NOT      a=7 b=7 c=4 imm=-5
+  62:  BNE      a=4 b=3 c=4 imm=-64  # -> -1
+  63:  ADDI     a=5 b=7 c=4 imm=3
+  64:  RUNCTX   a=7 b=3 c=1 imm=384
+  65:  ADDI     a=6 b=1 c=5 imm=19
+  66:  BLT      a=2 b=6 c=3 imm=-7  # -> 60
+  67:  AND      a=7 b=3 c=2 imm=-8
+  68:  HALT     a=0 b=0 c=0 imm=0

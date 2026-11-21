@@ -1,0 +1,27 @@
+# bare_flat_shape_lenient_s42 4/4=False stall=None R=0.52
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 2], [0, 2]]; label=batched/priority-like
+
+   0:  CTXGET   a=3 b=2 c=1 imm=3
+   1:  ADDPROT  a=0 b=0 c=1 imm=19
+   2:  RUNCTX   a=4 b=1 c=4 imm=23
+   3:  JAL      a=4 b=7 c=1 imm=3  # -> 7
+   4:  LOAD     a=0 b=3 c=6 imm=30
+   5:  STORE    a=0 b=2 c=6 imm=9
+   6:  JAL      a=5 b=1 c=1 imm=5  # -> 12
+   7:  RUNCTXI  a=4 b=0 c=7 imm=14
+   8:  RUNCTX   a=0 b=3 c=4 imm=-4
+   9:  XOR      a=2 b=3 c=5 imm=5
+  10:  MUL      a=6 b=4 c=7 imm=-39
+  11:  RUNCTX   a=3 b=4 c=1 imm=14
+  12:  JR       a=5 b=3 c=1 imm=-45
+  13:  JMP      a=3 b=2 c=7 imm=32  # -> 46
+  14:  RUNCTXI  a=3 b=5 c=0 imm=32
+  15:  RUNCTX   a=3 b=0 c=6 imm=256
+  16:  STORE    a=6 b=4 c=1 imm=16
+  17:  LOAD     a=5 b=3 c=7 imm=81
+  18:  CTXGET   a=7 b=2 c=4 imm=100
+  19:  XOR      a=4 b=6 c=6 imm=27
+  20:  RUNCTX   a=7 b=1 c=0 imm=0
+  21:  OR       a=6 b=1 c=6 imm=2
+  22:  RUNCTXI  a=4 b=0 c=1 imm=16
+  23:  HALT     a=0 b=0 c=0 imm=0

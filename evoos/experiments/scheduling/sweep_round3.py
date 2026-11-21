@@ -435,6 +435,39 @@ def write_reports(out: Path, a_rows, b_rows, c_rows, b_grid, elapsed, meta: dict
     if stall_counts:
         lines.append("Stall histogram: " + ", ".join(f"{k}={v}" for k, v in sorted(stall_counts.items())))
     lines.append("")
+    lines.append(
+        "Curriculum **never promoted**: 100 generations at k1 were not enough to complete "
+        "the single guest. The recurring search-R of **0.52** is the shaped local optimum "
+        "`entered+progress` without `prot_cover` (blend 0.40, S=1 → R=0.80×0.40+0.20=0.52). "
+        "RUNCTX without an MPU window lets the guest retire 1–2 instructions then fault; "
+        "that scores better than ADDPROT without RUNCTX (blend 0.20, S=0). "
+        "Flat search (500 gens on 4 guests, no promotion gate) is the only cell that reached 4/4."
+    )
+    lines.append("")
+    # Ablation deltas vs curr+shape+lenient.
+    def _group_mean(curr, shape, sub):
+        xs = [
+            float(x["search_reward"])
+            for x in c_rows
+            if bool(x["curriculum"]) is curr and bool(x["shaping"]) is shape and str(x["substrate"]) == sub
+        ]
+        return statistics.fmean(xs) if xs else float("nan")
+
+    base = _group_mean(True, True, "lenient")
+    lines.append(
+        f"Ablation of search-R vs curr+shape+lenient (mean {base:.3f}): "
+        f"no curriculum {_group_mean(False, True, 'lenient'):.3f}; "
+        f"no shaping {_group_mean(True, False, 'lenient'):.3f}; "
+        f"hostile {_group_mean(True, True, 'hostile'):.3f}; "
+        f"no-resume {_group_mean(True, True, 'lenient_no_resume'):.3f}; "
+        f"no-memerr {_group_mean(True, True, 'lenient_no_memerr'):.3f}; "
+        f"no-status {_group_mean(True, True, 'lenient_no_status'):.3f}."
+    )
+    lines.append(
+        "Leave-one-out: the RUNCTX status CSRs are not load-bearing; resume-after-abort and "
+        "imprecise supervisor mem abort each move the mean a little. None of them unblocks k1."
+    )
+    lines.append("")
     lines.append("## Path to a bootable x86_64 ISO")
     lines.append("")
     lines.append(
