@@ -33,6 +33,39 @@ def run_to_completion() -> Candidate:
     return Candidate(instrs=assemble(src), origin="baseline_rtc", id=-1)
 
 
+def round_robin_live(quantum: int = 16) -> Candidate:
+    """Same policy as round_robin, but the outer loop never HALTs.
+
+    Idle rounds JMP back to `main` so newly installed (unhalted) guests are
+    noticed. That is still bytecode policy, not a firmware scheduler.
+    """
+    src = f"""
+        MOVI r1, 1
+    setup:
+        CTXGET r2, r1, DATA_BASE
+        CTXGET r3, r1, DATA_BOUND
+        ADDPROT r1, r2, r3
+        ADDI r1, r1, 1
+        CTXGET r7, r0, N_CONTEXTS
+        BLT r1, r7, setup
+
+    main:
+        MOVI r1, 1
+    round:
+        CTXGET r2, r1, HALTED
+        BNE r2, r0, skip
+        CTXGET r2, r1, FAULT
+        BNE r2, r0, skip
+        RUNCTXI r1, {int(quantum)}
+    skip:
+        ADDI r1, r1, 1
+        CTXGET r7, r0, N_CONTEXTS
+        BLT r1, r7, round
+        JMP main
+    """
+    return Candidate(instrs=assemble(src), origin=f"baseline_rr_live_q{quantum}", id=-5)
+
+
 def round_robin(quantum: int = 16) -> Candidate:
     """Grant each guest its data window, then rotate RUNCTXI quanta."""
     src = f"""
@@ -95,6 +128,7 @@ def unprotected_rtc() -> Candidate:
 ALL_BASELINES = {
     "run_to_completion": run_to_completion,
     "round_robin": round_robin,
+    "round_robin_live": round_robin_live,
     "selfish_first": selfish_first,
     "unprotected_rtc": unprotected_rtc,
 }

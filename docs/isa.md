@@ -124,10 +124,30 @@ Python: `evoos.vm.codec.dumps_image` / `loads_image`.
 
 ## STORE / IO window
 
-ISA STORE always writes data memory. Firmware may **echo** stores in
-`[io_base, io_bound)` (default words 1920..1984) to serial and VGA. Echo is
-not an opcode and does not change the word in memory. Guest slots stay
-256..768; the info block stays at words 0..31.
+ISA STORE always writes data memory. The default IO window is words
+`[1920, 1984)`. Guest slots stay 256..768; the info block stays at words 0..31.
+
+Firmware (not bytecode) posts low-level input events into the window so a
+supervisor *could* LOAD them. Offsets from `io_base`:
+
+| off | name | writer |
+| --- | --- | --- |
+| 0 | KEY_ASCII | firmware (PS/2 scancode set 1 or serial byte, lowercased) |
+| 1 | KEY_SEQ | firmware, monotonic counter |
+| 2 | KEY_SCAN | firmware, raw PS/2 make code (0 if the event was serial) |
+| 3 | SPAWNS | firmware, count of catalogue installs |
+| 4 | LAST_SLOT | firmware, last installed slot 0..3 |
+| 5 | LAST_FAULT | firmware, isolation/fault event count |
+
+These are memory words, not a Unix tty. Policy (which context RUNCTX runs,
+ADDPROT windows) stays in supervisor bytecode. Installing a catalogue guest
+is firmware because the machine is Harvard: bytecode cannot write another
+context's code list.
+
+Live images raise `max_steps` / `wall_steps` so firmware can slice forever.
+The one-shot HALT elite is unchanged (`--supervisor evolved`). The live ISO
+embeds a one-instruction edition (`--supervisor evolved_live`): instruction
+70 HALT is JMP back into the evolved RUNCTX loop. No new opcodes.
 
 ## Arithmetic
 

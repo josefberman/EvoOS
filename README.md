@@ -133,39 +133,49 @@ The evolved supervisor *is* the OS. A tiny host stub (C interpreter of the froze
 
 ## Booting EvoOS
 
-The OS is the evolved bytecode blob. Firmware in `native/` interprets the frozen 5-word ISA (`docs/isa.md`). It does not contain a scheduler, heap, or VFS.
+The OS is the evolved bytecode blob. Firmware in `native/` interprets the frozen 5-word ISA (`docs/isa.md`). It is not a kernel: it does device I/O (PS/2, serial, GOP framebuffer) and a Harvard loader for a built-in guest catalogue. Who runs, and which protection windows apply, stay in supervisor bytecode (`RUNCTX` / `ADDPROT`).
+
+The ISO is a **live** system. The supervisor is sliced forever; guests halt, get replaced from the catalogue, and isolation is demonstrated while it is running. There is no `[halt]` after the first workload.
 
 **Build the ISO** (needs `gcc`, `xorriso`, Python 3.11+):
 
 ```bash
 pip install -e ".[dev]"
-make iso                          # evolved gadgets elite (round 2 seed 42)
-make iso SUPERVISOR=rr            # hand-written round-robin fallback
+make iso                          # live edition of gadgets elite s42
+make iso LIVE_SUPERVISOR=rr_live  # never-HALT human round-robin
 ```
 
 Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t evoos . && docker run --rm evoos make iso test-qemu`.
 
-**QEMU (BIOS, serial captured — this is the CI check):**
+**Keys** (PS/2 scancode set 1, or a serial byte — not a Unix tty):
+
+| key | action |
+| --- | --- |
+| `1`–`4` | install next catalogue kind into that slot |
+| `s` `f` `x` `c` `m` | sum / fill / xor / copyinc / **malicious** into the next slot |
+| space | next kind into the next slot |
+| `i` | inspect contexts on serial |
+| `h` | help |
+| `q` | quit (isa-debug-exit; isolation_n==0 → QEMU status 1) |
+
+`m` installs a guest that stores into another slot. The evolved ADDPROT window should fault it (`fault=1`, `isolation_n=0`).
+
+**QEMU live test** (BIOS + UEFI, QMP `send-key`, screendump):
 
 ```bash
 make test-qemu
-# or:
-qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -display none \
-  -serial file:build/serial.log \
-  -device isa-debug-exit,iobase=0xf4,iosize=0x04 -no-reboot
 ```
 
-Success: serial contains `completed 4/4`, `isolation=ok`, `EvoOS done.` QEMU debug-exit 0 → process status 1.
+Success: serial contains `EvoOS live`, a `malicious` spawn, `inspect isolation_n=`, `EvoOS quit`. Screenshot: `artifacts/dashboard.png`.
 
-**QEMU UEFI** (OVMF):
+**QEMU interactive:**
 
 ```bash
-qemu-system-x86_64 -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
-  -drive if=pflash,format=raw,file=/tmp/OVMF_VARS.fd \
-  -cdrom artifacts/evoos.iso -m 128M -serial stdio -display none
+qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -serial mon:stdio \
+  -device isa-debug-exit,iobase=0xf4,iosize=0x04
 ```
 
-Copy `OVMF_VARS_4M.fd` to a writable `/tmp/OVMF_VARS.fd` first.
+**Live supervisor.** The round-2 elite HALTs at instruction 70 (fine for one-shot eval). The live ISO embeds `evolved_gadgets_s42_live`: that HALT is JMP back into the evolved RUNCTX loop. Same opcodes, same bytes 0..69. Open-arrival eval (`evoos/evaluator/open_arrival.py`) injects guests after t=0 without new opcodes; RR-live (`JMP main`) is the human never-HALT baseline. `--supervisor evolved` still packs the original HALT blob for differential tests.
 
 **VirtualBox**
 
@@ -174,18 +184,20 @@ Copy `OVMF_VARS_4M.fd` to a writable `/tmp/OVMF_VARS.fd` first.
 3. Storage: add the ISO as an optical drive (IDE or SATA). Do not attach a virtual HDD; this firmware does not install.
 4. System → Boot order: **Optical** first. Uncheck Floppy.
 5. For BIOS: System → uncheck Enable EFI. For UEFI: check Enable EFI (the ISO is a hybrid Limine image).
-6. Ports → Serial Ports → Port 1: enable, port mode **Raw file**, path `evoos-serial.log` if you want the same log as QEMU.
-7. Display: 16 MB VRAM, VMSVGA or VBoxVGA. Limine hands the firmware a framebuffer (not BIOS text at 0xB8000 — that MMIO is unmapped). You should see block-letter **EVOOS**, four guest status squares, and the serial log as glyphs.
-8. Start. Guests should all complete; isolation OK.
+6. Ports → Serial Ports → Port 1: enable, port mode **Raw file**, path `evoos-serial.log`.
+7. Display: 16 MB VRAM, VMSVGA or VBoxVGA. Limine hands the firmware a framebuffer (not BIOS text at 0xB8000). You should see **EVOOS LIVE**, the elite name, four context rows, and a RUNCTX heatmap.
+8. Start. Type `m` to inject a malicious guest; the FAULT row should go red and isolation stay 0. Type `q` does nothing useful in VirtualBox (no isa-debug-exit); reset the VM to stop.
 
-**Differential tests** (Python VM vs hosted C interpreter, same image):
+Headless attempt on this Cloud Agent VM: `VBoxManage` 7.0.16 installed from Ubuntu noble, the VM registered, `startvm --type headless` failed with `NS_ERROR_FAILURE`. Cause: `/dev/vboxdrv` does not exist (`modprobe vboxdrv`: module not found under `/lib/modules/6.12.113+`). Matching `linux-headers-6.12.113+` are not in the archive (dkms built headers for 6.8.0-151 instead). **VirtualBox did not boot here.** QEMU BIOS and OVMF UEFI did.
+
+**Differential tests** (Python VM vs hosted C interpreter, one-shot image, max_steps=8000):
 
 ```bash
 make test-diff
-pytest tests/test_codec.py tests/test_differential.py
+pytest tests/test_codec.py tests/test_differential.py tests/test_open_arrival.py
 ```
 
-**Select supervisor at pack time:** `--supervisor evolved` embeds `experiments/scheduling/results/examples/correctness_gadgets_s42_round-robin-like.txt`. `--supervisor rr` embeds the human round-robin baseline (`q=16`). STORE to words `[1920,1984)` is echoed to serial/VGA; the word still lands in memory (ISA unchanged).
+**Select supervisor at pack time:** `--supervisor evolved` / `evolved_live` / `rr` / `rr_live`. `--live` raises max_steps so firmware can slice indefinitely.
 
 ## Layout
 
@@ -194,11 +206,12 @@ evoos/vm/           instruction_set, codec (frozen 5-word encoding), machine, sa
 evoos/evaluator/    workloads, correctness, reward, novelty
 evoos/agent/        mutations (packs), policy, MAP-Elites, search
 evoos/experiments/scheduling/  baselines, Condition B, sweep, results/
-evoos/boot/         pack EVS0 images, Python vs C traces
+evoos/boot/         pack EVS0 images, catalogue, Python vs C traces
+evoos/evaluator/    workloads, correctness, open_arrival, reward, novelty
 evoos/placeholders/ stages 2–4 stubs
-native/             freestanding C interpreter, Limine firmware, ISO recipe
-docs/isa.md         frozen binary ISA
-artifacts/evoos.iso bootable hybrid BIOS+UEFI image
+native/             freestanding C interpreter, Limine firmware, live ISO recipe
+docs/isa.md         frozen binary ISA + live IO window
+artifacts/          evoos.iso, dashboard.png, serial-bios.log
 train.py
 ```
 
@@ -206,10 +219,11 @@ train.py
 
 | Stage | Question | Status |
 | --- | --- | --- |
-| 1 | Discover multiplexing + isolation for four competing guests | this milestone |
+| 1 | Discover multiplexing + isolation for four competing guests | done (search) |
+| boot-1 | Frozen ISA + C interpreter + one-shot Limine ISO | `native/`, `docs/isa.md` |
+| boot-2 | Live ISO: open arrivals, PS/2+serial events, framebuffer dashboard | this milestone |
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
 | 3 | Persistence / a block device, not a VFS opcode | `evoos/placeholders/persistence.py` |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |
-| 5 | Bootable x86_64 ISO in QEMU then VirtualBox (BIOS, then UEFI); stub interprets evolved bytecode | `native/` (Limine ISO, C interpreter); placeholder `evoos/placeholders/qemu_boot.py` |
 
-Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral). Boot track: ISO + differential harness in this tree.
+Next: break the k1 `entered`-without-`prot_cover` local optimum (shaping weights or a cover-before-progress gate that is still behavioral).

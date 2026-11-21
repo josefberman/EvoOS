@@ -3,6 +3,7 @@
 ROOT := $(abspath ..)
 PYTHON ?= python3
 SUPERVISOR ?= evolved
+LIVE_SUPERVISOR ?= evolved_live
 WORKLOAD ?= train_small
 BUILD := $(ROOT)/build
 LIMINE := third_party/limine
@@ -18,14 +19,14 @@ KERN_CFLAGS ?= -g -O2 -pipe -Wall -Wextra -std=gnu11 -ffreestanding \
 KERN_LDFLAGS ?= -nostdlib -static -no-pie -Wl,-melf_x86_64 -Wl,-z,max-page-size=0x1000 \
 	-Wl,-z,noexecstack -T linker.ld -Wl,--build-id=none
 
-.PHONY: all host iso kernel images test-diff test-qemu clean limine-tool
+.PHONY: all host iso kernel images test-diff test-qemu test-live clean limine-tool catalogue
 
 all: host iso
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
-images: $(BUILD)/boot.img $(BUILD)/boot_rr.img $(BUILD)/supervisor.bin
+images: $(BUILD)/boot.img $(BUILD)/boot_rr.img $(BUILD)/boot_live.img $(BUILD)/supervisor.bin
 
 $(BUILD)/boot.img: | $(BUILD)
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.pack --supervisor $(SUPERVISOR) \
@@ -36,17 +37,26 @@ $(BUILD)/boot_rr.img: | $(BUILD)
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.pack --supervisor rr \
 		--workload $(WORKLOAD) -o $(BUILD)/boot_rr.img
 
+$(BUILD)/boot_live.img: | $(BUILD)
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.pack --supervisor $(LIVE_SUPERVISOR) \
+		--workload $(WORKLOAD) --live -o $(BUILD)/boot_live.img
+
 $(BUILD)/supervisor.bin: $(BUILD)/boot.img
+
+catalogue: guest_catalogue.h
+
+guest_catalogue.h: ../evoos/boot/catalogue.py ../evoos/evaluator/workloads.py
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.catalogue -o native/guest_catalogue.h
 
 host: $(BUILD)/evoos_host
 
 $(BUILD)/evoos_host: evoos_vm.c evoos_host.c evoos_vm.h | $(BUILD)
 	$(HOST_CC) $(HOST_CFLAGS) -o $@ evoos_vm.c evoos_host.c
 
-boot.img: $(BUILD)/boot.img
-	cp $(BUILD)/boot.img boot.img
+boot.img: $(BUILD)/boot_live.img
+	cp $(BUILD)/boot_live.img boot.img
 
-$(BUILD)/kernel.elf: evoos_boot.c evoos_vm.c evoos_image.S evoos_vm.h linker.ld limine.h boot.img | $(BUILD)
+$(BUILD)/kernel.elf: evoos_boot.c evoos_vm.c evoos_image.S evoos_vm.h linker.ld limine.h boot.img guest_catalogue.h | $(BUILD)
 	$(CC) $(KERN_CFLAGS) -I. -c evoos_boot.c -o $(BUILD)/evoos_boot.o
 	$(CC) $(KERN_CFLAGS) -I. -c evoos_vm.c -o $(BUILD)/evoos_vm_boot.o
 	$(CC) $(KERN_CFLAGS) -c evoos_image.S -o $(BUILD)/evoos_image.o
@@ -96,32 +106,24 @@ QEMU_COMMON = -cdrom $(BUILD)/evoos.iso -m 128M -display none \
 OVMF_CODE ?= /usr/share/OVMF/OVMF_CODE_4M.fd
 OVMF_VARS ?= /usr/share/OVMF/OVMF_VARS_4M.fd
 
-test-qemu: iso
-	rm -f $(BUILD)/serial.log
-	set +e; timeout 20 $(QEMU) $(QEMU_COMMON); st=$$?; \
-	  echo "qemu-bios-exit=$$st"; \
-	  if [ ! -f $(BUILD)/serial.log ]; then echo "missing serial.log"; exit 1; fi; \
-	  cat $(BUILD)/serial.log; \
-	  grep -q "EvoOS done." $(BUILD)/serial.log || exit 1; \
-	  grep -q "completed 4/4" $(BUILD)/serial.log || exit 1; \
-	  grep -q "isolation=ok" $(BUILD)/serial.log || exit 1; \
-	  test $$st -eq 1
-	@echo "BIOS QEMU boot OK"
+test-qemu: test-live
+
+test-live: iso
+	mkdir -p $(ROOT)/artifacts
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_live_test.py \
+		--iso $(BUILD)/evoos.iso \
+		--serial $(BUILD)/serial.log \
+		--screenshot $(ROOT)/artifacts/dashboard.png
+	cp $(BUILD)/serial.log $(ROOT)/artifacts/serial-bios.log
+	@echo "BIOS QEMU live test OK"
 	@if [ -f "$(OVMF_CODE)" ]; then \
-	  rm -f $(BUILD)/serial-uefi.log $(BUILD)/ovmf_vars.fd; \
-	  cp "$(OVMF_VARS)" $(BUILD)/ovmf_vars.fd; \
-	  set +e; timeout 25 $(QEMU) -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
-	    -drive if=pflash,format=raw,file=$(BUILD)/ovmf_vars.fd \
-	    -cdrom $(BUILD)/evoos.iso -m 128M -display none \
-	    -serial file:$(BUILD)/serial-uefi.log \
-	    -device isa-debug-exit,iobase=0xf4,iosize=0x04 \
-	    -no-reboot -cpu qemu64; st=$$?; \
-	    echo "qemu-uefi-exit=$$st"; \
-	    if [ -f $(BUILD)/serial-uefi.log ]; then cat $(BUILD)/serial-uefi.log; fi; \
-	    grep -q "EvoOS done." $(BUILD)/serial-uefi.log && \
-	    grep -q "completed 4/4" $(BUILD)/serial-uefi.log && \
-	    grep -q "isolation=ok" $(BUILD)/serial-uefi.log && \
-	    test $$st -eq 1 && echo "UEFI QEMU boot OK" || echo "UEFI QEMU boot skipped/failed (st=$$st)"; \
+	  cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_live_test.py \
+		--iso $(BUILD)/evoos.iso \
+		--serial $(BUILD)/serial-uefi.log \
+		--screenshot $(ROOT)/artifacts/dashboard-uefi.png \
+		--uefi --ovmf-code $(OVMF_CODE) --ovmf-vars $(OVMF_VARS) \
+		&& cp $(BUILD)/serial-uefi.log $(ROOT)/artifacts/serial-uefi.log \
+		&& echo "UEFI QEMU live test OK" || echo "UEFI QEMU live test failed"; \
 	else echo "OVMF not found; UEFI test skipped"; fi
 
 clean:

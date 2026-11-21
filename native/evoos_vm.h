@@ -26,6 +26,14 @@
 #define EVOOS_PERM_W 2
 #define EVOOS_PERM_RW 3
 
+/* Firmware IO window offsets from io_base (default 1920). Not opcodes. */
+#define EVOOS_IO_KEY_ASCII 0
+#define EVOOS_IO_KEY_SEQ 1
+#define EVOOS_IO_KEY_SCAN 2
+#define EVOOS_IO_SPAWNS 3
+#define EVOOS_IO_LAST_SLOT 4
+#define EVOOS_IO_LAST_FAULT 5
+
 enum {
     EVOOS_HALT = 0,
     EVOOS_NOP = 1,
@@ -164,6 +172,11 @@ extern evoos_runctx_hook_fn evoos_runctx_hook;
 
 int evoos_load_image(EvoOSMachine *m, const uint8_t *data, size_t len);
 void evoos_run(EvoOSMachine *m, int32_t max_steps);
+void evoos_run_slice(EvoOSMachine *m, int32_t n_ops);
+void evoos_reenter_supervisor(EvoOSMachine *m);
+int evoos_install_guest(EvoOSMachine *m, int cid, const EvoOSInstr *code, int n_code,
+                        int32_t base, int32_t bound, const int32_t *init_addr,
+                        const int32_t *init_val, int n_init, const char *name);
 void evoos_dump_trace(const EvoOSMachine *m, evoos_emit_fn emit);
 uint32_t evoos_mem_fingerprint(const EvoOSMachine *m);
 

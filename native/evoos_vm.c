@@ -435,6 +435,87 @@ void evoos_run(EvoOSMachine *m, int32_t max_steps) {
     }
 }
 
+void evoos_run_slice(EvoOSMachine *m, int32_t n_ops) {
+    int32_t end;
+    if (n_ops <= 0) {
+        return;
+    }
+    end = m->cycles + n_ops;
+    if (end < m->cycles) {
+        end = 0x7fffffff;
+    }
+    while (!m->halted && m->cycles < end) {
+        EvoOSContext *sup = &m->contexts[0];
+        if (sup->halted || sup->fault) {
+            m->halted = 1;
+            break;
+        }
+        execute(m, 0);
+    }
+}
+
+void evoos_reenter_supervisor(EvoOSMachine *m) {
+    EvoOSContext *s = &m->contexts[0];
+    s->halted = 0;
+    s->fault = 0;
+    s->pc = 0;
+    m->halted = 0;
+    m->supervisor_fault = 0;
+}
+
+int evoos_install_guest(EvoOSMachine *m, int cid, const EvoOSInstr *code, int n_code,
+                        int32_t base, int32_t bound, const int32_t *init_addr,
+                        const int32_t *init_val, int n_init, const char *name) {
+    EvoOSContext *ctx;
+    int32_t a, i;
+    if (cid <= 0 || cid >= m->n_contexts || n_code <= 0 || n_code > EVOOS_MAX_CODE) {
+        return -1;
+    }
+    ctx = &m->contexts[cid];
+    ctx->n_code = n_code;
+    for (i = 0; i < n_code; i++) {
+        ctx->code[i] = code[i];
+    }
+    ctx->pc = 0;
+    ctx->halted = 0;
+    ctx->fault = 0;
+    ctx->cycles = 0;
+    ctx->halt_cycle = -1;
+    ctx->data_base = base;
+    ctx->data_bound = bound;
+    for (i = 0; i < EVOOS_N_REGS; i++) {
+        ctx->regs[i] = 0;
+    }
+    ctx->regs[1] = base;
+    ctx->regs[2] = bound;
+    m->legal_lo[cid] = base;
+    m->legal_hi[cid] = bound;
+    m->legal_set[cid] = 1;
+    if (base >= 0 && bound <= m->mem_words && bound > base) {
+        for (a = base; a < bound; a++) {
+            m->mem[a] = 0;
+            m->last_writer[a] = 255;
+        }
+    }
+    for (i = 0; i < n_init; i++) {
+        a = init_addr[i];
+        if (a >= 0 && a < m->mem_words) {
+            m->mem[a] = init_val[i];
+            m->last_writer[a] = 0;
+        }
+    }
+    if (name && cid >= 1) {
+        for (i = 0; i < 31; i++) {
+            m->guest_name[cid - 1][i] = name[i];
+            if (name[i] == 0) {
+                break;
+            }
+        }
+        m->guest_name[cid - 1][31] = 0;
+    }
+    return 0;
+}
+
 static void copy_cstr32(char *dst, const uint8_t *src) {
     int i;
     for (i = 0; i < 31; i++) {
