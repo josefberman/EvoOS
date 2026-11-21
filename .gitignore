@@ -21,6 +21,7 @@ htmlcov/
 native/boot.img
 native/*.o
 native/guest_catalogue.h
+native/supervisor_aot.c
 *.ppm
 artifacts/*.ppm
 artifacts/ovmf_vars_live.fd

@@ -4,8 +4,17 @@ The research VM in `evoos/vm/` is the specification. This document freezes the
 **on-disk encoding**. Semantics are unchanged: the same five integer fields
 the Python `Instr` tuple already used.
 
-The OS is a supervisor program in this ISA. C/Rust firmware only interprets
-these words.
+The OS is a supervisor program in this ISA. On the search VM a C/Python
+interpreter executes these words. On the bootable ISO the same words are
+**AOT-compiled to native x86_64** and run in ring 0; firmware is only boot
+plus a trap trampoline.
+
+## Version
+
+Encoding version **1** (five `i32` words, opcodes 0–31) is unchanged.
+**ISA profile 2** (this document's hardware section) grounds privileged
+ops in real x86-64. Search still mutates version-1 programs; the AOT
+compiler and HITL evaluator consume the same blob.
 
 ## Instruction
 
@@ -153,3 +162,37 @@ embeds a one-instruction edition (`--supervisor evolved_live`): instruction
 
 All ALU results wrap to 32-bit two's complement (Python `wrap32`). SHR is
 logical. CMP/BLT/BGE are signed.
+
+## Hardware profile (ISA v2)
+
+Privileged ops on the ISO are not interpreted. They are trampoline calls
+from AOT-compiled supervisor code:
+
+| op | Hardware |
+| --- | --- |
+| ADDPROT / CLRPROT | Per-context page tables. Each guest slot is a 4 KiB user page. ADDPROT `[lo,hi)` maps any slot whose word window overlaps that range (U+RW, NX). CLRPROT unmaps those data pages. Code and stack pages stay mapped. Region cap is still 4 (extra ADDPROT is a no-op, not `PROT_FULL` halt). |
+| RUNCTX / RUNCTXI | `iretq` into ring 3 with that context's CR3. PIT channel 0 mode-0 is armed for `N * 80` counts (~1–17 ms). Return to the supervisor on IRQ0 (preempt), `int $0x80` (halt), `#PF`, or `#GP`. |
+| CTXGET / CTXSET | Saved host register state (RIP/RSP/RFLAGS + GPRs) plus HALTED/FAULT/DATA_*/N_CONTEXTS. `PC` is the low 32 bits of RIP; guests live at `0x400000` so CTXSET PC is not useful. |
+
+**Guests are real x86-64 user code**, not ISA bytecode. They signal completion
+with `int $0x80`. Isolation is a `#PF` on an unmapped user page, never a
+store check in C.
+
+### Divergences from the Python VM (documented, search still matches on outcomes)
+
+1. **Quantum.** Python `RUNCTX N` counts ISA guest instructions. Hardware `N`
+   is a PIT one-shot. HITL agreement is completed/isolation, not switch
+   counts or cycle counts.
+2. **Guest language.** Python guests are ISA programs with the same
+   algorithms (sum/fill/xor/copyinc). Hardware guests are `.S` user
+   programs with RDI = data window. The supervisor bytecode is identical.
+3. **PROT_FULL.** Python latches supervisor fault. Hardware drops extra
+   regions so a live elite cannot kill itself with redundant ADDPROT.
+4. **Invalid RUNCTX id.** Python may CTX-fault the supervisor. Hardware
+   returns 0 (nop), matching `docs/isa.md` opcode table.
+5. **Sticky #PF.** Further RUNCTX of a faulted guest is a nop until CTXSET
+   FAULT=0 (hostile substrate).
+
+Still simulated / not claimed as hardware: the PIT quantum vs retirement
+count, QEMU as the machine, firmware-drawn dashboard, serial as a debug
+console, no disk, no SMP, `int $0x80` as the only "syscall".

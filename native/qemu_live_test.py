@@ -183,11 +183,13 @@ def main() -> int:
     try:
         q = QMP(qmp_path, timeout=20.0 if args.uefi else 12.0)
         wait_serial(serial, "EvoOS live", 20.0)
+        wait_serial(serial, "preempt vector=32", 12.0)
+        wait_serial(serial, "halted", 12.0)
         time.sleep(0.4)
         q.sendkey("h")
         wait_serial(serial, "keys:", 8.0)
         q.sendkey("m")
-        wait_serial(serial, "malicious", 8.0)
+        wait_serial(serial, "#PF", 8.0)
         q.sendkey("s")
         wait_serial(serial, "loader:", 8.0)
         q.sendkey("i")
@@ -218,6 +220,12 @@ def main() -> int:
     text = serial.read_text(errors="replace") if serial.exists() else ""
     print(text)
     if "EvoOS live" not in text:
+        return 1
+    if "#PF" not in text:
+        print("missing #PF", file=sys.stderr)
+        return 1
+    if "preempt vector=32" not in text:
+        print("missing timer preempt", file=sys.stderr)
         return 1
     if "malicious" not in text:
         return 1
