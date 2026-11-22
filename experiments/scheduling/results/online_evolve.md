@@ -7,20 +7,35 @@ Default ISO is a self-evolving build seeded with **s99**. The evolution engine i
 - Live supervisor is **interpreted bytecode** calling the same ring-0 trampolines (`RUNCTX`/`ADDPROT`/`BLK*`) as AOT. Guest contexts are real x86 + MMU; they survive a supervisor swap (PC/regs of the supervisor reset; `hw.ctx[]` does not).
 - Mutations match the Python gadgets pack: `modify_imm` / `modify_operand` / insert/delete / crossover / MMU and RUNCTX gadgets.
 - Shadow eval is the **C interpreter** (`evoos_vm.c`) on a private `EvoOSMachine`. It never calls live `evoos_hw_runctx`. A broken candidate cannot touch live page tables.
-- Reward is the same shape (F/S/E, isolation hard 0). PUT traces add a persist bonus if the payload is on the shadow disk. Route SVC 3 adds a smaller bonus if dest window holds 77.
-- Hot-swap when a candidate beats the incumbent by 0.03 and passes safety (no isolation, supervisor not halted early, every shadow guest progressed). Rollback if live `isolation_n` rises after a swap.
-- Archive is **firmware ATA LBAs 64+** (full 512-byte sectors), not the 32-block guest device. Reboot reloads incumbent, generation, lineage ids.
+- Reward is graded (F/S/E + no-halt + switch events + deliveries + fairness). Isolation / supervisor fault is still hard 0. Never-halt pressure/spin guests score on progress, not HALT.
+- Parent selection is lexicase over four cases: open-arrival, pressure, route+PUT, live-train traces. Swap gate is held-out recent live traces + margin, plus safety on the regression suite.
+- MAP-Elites 4×4 (switch bins × fitness band) is persisted with the incumbent (archive version 2).
+- Rollback if live `isolation_n` rises, live fitness drops, or the supervisor HALTs after a swap. Key `d` injects a HALT degrader for the QEMU session.
+- Archive is **firmware ATA LBAs 64+** (full 512-byte sectors), not the 32-block guest device. Reboot reloads incumbent, generation, lineage ids, and occupied map cells.
 
 ## What is simulated / honest limits
 
 - Shadow guests are EvoOS **bytecode** catalogue entries, not the native x86 images. Traces record spawn kind + SVC; replay is a model of the live mix, not cycle-accurate.
 - There is no runtime gcc. “AOT or interpreter” on device is the interpreter. Seed AOT `supervisor_main` remains in the ISO for persist_storage_main only.
-- Population is 6. One mutant (plus incumbent + persist_rr challenger) per tick. Not a datacenter search.
+- MAP-Elites is 4×4 cells. Two mutants per tick plus seeded challengers, lexicase parents. Not a datacenter search.
 - persist_rr is a **seeded challenger**, not discovered. If the user’s mix includes PUT, it can beat s99 on the persist bonus — that is a real swap of scheduling+storage policy, still human-shaped.
 - Round 7/8 C-hw research guests were not in this tree; pressure (window store storm) and route (SVC 3) are the on-ISO stand-ins.
 
 ## Tests
 
-`make test-qemu` boots BIOS+UEFI with a disk, runs the existing #PF/preempt session, then PUT + route + pressure, waits 8 generations, screenshots, quits, reboots, and checks `archive loaded gen=`. Isolation must stay 0. Swap is required only if something beats s99; otherwise the log says so.
+`make test-qemu` boots BIOS+UEFI with a disk, runs #PF/preempt, PUT + route (so held-out traces have deliveries), waits for a real hot-swap, then pressure, injects a HALT degrader (`d`) to force rollback, screenshots, quits, reboots, and checks `archive loaded gen=`. Isolation must stay 0.
 
-Session (BIOS, 8 gens): `isolation_n=0` throughout, `#PF` on malicious, IRQ0 preempt, `put=123`. Shadow scored the incumbent 0 on the pressure-heavy replay (never-halt guests fail the “all shadow guests progress/complete” safety gate as written), so **no hot-swap** — serial `evo noswap gen=8`. Reboot: `archive loaded gen=8 inc=1`. UEFI matched. Persist HITL (`make test-persist`) uses a fresh disk so the live-test archive cannot replace the persist elite.
+Graded fitness + mixed traces are what make the incumbent’s score non-zero; persist_rr can beat s99 on PUT held-out by the persist bonus. That is a real swap of seeded policy, not a scripted inject. The degrader is test-only.
+
+Round 7 C-hw fifo-swap / place-first binaries are **not in this tree**. `c_hw_fifo_swap_like` and `c_hw_place_first` are ISA-identical stand-ins (FIFO walk; new-arrivals-first).
+
+### Session numbers (BIOS)
+
+| event | gen | dfit | dheld | n | via |
+| --- | --- | --- | --- | --- | --- |
+| s99 → persist_rr | 1 | +166 | +273 | 62→50 | challenger |
+| persist_rr → mutant | 23 | +46 | +32 | 50→17 | modify_operand |
+| live-fitness rollback | 25 | — | — | → persist_rr | pressure starved later slots |
+| degrader HALT + rollback | 25 | — | — | 50→1→50 | test-degrade |
+
+`isolation_n=0` throughout. Inspect after swaps still shows guest contexts (spin/pressure running). Reboot: `archive loaded gen=40 inc=2` persist_rr, `map=6`, lineage `1,2,48,55`. UEFI matched (challenger + `insert_runctx_gadget` mutant, same two rollbacks). Serial: `artifacts/serial-bios.log`. Screendump: `artifacts/dashboard.png`.

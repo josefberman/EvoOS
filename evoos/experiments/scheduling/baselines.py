@@ -111,6 +111,61 @@ def selfish_first() -> Candidate:
     return Candidate(instrs=assemble(src), origin="baseline_selfish", id=-3)
 
 
+def fifo_swap_like(quantum: int = 16) -> Candidate:
+    """Round-7 C-hw stand-in: FIFO walk, swap to the next runnable guest.
+
+    The C-hw pack (fifo-swap / place-first elites) is not in this tree.
+    This is the same ISA organization: scan context ids, skip halted/faulted,
+    RUNCTXI a quantum, never HALT.
+    """
+    cand = round_robin_live(quantum)
+    return Candidate(instrs=cand.instrs, origin="c_hw_fifo_swap_like", id=-7)
+
+
+def place_first(quantum: int = 24) -> Candidate:
+    """Round-7 C-hw stand-in: new arrivals (cycles==0) run before the rest."""
+    src = f"""
+        MOVI r1, 1
+    setup:
+        CTXGET r2, r1, DATA_BASE
+        CTXGET r3, r1, DATA_BOUND
+        ADDPROT r1, r2, r3
+        ADDI r1, r1, 1
+        CTXGET r7, r0, N_CONTEXTS
+        BLT r1, r7, setup
+
+    main:
+        MOVI r1, 1
+    find_new:
+        CTXGET r2, r1, HALTED
+        BNE r2, r0, skip_new
+        CTXGET r2, r1, FAULT
+        BNE r2, r0, skip_new
+        CTXGET r2, r1, CYCLES
+        BNE r2, r0, skip_new
+        RUNCTXI r1, {int(quantum)}
+        JMP main
+    skip_new:
+        ADDI r1, r1, 1
+        CTXGET r7, r0, N_CONTEXTS
+        BLT r1, r7, find_new
+
+        MOVI r1, 1
+    rr:
+        CTXGET r2, r1, HALTED
+        BNE r2, r0, skip_rr
+        CTXGET r2, r1, FAULT
+        BNE r2, r0, skip_rr
+        RUNCTXI r1, {int(quantum)}
+    skip_rr:
+        ADDI r1, r1, 1
+        CTXGET r7, r0, N_CONTEXTS
+        BLT r1, r7, rr
+        JMP main
+    """
+    return Candidate(instrs=assemble(src), origin="c_hw_place_first", id=-8)
+
+
 def persist_rr(quantum: int = 32) -> Candidate:
     """Human Condition A: round-robin plus a slot table on the block device.
 
@@ -206,4 +261,6 @@ ALL_BASELINES = {
     "selfish_first": selfish_first,
     "unprotected_rtc": unprotected_rtc,
     "persist_rr": persist_rr,
+    "fifo_swap_like": fifo_swap_like,
+    "place_first": place_first,
 }

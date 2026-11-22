@@ -26,6 +26,12 @@ typedef struct {
     int32_t id;
     int32_t parent;
     int32_t fit;
+    int32_t held;
+    int32_t cases[META_N_CASES];
+    int32_t cell_x;
+    int32_t cell_y;
+    int32_t switches;
+    int32_t safe;
     char origin[24];
 } MetaCand;
 
@@ -36,6 +42,7 @@ typedef struct {
 } MetaTrace;
 
 static MetaCand pop[META_POP];
+static MetaCand map_el[META_MAP_X * META_MAP_Y];
 static MetaCand incumbent;
 static MetaCand rollback;
 static MetaTrace traces[META_TRACE];
@@ -54,7 +61,9 @@ static uint32_t live_r[8];
 static int32_t live_fit;
 static int32_t last_shadow;
 static int32_t iso_at_swap;
+static int32_t live_fit_at_swap;
 static int32_t swapped_live;
+static int32_t map_n;
 static int32_t lineage[8];
 static int32_t lineage_n;
 static EvoOSMachine shadow;
@@ -397,76 +406,89 @@ static int install_kind(EvoOSMachine *m, int slot, int32_t kid) {
                                p->init_addr, p->init_val, p->n_init, p->name);
 }
 
-static int32_t shadow_eval(const MetaCand *c, int *safe) {
-    int i, spawned = 0, progressed = 0, completed = 0, n_g = 0;
-    int32_t fit, f, s, e;
-    int32_t useful = 0;
-    int has_put = 0, persist_ok = 0;
-    int has_route = 0, route_ok = 0;
-    *safe = 0;
-    evoos_reset_machine(&shadow, 5, 1024, 2500);
-    evoos_install_supervisor(&shadow, c->code, c->n);
-    {
-        int replay = n_trace < 8 ? n_trace : 8;
-    for (i = 0; i < replay; i++) {
-        int idx = (tr_i - replay + i + META_TRACE) % META_TRACE;
-        MetaTrace t = traces[idx];
-        if (t.kind == 1) {
-            if (install_kind(&shadow, t.slot, t.aux) == 0) {
-                spawned++;
-                if (t.aux == META_KIND_PUT) {
-                    has_put = 1;
-                }
-                if (t.aux == META_KIND_ROUTE) {
-                    has_route = 1;
-                }
-            }
-        } else if (t.kind == 2) {
-            shadow.last_svc = t.aux;
-            shadow.last_svc_ctx = t.slot + 1;
-        }
-        evoos_run_slice(&shadow, 280);
-        if (shadow.isolation_n > 0) {
-            return 0;
-        }
+static int is_infinite_kind(int32_t kid) {
+    return kid == META_KIND_PRESS || kid == META_KIND_SPIN;
+}
+
+static int32_t guest_kind_from_name(const char *name) {
+    if (!name || !name[0]) {
+        return -1;
     }
+    if (name[0] == 'p' && name[1] == 'r') {
+        return META_KIND_PRESS;
     }
-    evoos_run_slice(&shadow, 600);
-    if (shadow.isolation_n > 0) {
+    if (name[0] == 's' && name[1] == 'p') {
+        return META_KIND_SPIN;
+    }
+    return -1;
+}
+
+static int32_t clamp1000(int32_t v) {
+    if (v < 0) {
+        return 0;
+    }
+    if (v > 1000) {
+        return 1000;
+    }
+    return v;
+}
+
+/* Graded F/S/E + no-halt + deliveries. Isolation/corruption is hard 0. */
+static int32_t score_machine(int want_put, int want_route, int *safe_out, int32_t *sw_out) {
+    int i, n_g = 0, progressed = 0, completed = 0, finite = 0, finite_done = 0;
+    int32_t fsum = 0, useful = 0, cyc_sum = 0, f, s, e, nh, sw, del, fit, fair;
+    int persist_ok = 0, route_ok = 0;
+    int32_t shares[EVOOS_MAX_CTX];
+    *safe_out = 0;
+    if (sw_out) {
+        *sw_out = shadow.switch_count;
+    }
+    if (shadow.isolation_n > 0 || shadow.supervisor_fault) {
         return 0;
     }
     for (i = 1; i < shadow.n_contexts; i++) {
         EvoOSContext *g = &shadow.contexts[i];
+        int inf, gf;
         if (g->n_code <= 0) {
             continue;
         }
         n_g++;
+        inf = is_infinite_kind(guest_kind_from_name(shadow.guest_name[i - 1]));
         if (g->cycles > 0 || g->fault || g->halted) {
             progressed++;
         }
         if (g->halted) {
             completed++;
-            useful += g->cycles;
         }
+        useful += g->cycles;
+        cyc_sum += g->cycles;
+        shares[n_g - 1] = g->cycles;
+        if (!inf) {
+            finite++;
+            if (g->halted) {
+                finite_done++;
+                gf = 1000;
+            } else {
+                gf = clamp1000((g->cycles * 1000) / 8);
+            }
+        } else {
+            gf = g->cycles > 0 ? 1000 : 0;
+        }
+        fsum += gf;
     }
     if (n_g == 0) {
         n_g = 1;
+        fsum = 0;
     }
-    if (shadow.contexts[0].halted && completed < n_g) {
-        return 0;
-    }
-    if (progressed < n_g) {
-        return 0;
-    }
-    *safe = 1;
-    f = (800 * completed + 200 * progressed) / n_g;
+    f = fsum / n_g;
     s = 1000;
-    e = shadow.cycles > 0 ? (1000 * useful) / shadow.cycles : 0;
-    if (e > 1000) {
-        e = 1000;
+    e = shadow.cycles > 0 ? clamp1000((1000 * useful) / shadow.cycles) : 0;
+    nh = 1000;
+    if (shadow.contexts[0].halted && finite_done < finite) {
+        nh = 0;
     }
-    fit = (45 * f + 20 * s + 15 * e) / 80;
-    if (has_put) {
+    sw = n_g > 0 ? clamp1000((shadow.switch_count * 1000) / n_g) : 0;
+    if (want_put) {
         int b;
         for (b = 0; b < EVOOS_N_BLOCKS; b++) {
             if (shadow.disk[b][0] == 123) {
@@ -474,28 +496,205 @@ static int32_t shadow_eval(const MetaCand *c, int *safe) {
                 break;
             }
         }
-        if (persist_ok) {
-            fit += 250;
-        }
     }
-    if (has_route) {
+    if (want_route) {
         int cid;
         for (cid = 1; cid < shadow.n_contexts; cid++) {
             int32_t base = shadow.contexts[cid].data_base;
-            if (base >= 0 && base + 2 < shadow.mem_words && shadow.mem[base + 2] == 77 &&
-                cid != 1) {
+            if (base >= 0 && base + 2 < shadow.mem_words && shadow.mem[base + 2] == 77) {
                 route_ok = 1;
             }
         }
-        if (route_ok) {
-            fit += 80;
+    }
+    del = 0;
+    if (want_put) {
+        del += persist_ok ? 1000 : 0;
+    }
+    if (want_route) {
+        del += route_ok ? 1000 : 0;
+    }
+    if (want_put && want_route) {
+        del /= 2;
+    }
+    fair = 1000;
+    if (n_g > 1 && cyc_sum > 0) {
+        int32_t mean = cyc_sum / n_g;
+        int32_t var = 0;
+        for (i = 0; i < n_g; i++) {
+            int32_t d = shares[i] - mean;
+            var += d < 0 ? -d : d;
+        }
+        fair = clamp1000(1000 - (var * 200) / (cyc_sum + 1));
+    }
+    fit = (40 * f + 15 * s + 10 * e + 15 * nh + 10 * sw + 5 * del + 5 * fair) / 100;
+    if (want_put && persist_ok) {
+        fit += 80;
+    }
+    if (want_route && route_ok) {
+        fit += 40;
+    }
+    fit = clamp1000(fit);
+    if (progressed > 0 && nh == 1000) {
+        *safe_out = 1;
+    }
+    return fit;
+}
+
+static void replay_range(int start, int n, int *want_put, int *want_route) {
+    int i;
+    for (i = 0; i < n; i++) {
+        int idx = (start + i + META_TRACE) % META_TRACE;
+        MetaTrace t = traces[idx];
+        if (t.kind == 1) {
+            if (install_kind(&shadow, t.slot, t.aux) == 0) {
+                if (t.aux == META_KIND_PUT) {
+                    *want_put = 1;
+                }
+                if (t.aux == META_KIND_ROUTE) {
+                    *want_route = 1;
+                }
+            }
+        } else if (t.kind == 2) {
+            shadow.last_svc = t.aux;
+            shadow.last_svc_ctx = t.slot + 1;
+        }
+        evoos_run_slice(&shadow, 120);
+        if (shadow.isolation_n > 0) {
+            return;
         }
     }
-    if (fit > 1000) {
-        fit = 1000;
+}
+
+static int32_t eval_open(const MetaCand *c, int *safe) {
+    evoos_reset_machine(&shadow, 5, 1024, 1800);
+    evoos_install_supervisor(&shadow, c->code, c->n);
+    install_kind(&shadow, 0, META_KIND_SUM);
+    install_kind(&shadow, 1, META_KIND_FILL);
+    evoos_run_slice(&shadow, 160);
+    if (shadow.isolation_n > 0) {
+        *safe = 0;
+        return 0;
     }
-    (void)spawned;
-    return fit;
+    install_kind(&shadow, 2, META_KIND_XOR);
+    install_kind(&shadow, 3, META_KIND_SUM);
+    evoos_run_slice(&shadow, 220);
+    return score_machine(0, 0, safe, 0);
+}
+
+static int32_t eval_pressure(const MetaCand *c, int *safe, int32_t *sw) {
+    evoos_reset_machine(&shadow, 5, 1024, 1800);
+    evoos_install_supervisor(&shadow, c->code, c->n);
+    install_kind(&shadow, 0, META_KIND_PRESS);
+    install_kind(&shadow, 1, META_KIND_PRESS);
+    install_kind(&shadow, 2, META_KIND_PRESS);
+    install_kind(&shadow, 3, META_KIND_SPIN);
+    evoos_run_slice(&shadow, 280);
+    return score_machine(0, 0, safe, sw);
+}
+
+static int32_t eval_route(const MetaCand *c, int *safe) {
+    evoos_reset_machine(&shadow, 5, 1024, 1800);
+    evoos_install_supervisor(&shadow, c->code, c->n);
+    install_kind(&shadow, 0, META_KIND_PUT);
+    install_kind(&shadow, 1, META_KIND_ROUTE);
+    evoos_run_slice(&shadow, 200);
+    return score_machine(1, 1, safe, 0);
+}
+
+static int32_t eval_live_window(const MetaCand *c, int start, int n, int *safe, int32_t *sw) {
+    int want_put = 0, want_route = 0;
+    evoos_reset_machine(&shadow, 5, 1024, 1800);
+    evoos_install_supervisor(&shadow, c->code, c->n);
+    if (n <= 0) {
+        *safe = 1;
+        return 0;
+    }
+    replay_range(start, n, &want_put, &want_route);
+    evoos_run_slice(&shadow, 160);
+    return score_machine(want_put, want_route, safe, sw);
+}
+
+static void live_split(int *train_start, int *train_n, int *held_start, int *held_n) {
+    int held = n_trace < META_HELD ? n_trace : META_HELD;
+    int train = n_trace - held;
+    if (train < 0) {
+        train = 0;
+    }
+    *held_n = held;
+    *train_n = train;
+    *held_start = (tr_i - held + META_TRACE) % META_TRACE;
+    *train_start = (tr_i - n_trace + META_TRACE) % META_TRACE;
+}
+
+static void eval_all(MetaCand *c) {
+    int s0 = 0, s1 = 0, s2 = 0, s3 = 0, sh = 0;
+    int ts, tn, hs, hn;
+    int32_t sw = 0;
+    int32_t held;
+    live_split(&ts, &tn, &hs, &hn);
+    c->cases[0] = eval_open(c, &s0);
+    c->cases[1] = eval_pressure(c, &s1, &sw);
+    c->cases[2] = eval_route(c, &s2);
+    c->cases[3] = eval_live_window(c, ts, tn, &s3, 0);
+    held = hn > 0 ? eval_live_window(c, hs, hn, &sh, &sw) : c->cases[3];
+    c->held = held;
+    c->fit = (c->cases[0] + c->cases[1] + c->cases[2] + c->cases[3] + held) / 5;
+    c->switches = sw;
+    c->safe = s0 && s1 && s2 && (tn == 0 || s3) && (hn == 0 || sh);
+    c->cell_x = c->switches / 4;
+    if (c->cell_x >= META_MAP_X) {
+        c->cell_x = META_MAP_X - 1;
+    }
+    c->cell_y = c->fit / 250;
+    if (c->cell_y >= META_MAP_Y) {
+        c->cell_y = META_MAP_Y - 1;
+    }
+    evals++;
+}
+
+static void map_add(const MetaCand *c) {
+    int idx;
+    if (!c->safe || c->n <= 0) {
+        return;
+    }
+    idx = c->cell_y * META_MAP_X + c->cell_x;
+    if (map_el[idx].n <= 0 || c->fit > map_el[idx].fit) {
+        if (map_el[idx].n <= 0) {
+            map_n++;
+        }
+        map_el[idx] = *c;
+    }
+}
+
+static MetaCand *lexicase_parent(void) {
+    int i, alive[META_MAP_X * META_MAP_Y];
+    int n_alive = 0, k, cs;
+    for (i = 0; i < META_MAP_X * META_MAP_Y; i++) {
+        if (map_el[i].n > 0) {
+            alive[n_alive++] = i;
+        }
+    }
+    if (n_alive == 0) {
+        return &incumbent;
+    }
+    for (k = 0; k < META_N_CASES && n_alive > 1; k++) {
+        int32_t best = -1;
+        int keep = 0;
+        cs = (int)(rnd() % (uint32_t)META_N_CASES);
+        for (i = 0; i < n_alive; i++) {
+            int32_t v = map_el[alive[i]].cases[cs];
+            if (v > best) {
+                best = v;
+            }
+        }
+        for (i = 0; i < n_alive; i++) {
+            if (map_el[alive[i]].cases[cs] >= best) {
+                alive[keep++] = alive[i];
+            }
+        }
+        n_alive = keep;
+    }
+    return &map_el[alive[rndn(n_alive)]];
 }
 
 /* ---- ATA archive (firmware LBAs 64+, not guest BLK* namespace) ---- */
@@ -592,7 +791,7 @@ static void archive_save(void) {
     }
     mset(sec, 0, 512);
     wr32(sec + 0, 0x4C4F5645u); /* EVOL */
-    wr32(sec + 4, 1);
+    wr32(sec + 4, 2);
     wr32(sec + 8, (uint32_t)generation);
     wr32(sec + 12, (uint32_t)incumbent.id);
     wr32(sec + 16, (uint32_t)incumbent.parent);
@@ -602,14 +801,30 @@ static void archive_save(void) {
     wr32(sec + 32, (uint32_t)evals);
     wr32(sec + 36, (uint32_t)next_id);
     wr32(sec + 40, (uint32_t)lineage_n);
+    wr32(sec + 76, (uint32_t)map_n);
+    wr32(sec + 80, (uint32_t)incumbent.held);
     for (i = 0; i < 8; i++) {
         wr32(sec + 44 + i * 4, (uint32_t)lineage[i]);
+    }
+    {
+        uint32_t mask = 0;
+        for (i = 0; i < META_MAP_X * META_MAP_Y; i++) {
+            if (map_el[i].n > 0) {
+                mask |= (1u << i);
+            }
+        }
+        wr32(sec + 84, mask);
     }
     if (evoos_hw_ata_lba(META_LBA0, sec, 1) != 0) {
         return;
     }
     save_code(META_LBA0 + 1, &incumbent);
     save_code(META_LBA0 + 7, &rollback);
+    for (i = 0; i < META_MAP_X * META_MAP_Y; i++) {
+        if (map_el[i].n > 0) {
+            save_code(META_LBA_MAP + i * 6, &map_el[i]);
+        }
+    }
 }
 
 static int archive_load(void) {
@@ -622,33 +837,50 @@ static int archive_load(void) {
     if (evoos_hw_ata_lba(META_LBA0, sec, 0) != 0) {
         return 0;
     }
-    if (rd32(sec + 0) != 0x4C4F5645u || rd32(sec + 4) != 1) {
-        return 0;
+    {
+        uint32_t ver = rd32(sec + 4);
+        if (rd32(sec + 0) != 0x4C4F5645u || (ver != 1 && ver != 2)) {
+            return 0;
+        }
+        if (load_code(META_LBA0 + 1, &incumbent) != 0 || incumbent.n <= 0) {
+            return 0;
+        }
+        load_code(META_LBA0 + 7, &rollback);
+        generation = (int32_t)rd32(sec + 8);
+        swaps = (int32_t)rd32(sec + 24);
+        rollbacks = (int32_t)rd32(sec + 28);
+        evals = (int32_t)rd32(sec + 32);
+        next_id = (int32_t)rd32(sec + 36);
+        if (next_id < 5) {
+            next_id = 5;
+        }
+        lineage_n = (int32_t)rd32(sec + 40);
+        if (lineage_n > 8) {
+            lineage_n = 8;
+        }
+        for (i = 0; i < 8; i++) {
+            lineage[i] = (int32_t)rd32(sec + 44 + i * 4);
+        }
+        incumbent.held = (int32_t)rd32(sec + 80);
+        if (ver >= 2) {
+            uint32_t mask = rd32(sec + 84);
+            map_n = 0;
+            for (i = 0; i < META_MAP_X * META_MAP_Y; i++) {
+                if (mask & (1u << i)) {
+                    if (load_code(META_LBA_MAP + i * 6, &map_el[i]) == 0 && map_el[i].n > 0) {
+                        map_n++;
+                    } else {
+                        mset(&map_el[i], 0, sizeof(map_el[i]));
+                    }
+                }
+            }
+        }
+        pop[0] = incumbent;
+        resumed = 1;
+        live_pc = 0;
+        mset(live_r, 0, sizeof(live_r));
+        return 1;
     }
-    if (load_code(META_LBA0 + 1, &incumbent) != 0 || incumbent.n <= 0) {
-        return 0;
-    }
-    load_code(META_LBA0 + 7, &rollback);
-    generation = (int32_t)rd32(sec + 8);
-    swaps = (int32_t)rd32(sec + 24);
-    rollbacks = (int32_t)rd32(sec + 28);
-    evals = (int32_t)rd32(sec + 32);
-    next_id = (int32_t)rd32(sec + 36);
-    if (next_id < 3) {
-        next_id = 3;
-    }
-    lineage_n = (int32_t)rd32(sec + 40);
-    if (lineage_n > 8) {
-        lineage_n = 8;
-    }
-    for (i = 0; i < 8; i++) {
-        lineage[i] = (int32_t)rd32(sec + 44 + i * 4);
-    }
-    pop[0] = incumbent;
-    resumed = 1;
-    live_pc = 0;
-    mset(live_r, 0, sizeof(live_r));
-    return 1;
 }
 
 static void lineage_push(int32_t id) {
@@ -663,7 +895,45 @@ static void lineage_push(int32_t id) {
     }
 }
 
+static void log_swap_diff(const MetaCand *old, const MetaCand *nw) {
+    int i, n, diffs = 0;
+    log_s("swapdelta dfit=");
+    log_i(nw->fit - old->fit);
+    log_s(" dheld=");
+    log_i(nw->held - old->held);
+    log_s(" n=");
+    log_i(old->n);
+    log_s("->");
+    log_i(nw->n);
+    log_s("\n");
+    n = old->n < nw->n ? old->n : nw->n;
+    for (i = 0; i < n && diffs < 6; i++) {
+        if (old->code[i].op != nw->code[i].op || old->code[i].imm != nw->code[i].imm) {
+            log_s("swapdiff pc=");
+            log_i(i);
+            log_s(" op ");
+            log_i(old->code[i].op);
+            log_s("->");
+            log_i(nw->code[i].op);
+            log_s(" imm ");
+            log_i(old->code[i].imm);
+            log_s("->");
+            log_i(nw->code[i].imm);
+            log_s("\n");
+            diffs++;
+        }
+    }
+    if (old->n != nw->n) {
+        log_s("swapdiff len ");
+        log_i(old->n);
+        log_s("->");
+        log_i(nw->n);
+        log_s("\n");
+    }
+}
+
 static void do_swap(const MetaCand *c, const char *why) {
+    log_swap_diff(&incumbent, c);
     rollback = incumbent;
     incumbent = *c;
     live_pc = 0;
@@ -671,6 +941,7 @@ static void do_swap(const MetaCand *c, const char *why) {
     swaps++;
     swapped_live = 1;
     iso_at_swap = hw.isolation_n;
+    live_fit_at_swap = live_fit;
     last_shadow = c->fit;
     lineage_push(c->id);
     pop[0] = incumbent;
@@ -680,6 +951,8 @@ static void do_swap(const MetaCand *c, const char *why) {
     log_i(c->parent);
     log_s(" fit=");
     log_i(c->fit);
+    log_s(" held=");
+    log_i(c->held);
     log_s(" via=");
     log_s(c->origin);
     log_s(" ");
@@ -915,7 +1188,7 @@ void evoos_meta_record_svc(int32_t code, int32_t ctx) {
 
 void evoos_meta_on_live_metrics(int32_t isolation_n) {
     int i, progressed = 0, n_g = 0;
-    if (isolation_n > 0 && swapped_live) {
+    if (isolation_n > iso_at_swap && swapped_live) {
         do_rollback("live isolation");
         return;
     }
@@ -934,98 +1207,131 @@ void evoos_meta_on_live_metrics(int32_t isolation_n) {
             live_fit = 0;
         }
     }
+    if (swapped_live && live_fit_at_swap > 0 && live_fit + 250 < live_fit_at_swap) {
+        do_rollback("live fitness");
+    }
+}
+
+void evoos_meta_on_supervisor_halt(void) {
+    if (swapped_live) {
+        do_rollback("supervisor halt");
+    }
+}
+
+void evoos_meta_inject_degrader(void) {
+    static const EvoOSInstr halt_only[1] = {{0, 0, 0, 0, 0}};
+    MetaCand bad;
+    cand_from(&bad, halt_only, 1, next_id++, incumbent.id, "degrader_halt");
+    bad.fit = 0;
+    bad.held = 0;
+    bad.safe = 0;
+    log_s("degrade inject\n");
+    do_swap(&bad, "test-degrade");
+}
+
+static int try_swap(MetaCand *c, const char *why) {
+    if (!c->safe || c->id == incumbent.id) {
+        return 0;
+    }
+    if (c->held >= incumbent.held + META_MARGIN_MILLI) {
+        do_swap(c, why);
+        return 1;
+    }
+    return 0;
 }
 
 void evoos_meta_tick(void) {
     MetaCand child;
-    const MetaCand *parent;
-    const MetaCand *other;
-    int safe = 0;
-    int32_t fit;
+    MetaCand *parent;
+    MetaCand *other;
+    int k;
     if (!evo_on) {
         return;
     }
     tick_div++;
-    if ((tick_div & 15) != 0) {
-        return;
-    }
-    if (n_trace < 3) {
+    if ((tick_div & 3) != 0) {
         return;
     }
     generation++;
-    {
-        int inc_safe = 0;
-        incumbent.fit = shadow_eval(&incumbent, &inc_safe);
-        if (!inc_safe) {
-            incumbent.fit = 0;
-        }
-        pop[0].fit = incumbent.fit;
-        {
-            int psafe = 0;
-            int32_t pf = shadow_eval(&pop[1], &psafe);
-            if (psafe) {
-                pop[1].fit = pf;
-            }
-            if (psafe && inc_safe && incumbent.fit > 0 && pf >= incumbent.fit + 200 &&
-                pop[1].id != incumbent.id) {
-                do_swap(&pop[1], "challenger");
+    eval_all(&incumbent);
+    last_shadow = incumbent.fit;
+    map_add(&incumbent);
+    for (k = 0; k < 4; k++) {
+        if (pop[k].n > 0 && pop[k].id != incumbent.id) {
+            eval_all(&pop[k]);
+            map_add(&pop[k]);
+            if (try_swap(&pop[k], k == 1 ? "challenger" : "seed")) {
                 log_s("evo gen=");
                 log_i(generation);
                 log_s(" evals=");
                 log_i(evals);
-                log_s(" challenger fit=");
-                log_i(pf);
+                log_s(" map=");
+                log_i(map_n);
+                log_s(" inc=");
+                log_i(incumbent.fit);
+                log_s(" held=");
+                log_i(incumbent.held);
                 log_s("\n");
-                evals++;
                 return;
             }
         }
     }
-    parent = &pop[rndn(META_POP)];
-    if (parent->n <= 0) {
-        parent = &incumbent;
-    }
-    other = &pop[rndn(META_POP)];
-    mutate(&child, parent, other->n ? other : &incumbent);
-    fit = shadow_eval(&child, &safe);
-    child.fit = fit;
-    evals++;
-    last_shadow = fit;
-    if (safe && fit > pop[META_POP - 1].fit) {
-        pop[META_POP - 1] = child;
-        {
-            int i;
-            for (i = META_POP - 1; i > 1; i--) {
-                if (pop[i].fit > pop[i - 1].fit) {
-                    MetaCand t = pop[i];
-                    pop[i] = pop[i - 1];
-                    pop[i - 1] = t;
-                }
-            }
+    parent = lexicase_parent();
+    other = lexicase_parent();
+    for (k = 0; k < 2; k++) {
+        mutate(&child, parent, other);
+        eval_all(&child);
+        map_add(&child);
+        last_shadow = child.fit;
+        if (try_swap(&child, "shadow")) {
+            log_s("evo gen=");
+            log_i(generation);
+            log_s(" evals=");
+            log_i(evals);
+            log_s(" cand=");
+            log_i(child.id);
+            log_s(" fit=");
+            log_i(child.fit);
+            log_s(" held=");
+            log_i(child.held);
+            log_s(" inc=");
+            log_i(incumbent.held);
+            log_s(" origin=");
+            log_s(child.origin);
+            log_s("\n");
+            return;
         }
+        parent = other;
+        other = lexicase_parent();
     }
-    if (safe && incumbent.fit > 0 && fit >= incumbent.fit + META_MARGIN_MILLI) {
-        do_swap(&child, "shadow");
-    }
-    if ((generation % 8) == 0) {
+    if ((generation % 4) == 0) {
         log_s("evo gen=");
         log_i(generation);
         log_s(" evals=");
         log_i(evals);
+        log_s(" map=");
+        log_i(map_n);
         log_s(" cand=");
         log_i(child.id);
         log_s(" fit=");
-        log_i(fit);
+        log_i(child.fit);
         log_s(" inc=");
         log_i(incumbent.fit);
+        log_s(" held=");
+        log_i(incumbent.held);
+        log_s(" ih=");
+        log_i(incumbent.held);
+        log_s(" cases=");
+        log_i(incumbent.cases[0]);
+        log_s(",");
+        log_i(incumbent.cases[1]);
+        log_s(",");
+        log_i(incumbent.cases[2]);
+        log_s(",");
+        log_i(incumbent.cases[3]);
         log_s(" origin=");
         log_s(child.origin);
         log_s("\n");
-        if (!(safe && fit >= incumbent.fit + META_MARGIN_MILLI)) {
-            log_s("evo noswap gen=");
-            log_i(generation);
-            log_s("\n");
-        }
         archive_save();
     }
 }
@@ -1081,13 +1387,18 @@ void evoos_meta_init(void) {
     int i;
     rng_s = 0xA341316Cu;
     (void)seed_s99_code;
+    mset(map_el, 0, sizeof(map_el));
+    map_n = 0;
     cand_from(&incumbent, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&rollback, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&pop[0], seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&pop[1], seed_persist_rr_code, SEED_PERSIST_RR_N, 2, 0, seed_persist_rr_origin);
-    for (i = 2; i < META_POP; i++) {
+    cand_from(&pop[2], seed_fifo_swap_code, SEED_FIFO_SWAP_N, 3, 0, seed_fifo_swap_origin);
+    cand_from(&pop[3], seed_place_first_code, SEED_PLACE_FIRST_N, 4, 0, seed_place_first_origin);
+    for (i = 4; i < META_POP; i++) {
         mutate(&pop[i], &incumbent, &pop[1]);
     }
+    next_id = 5;
     lineage_n = 0;
     lineage_push(1);
     live_pc = 0;
@@ -1099,9 +1410,11 @@ void evoos_meta_init(void) {
         log_i(incumbent.id);
         log_s(" lineage resume origin=");
         log_s(incumbent.origin);
+        log_s(" map=");
+        log_i(map_n);
         log_s("\n");
     } else {
-        log_s("archive empty; seed s99 id=1 challenger persist_rr id=2\n");
+        log_s("archive empty; seed s99 fifo place_first persist_rr\n");
         archive_save();
     }
     log_s("meta online evo=");

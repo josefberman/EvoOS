@@ -125,7 +125,7 @@ test-live: iso $(BUILD)/persist.img
 		--iso $(BUILD)/evoos.iso \
 		--serial $(BUILD)/serial.log \
 		--screenshot $(ROOT)/artifacts/dashboard.png \
-		--disk $(BUILD)/persist.img --evolve-gens 8
+		--disk $(BUILD)/persist.img --evolve-gens 24
 	cp $(BUILD)/serial.log $(ROOT)/artifacts/serial-bios.log
 	@echo "BIOS QEMU live test OK"
 	@if [ -f "$(OVMF_CODE)" ]; then \
@@ -135,7 +135,7 @@ test-live: iso $(BUILD)/persist.img
 		--serial $(BUILD)/serial-uefi.log \
 		--screenshot $(ROOT)/artifacts/dashboard-uefi.png \
 		--uefi --ovmf-code $(OVMF_CODE) --ovmf-vars $(OVMF_VARS) \
-		--disk $(BUILD)/persist-uefi.img --evolve-gens 8 \
+		--disk $(BUILD)/persist-uefi.img --evolve-gens 24 \
 		&& cp $(BUILD)/serial-uefi.log $(ROOT)/artifacts/serial-uefi.log \
 		&& echo "UEFI QEMU live test OK" || echo "UEFI QEMU live test failed"; \
 	else echo "OVMF not found; UEFI test skipped"; fi

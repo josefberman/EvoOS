@@ -9,11 +9,16 @@
 
 #include <stdint.h>
 
-#define META_POP 6
+#define META_POP 8
 #define META_MAX_CODE 128
 #define META_TRACE 48
 #define META_MARGIN_MILLI 30
 #define META_LBA0 64
+#define META_MAP_X 4
+#define META_MAP_Y 4
+#define META_N_CASES 4
+#define META_HELD 6
+#define META_LBA_MAP 80
 
 typedef struct {
     int32_t generation;
@@ -42,6 +47,8 @@ void evoos_meta_record_spawn(int slot, const char *kind);
 void evoos_meta_record_svc(int32_t code, int32_t ctx);
 void evoos_meta_on_live_metrics(int32_t isolation_n);
 void evoos_meta_show_lineage(void);
+void evoos_meta_inject_degrader(void);
+void evoos_meta_on_supervisor_halt(void);
 EvoOSMetaStats evoos_meta_stats(void);
 int evoos_meta_using_interp(void);
 

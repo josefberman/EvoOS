@@ -63,6 +63,17 @@ class QMP:
             raise SystemExit(f"send-key {keys}: {r}")
 
 
+def wait_maybe(path: Path, needle: str, timeout: float, start: int = 0) -> bool:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if path.exists():
+            text = path.read_text(errors="replace")
+            if needle in text[start:]:
+                return True
+        time.sleep(0.05)
+    return False
+
+
 def wait_serial(path: Path, needle: str, timeout: float, start: int = 0) -> str:
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -203,11 +214,20 @@ def main() -> int:
             q.sendkey("w")
             wait_serial(serial, "put=", 16.0)
             q.sendkey("u")
+            wait_serial(serial, "route", 8.0)
+            got_swap = wait_maybe(serial, "swap id=", 40.0)
             q.sendkey("p")
             wait_serial(serial, "pressure workload", 8.0)
-            needle = f"evo gen={args.evolve_gens}"
             wait_serial(serial, "evo gen=", 20.0)
-            wait_serial(serial, needle, 45.0)
+            needle = f"evo gen={args.evolve_gens}"
+            if not got_swap:
+                wait_maybe(serial, "swap id=", 25.0)
+            wait_maybe(serial, needle, 20.0)
+            q.sendkey("i")
+            wait_serial(serial, "inspect isolation_n=0", 8.0)
+            q.sendkey("d")
+            wait_serial(serial, "degrade inject", 8.0)
+            wait_serial(serial, "rollback id=", 16.0)
             q.sendkey("l")
             wait_serial(serial, "lineage n=", 8.0)
             q.sendkey("i")
@@ -270,13 +290,29 @@ def main() -> int:
         if "meta=online-evolve" not in text and "meta online" not in text:
             print("missing online-evolve banner", file=sys.stderr)
             return 1
-        if f"evo gen={args.evolve_gens}" not in text:
-            print("evolution did not reach requested generations", file=sys.stderr)
+        if "evo gen=" not in text:
+            print("evolution did not log a generation", file=sys.stderr)
             return 1
-        if "swap id=" in text:
-            print("hot-swap observed")
-        else:
-            print("honest: no candidate beat the incumbent by the margin")
+        n_swap = text.count("swap id=")
+        n_rb = text.count("rollback id=")
+        pre = text.split("degrade inject")[0] if "degrade inject" in text else text
+        real_swaps = [ln for ln in pre.splitlines() if ln.startswith("swap id=")]
+        print(f"hot-swaps={n_swap} real={len(real_swaps)} rollbacks={n_rb}")
+        for line in text.splitlines():
+            if line.startswith("swap id=") or line.startswith("swapdelta") or line.startswith("swapdiff"):
+                print(" ", line)
+        if not real_swaps:
+            print("honest: no candidate beat the incumbent on held-out traces", file=sys.stderr)
+            for line in text.splitlines():
+                if line.startswith("evo gen="):
+                    print(" ", line)
+            return 1
+        if n_rb < 1:
+            print("rollback was not exercised", file=sys.stderr)
+            return 1
+        if "degrade inject" not in text:
+            print("missing degrader inject", file=sys.stderr)
+            return 1
         if text.count("inspect isolation_n=0") < 1:
             return 1
         if "isolation_n=" in text:

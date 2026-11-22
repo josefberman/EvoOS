@@ -482,7 +482,7 @@ static void dashboard(void) {
 }
 
 static void print_help(void) {
-    cons_puts("keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage\n");
+    cons_puts("keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage  d degrade\n");
     cons_puts("w put  r get  z pull-plug  i inspect  q quit\n");
     cons_puts("loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM\n");
 }
@@ -701,6 +701,8 @@ static char scancode_to_ascii(uint8_t sc) {
         return 'm';
     case 0x19:
         return 'p';
+    case 0x20:
+        return 'd';
     case 0x22:
         return 'g';
     case 0x26:
@@ -766,6 +768,10 @@ static void handle_key(char ch, uint8_t scan) {
         slot = next_slot % 4;
         next_slot++;
         loader_spawn(slot, "route");
+        break;
+    case 'd':
+        evoos_meta_inject_degrader();
+        want_redraw = 1;
         break;
     case 'g':
         evoos_meta_toggle();
@@ -930,6 +936,7 @@ void kmain(void) {
             cons_puts(" switches=");
             cons_i32(hw.switch_count);
             cons_putc('\n');
+            evoos_meta_on_supervisor_halt();
             evoos_meta_on_live_metrics(hw.isolation_n);
         }
         evoos_meta_tick();
