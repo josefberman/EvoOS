@@ -34,6 +34,7 @@ HW_OPS = FULL_OPS + (
     "insert_blkwr_gadget",
     "insert_remap_gadget",
     "insert_svc_status_gadget",
+    "insert_clrprot_gadget",
 )
 
 OPERATOR_PACKS = {
@@ -89,6 +90,10 @@ OPERATOR_DOCS = {
     "insert_svc_status_gadget": (
         "ISA calling convention for SVC status CSRs: CTXGET LAST_SVC; "
         "CTXGET LAST_SVC_CTX. Not a pipe or mailbox."
+    ),
+    "insert_clrprot_gadget": (
+        "ISA calling convention for CLRPROT: MOVI ctx; CLRPROT ctx. "
+        "Clears one context's protection ranges. Not a revoke policy."
     ),
 }
 
@@ -164,6 +169,15 @@ def svc_status_gadget(rng: random.Random) -> tuple[Instr, ...]:
     return (
         Instr(int(Op.CTXGET), ra, 0, 0, int(CtxField.LAST_SVC)),
         Instr(int(Op.CTXGET), rb, 0, 0, int(CtxField.LAST_SVC_CTX)),
+    )
+
+
+def clrprot_gadget(rng: random.Random) -> tuple[Instr, ...]:
+    ra = rng.randint(1, N_REGS - 1)
+    ctx = rng.randint(1, 8)
+    return (
+        Instr(int(Op.MOVI), ra, 0, 0, ctx),
+        Instr(int(Op.CLRPROT), ra, 0, 0, 0),
     )
 
 
@@ -423,6 +437,10 @@ def mutate(
         i = rng.randrange(n + 1) if n else 0
         seq = _splice(seq, i, i, svc_status_gadget(rng))
         origin = "insert_svc_status_gadget"
+    elif op == "insert_clrprot_gadget":
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, clrprot_gadget(rng))
+        origin = "insert_clrprot_gadget"
     elif op == "crossover" and other is not None and other.instrs:
         cut_a = rng.randrange(n + 1) if n else 0
         cut_b = rng.randrange(len(other.instrs) + 1)

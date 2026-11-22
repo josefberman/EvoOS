@@ -157,6 +157,7 @@ class Machine:
         self.last_svc = 0
         self.last_svc_ctx = 0
         self.n_svc = 0
+        self.n_clrprot = 0
         self.disk = BlockDevice(
             n_blocks=self.config.n_blocks,
             block_words=self.config.block_words,
@@ -201,6 +202,7 @@ class Machine:
         self.last_svc_ctx = snap.last_svc_ctx
         self.disk = snap.disk.clone() if snap.disk is not None else None
         self.n_svc = 0
+        self.n_clrprot = 0
         self.observed_consts = []
 
     def state_hash(self) -> tuple:
@@ -568,6 +570,8 @@ class Machine:
             tid = regs[a]
             if 0 < tid < self.config.n_contexts:
                 self.contexts[tid].prot.clear()
+                if cid == 0:
+                    self.n_clrprot += 1
             ctx.pc = next_pc
             return
         if op == Op.RDTIME:

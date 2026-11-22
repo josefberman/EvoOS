@@ -79,6 +79,8 @@ python -m evoos.experiments.scheduling.sweep_round6 --out experiments/scheduling
 python -m evoos.experiments.scheduling.sweep_round7 --out experiments/scheduling/results/round7
 # Round 8: C-hw routing curriculum (shared-window QD + embed format):
 python -m evoos.experiments.scheduling.sweep_round8 --out experiments/scheduling/results/round8
+# Round 9: shared-window generalization + leak audit:
+python -m evoos.experiments.scheduling.sweep_round9 --out experiments/scheduling/results/round9
 ```
 
 ## Scaled results (measured)
@@ -285,3 +287,28 @@ gens_per_stage=2500, pop=48, 4 workers. **1,115,472** evals (mean 185912/seed). 
 r4 delivered mean **2.83** (best **4**). **2/6** seeds hit 4/4 messages on the four-pair train (1 and 42) vs round-7 evolved **1/4** and baseline **4/4**. **6/6** elites are `shared-window`: overlapping `CTXSET` windows + `ADDPROT` of the same range to two guest ids. Dual-granted overlap is not a leak. Nobody evolved copy-through-supervisor. Seed 42 is the strongest generalizer (r1=1 and r4=4). Seed 1’s r4=4 elite fails the 2-guest sandbox (specialized to 8 contexts). Ordering (r2 3/3) survives on seeds 99 and 2024 only.
 
 Boot-track embed (`evoos-embed-v1`): lossless JSON 5-tuples + `.bin` quintuples. Spec [`evoos/export/FORMAT.md`](evoos/export/FORMAT.md). Elites [`round8/embed/`](experiments/scheduling/results/round8/embed/). Disassembly [`round8/examples/`](experiments/scheduling/results/round8/examples/).
+
+## Round 9 (shared-window generalization + leak audit)
+
+Same machine, **89.5 min** wall, 6 seeds, pack `hw`, seeded from round-8 elites (seed 42 first). Lexicase includes shuffled pair assignment, message counts, store offsets, and the round-7 pressure mix. Third-guest grant of a pair window is a hard leak; CLRPROT-after-delivery is scored. Tables: [`experiments/scheduling/results/round9/summary.md`](experiments/scheduling/results/round9/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round9 --out experiments/scheduling/results/round9
+```
+
+generations=4000, pop=40, 4 workers. **960,000** evals (160000/seed). ISA still 0–34.
+
+**Baselines.** `payload_copy_rr` and `fifo_swap_rr`: official 4/4 **True**, round-7 4/4 **True**, audit **pass**.
+
+**Evolved official 4/4 (route_4+mix train AND held, all guests complete):** **0/6**. Round-7 pressure+route 4/4: **0/6**. Search R **0.769 ± 0.057** (best 0.853, seed 7). Audit pass **3/6**.
+
+| seed | R | 4/4 | r7 | r4 t/h | mix t/h | shuf | style | org | audit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 0.683 | False | False | 1/0 | 5/5 | 4 | shared-window | blk-user+shared-window | pass |
+| 7 | 0.853 | False | False | 3/2 | 4/4 | 4 | disk-buffer | fifo-swap-like+disk-buffer | fail |
+| 13 | 0.768 | False | False | 1/1 | 3/3 | 4 | shared-window | blk-user+shared-window | pass |
+| 42 | 0.784 | False | False | 0/0 | 2/2 | 4 | none | blk-user+rr | fail |
+| 99 | 0.715 | False | False | 2/2 | 3/3 | 4 | shared-window | fifo-swap-like+shared-window | fail |
+| 2024 | 0.811 | False | False | 3/3 | 3/3 | 6 | shared-window | fifo-swap-like+shared-window | pass |
+
+Leak-safe shared-window (1, 13, 2024) delivers 1–3/4 messages vs leaky round-8 4/4. Seed 2024 is the strongest leak-safe router. Seed 7 is highest R (disk-buffer + CLRPROT=30) but grants the attacker on `audit_mix_store`. Shared windows did not close the pressure 8/8. Embed [`round9/embed/`](experiments/scheduling/results/round9/embed/).

@@ -95,10 +95,14 @@ class EvalResult:
     route_style: str = "none"
     shared_window: bool = False
     delivery_writers: list[int] = field(default_factory=list)
+    share_leak: bool = False
+    revoked: bool = False
+    n_clrprot: int = 0
+    attacker_contained: bool = True
 
     @property
     def isolation_ok(self) -> bool:
-        return not self.corruption and not self.isolation_hits
+        return not self.corruption and not self.isolation_hits and not self.share_leak
 
 
 def load_firmware(machine: Machine, workload: Workload) -> None:
@@ -158,13 +162,33 @@ def _prot_covers(ctx, addr: int) -> bool:
     return any(lo <= addr < hi for lo, hi, _ in ctx.prot)
 
 
-def _granted_share(machine: Machine, addr: int, owner_cid: int, writer: int) -> bool:
-    """True when ADDPROT (or matching windows) granted the writer that address.
+def _pair_partner(workload: Workload, cid: int) -> int | None:
+    if cid <= 0 or cid > len(workload.guests):
+        return None
+    g = workload.guests[cid - 1]
+    if g.role not in ("producer", "consumer"):
+        return None
+    return int(g.pair) if g.pair else None
 
-    Shared windows are an organization, not a leak: both contexts must cover `addr`.
+
+def _granted_share(
+    machine: Machine,
+    addr: int,
+    owner_cid: int,
+    writer: int,
+    workload: Workload | None = None,
+) -> bool:
+    """True when the designated pair partner was granted `addr`.
+
+    Dual ADDPROT of a producer/consumer pair is an organization, not a leak.
+    A third guest covering the same range is a leak.
     """
     if writer <= 0 or writer >= len(machine.contexts) or owner_cid <= 0:
         return False
+    if workload is not None:
+        partner = _pair_partner(workload, owner_cid)
+        if partner is None or writer != partner:
+            return False
     owner = machine.contexts[owner_cid]
     wr = machine.contexts[writer]
     owner_ok = _in_window(owner, addr) or _prot_covers(owner, addr)
@@ -190,19 +214,86 @@ def _message_slots(guest: GuestImage) -> list[tuple[int, int]]:
     return []
 
 
+def _ctx_ranges(ctx) -> list[tuple[int, int]]:
+    ranges = [(int(lo), int(hi)) for lo, hi, _ in ctx.prot]
+    if ctx.data_bound > ctx.data_base:
+        ranges.append((int(ctx.data_base), int(ctx.data_bound)))
+    return ranges
+
+
+def _overlaps(lo: int, hi: int, lo2: int, hi2: int) -> bool:
+    return lo < hi2 and lo2 < hi
+
+
 def _overlapping_pair(machine: Machine, a: int, b: int) -> bool:
+    if a <= 0 or b <= 0 or a >= len(machine.contexts) or b >= len(machine.contexts):
+        return False
     ca, cb = machine.contexts[a], machine.contexts[b]
-    ranges_a = list(ca.prot)
-    ranges_b = list(cb.prot)
-    if ca.data_bound > ca.data_base:
-        ranges_a.append((ca.data_base, ca.data_bound, 0))
-    if cb.data_bound > cb.data_base:
-        ranges_b.append((cb.data_base, cb.data_bound, 0))
-    for lo, hi, _ in ranges_a:
-        for lo2, hi2, _ in ranges_b:
-            if lo < hi2 and lo2 < hi:
+    for lo, hi in _ctx_ranges(ca):
+        for lo2, hi2 in _ctx_ranges(cb):
+            if _overlaps(lo, hi, lo2, hi2):
                 return True
     return False
+
+
+def _pair_overlap_ranges(machine: Machine, a: int, b: int) -> list[tuple[int, int]]:
+    out: list[tuple[int, int]] = []
+    if a <= 0 or b <= 0 or a >= len(machine.contexts) or b >= len(machine.contexts):
+        return out
+    for lo, hi in _ctx_ranges(machine.contexts[a]):
+        for lo2, hi2 in _ctx_ranges(machine.contexts[b]):
+            olo, ohi = max(lo, lo2), min(hi, hi2)
+            if olo < ohi:
+                out.append((olo, ohi))
+    return out
+
+
+def _share_audit(machine: Machine, workload: Workload, outcomes: list[GuestOutcome]) -> dict:
+    """Third-guest grant of a pair window is a leak. Revocation is reported separately."""
+    leaks: list[tuple[int, int]] = []
+    n_share = 0
+    n_open = 0
+    delivered = 0
+    for i, g in enumerate(workload.guests):
+        if g.role != "consumer":
+            continue
+        cid = i + 1
+        partner = int(g.pair) if g.pair else 0
+        if partner <= 0:
+            continue
+        if outcomes and i < len(outcomes) and outcomes[i].correct:
+            delivered += 1
+        overlap = _pair_overlap_ranges(machine, partner, cid)
+        if overlap:
+            n_share += 1
+            n_open += 1
+            for olo, ohi in overlap:
+                for tid in range(1, len(machine.contexts)):
+                    if tid in (cid, partner) or tid > len(workload.guests):
+                        continue
+                    for lo, hi in _ctx_ranges(machine.contexts[tid]):
+                        if _overlaps(lo, hi, olo, ohi):
+                            leaks.append((tid, olo))
+        # Attacker covering a mapped pair member's window even without overlap.
+        for tid, ag in enumerate(workload.guests, start=1):
+            if ag.role != "attacker":
+                continue
+            for lo, hi in _ctx_ranges(machine.contexts[tid]):
+                for plo, phi in _ctx_ranges(machine.contexts[cid]) + _ctx_ranges(machine.contexts[partner]):
+                    if _overlaps(lo, hi, plo, phi):
+                        leaks.append((tid, lo))
+    revoked = delivered > 0 and n_open == 0
+    if delivered == 0:
+        revoked = int(getattr(machine, "n_clrprot", 0) or 0) > 0 and n_open == 0
+    attacker_ids = {i + 1 for i, g in enumerate(workload.guests) if g.role == "attacker"}
+    contained = not any(tid in attacker_ids for tid, _addr in leaks)
+    return {
+        "share_leak": bool(leaks),
+        "revoked": bool(revoked),
+        "n_clrprot": int(getattr(machine, "n_clrprot", 0) or 0),
+        "attacker_contained": bool(contained),
+        "leak_hits": leaks,
+    }
 
 
 def _route_telemetry(machine: Machine, workload: Workload, outcomes: list[GuestOutcome]) -> dict:
@@ -371,9 +462,15 @@ class Sandbox:
                     continue
                 for addr in range(lo, hi):
                     w = machine.last_writer[addr]
-                    if w not in (255, 0, cid) and not _granted_share(machine, addr, cid, int(w)):
+                    if w not in (255, 0, cid) and not _granted_share(
+                        machine, addr, cid, int(w), workload
+                    ):
                         corruption = True
                         isolation_hits.append((w, addr))
+        audit = _share_audit(machine, workload, outcomes)
+        if audit["leak_hits"]:
+            corruption = True
+            isolation_hits.extend(audit["leak_hits"])
         completed = sum(1 for o in outcomes if o.correct)
         progressed = sum(1 for o in outcomes if o.progressed)
         prot_cover = []
@@ -431,6 +528,10 @@ class Sandbox:
                 if g.role == "consumer" and o.correct
             ),
             n_resident=n_resident,
+            share_leak=bool(audit["share_leak"]),
+            revoked=bool(audit["revoked"]),
+            n_clrprot=int(audit["n_clrprot"]),
+            attacker_contained=bool(audit["attacker_contained"]),
             **_route_telemetry(machine, workload, outcomes),
         )
 
