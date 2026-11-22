@@ -19,7 +19,9 @@ from evoos.evaluator.novelty import (
     behavioral_descriptor,
     elites_cell,
     hw_cell,
+    is_non_baseline_route,
     milestone_cell,
+    route_cell,
     opcode_histogram,
 )
 from evoos.evaluator.reward import RewardBreakdown, RewardWeights, score
@@ -142,6 +144,7 @@ class SearchConfig:
     representation: str = "linear"  # linear | cgp
     epsilon: float | None = None  # None + epsilon_lexicase => auto MAD
     hw_archive: bool = False
+    route_archive: bool = False
 
 
 @dataclass
@@ -325,7 +328,9 @@ def run_search(
             state.records.append(rec)
         new_cell = False
         if not invalid:
-            if config.hw_archive and tr:
+            if config.route_archive and tr:
+                cell = route_cell(tr[0])
+            elif config.hw_archive and tr:
                 cell = hw_cell(tr[0])
             elif config.milestone_archive and tr:
                 cell = milestone_cell(tr[0])
@@ -333,7 +338,14 @@ def run_search(
                 cell = elites_cell(tr[0]) if tr else (0, 0)
             new_cell = cell not in state.archive.cells
             state.archive.add(cand, cell, bd.total, gen, bd)
-            if bd.total > state.best_reward:
+            better = bd.total > state.best_reward
+            if (not better) and tr and abs(bd.total - state.best_reward) < 1e-9:
+                # Equal correctness: keep a non-copy routing style over direct copy.
+                old_tr = state.best_record.train if state.best_record else None
+                old_copy = bool(old_tr) and not is_non_baseline_route(old_tr[0])
+                if old_copy and is_non_baseline_route(tr[0]):
+                    better = True
+            if better:
                 state.best_reward = bd.total
                 state.best = cand
                 state.best_record = rec

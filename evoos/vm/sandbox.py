@@ -32,6 +32,7 @@ class GuestImage:
     role: str = "compute"
     token: int = 0
     pair: int | None = None
+    messages: tuple[int, ...] = ()
 
 
 @dataclass
@@ -89,6 +90,11 @@ class EvalResult:
     n_svc: int = 0
     delivered: int = 0
     n_resident: int = 0
+    n_messages: int = 0
+    msg_ok: list[bool] = field(default_factory=list)
+    route_style: str = "none"
+    shared_window: bool = False
+    delivery_writers: list[int] = field(default_factory=list)
 
     @property
     def isolation_ok(self) -> bool:
@@ -144,12 +150,113 @@ def load_firmware(machine: Machine, workload: Workload) -> None:
         machine.disk.n_write = 0
 
 
+def _in_window(ctx, addr: int) -> bool:
+    return ctx.data_bound > ctx.data_base and ctx.data_base <= addr < ctx.data_bound
+
+
+def _prot_covers(ctx, addr: int) -> bool:
+    return any(lo <= addr < hi for lo, hi, _ in ctx.prot)
+
+
+def _granted_share(machine: Machine, addr: int, owner_cid: int, writer: int) -> bool:
+    """True when ADDPROT (or matching windows) granted the writer that address.
+
+    Shared windows are an organization, not a leak: both contexts must cover `addr`.
+    """
+    if writer <= 0 or writer >= len(machine.contexts) or owner_cid <= 0:
+        return False
+    owner = machine.contexts[owner_cid]
+    wr = machine.contexts[writer]
+    owner_ok = _in_window(owner, addr) or _prot_covers(owner, addr)
+    wr_ok = _in_window(wr, addr) or _prot_covers(wr, addr)
+    return owner_ok and wr_ok
+
+
 def _fingerprint(mem: list[int]) -> int:
     h = 2166136261
     for w in mem:
         h ^= w & 0xFFFFFFFF
         h = (h * 16777619) & 0xFFFFFFFF
     return h
+
+
+def _message_slots(guest: GuestImage) -> list[tuple[int, int]]:
+    if guest.expected_off:
+        return sorted((int(off), int(exp)) for off, exp in guest.expected_off.items())
+    if guest.messages:
+        return [(i, int(t)) for i, t in enumerate(guest.messages)]
+    if guest.role == "consumer" and guest.token:
+        return [(0, int(guest.token))]
+    return []
+
+
+def _overlapping_pair(machine: Machine, a: int, b: int) -> bool:
+    ca, cb = machine.contexts[a], machine.contexts[b]
+    ranges_a = list(ca.prot)
+    ranges_b = list(cb.prot)
+    if ca.data_bound > ca.data_base:
+        ranges_a.append((ca.data_base, ca.data_bound, 0))
+    if cb.data_bound > cb.data_base:
+        ranges_b.append((cb.data_base, cb.data_bound, 0))
+    for lo, hi, _ in ranges_a:
+        for lo2, hi2, _ in ranges_b:
+            if lo < hi2 and lo2 < hi:
+                return True
+    return False
+
+
+def _route_telemetry(machine: Machine, workload: Workload, outcomes: list[GuestOutcome]) -> dict:
+    msg_ok: list[bool] = []
+    writers: list[int] = []
+    shared = False
+    nmem = len(machine.mem)
+    consumers = [(i, g) for i, g in enumerate(workload.guests) if g.role == "consumer"]
+    for i, g in consumers:
+        cid = i + 1
+        ctx = machine.contexts[cid]
+        if g.pair:
+            shared = shared or _overlapping_pair(machine, int(g.pair), cid)
+        slots = _message_slots(g)
+        for off, exp in slots:
+            addr = None
+            actual = None
+            writer = 255
+            if ctx.data_base >= 256 and ctx.data_bound > ctx.data_base:
+                addr = ctx.data_base + off
+                if 0 <= addr < nmem:
+                    actual = machine.mem[addr]
+                    writer = int(machine.last_writer[addr])
+            elif g.home_block is not None and machine.disk is not None:
+                blk = int(g.home_block)
+                if 0 <= blk < len(machine.disk.blocks):
+                    words = machine.disk.blocks[blk]
+                    actual = words[off] if 0 <= off < len(words) else 0
+                    writer = -1
+            ok = actual == exp
+            msg_ok.append(bool(ok))
+            writers.append(writer)
+    n_ok = sum(1 for x in msg_ok if x)
+    style = "none"
+    if n_ok > 0:
+        if shared:
+            style = "shared-window"
+        elif any(w == -1 for w in writers):
+            style = "disk-buffer"
+        elif (
+            n_ok >= 2
+            and machine.n_svc >= 2 * n_ok
+            and machine.switch_count <= n_ok + 2
+        ):
+            style = "batch"
+        else:
+            style = "copy-supervisor"
+    return {
+        "n_messages": len(msg_ok),
+        "msg_ok": msg_ok,
+        "route_style": style,
+        "shared_window": bool(shared),
+        "delivery_writers": writers,
+    }
 
 
 def _guest_outcome(machine: Machine, guest: GuestImage, cid: int) -> GuestOutcome:
@@ -264,7 +371,7 @@ class Sandbox:
                     continue
                 for addr in range(lo, hi):
                     w = machine.last_writer[addr]
-                    if w not in (255, 0, cid):
+                    if w not in (255, 0, cid) and not _granted_share(machine, addr, cid, int(w)):
                         corruption = True
                         isolation_hits.append((w, addr))
         completed = sum(1 for o in outcomes if o.correct)
@@ -324,6 +431,7 @@ class Sandbox:
                 if g.role == "consumer" and o.correct
             ),
             n_resident=n_resident,
+            **_route_telemetry(machine, workload, outcomes),
         )
 
     def clear_cache(self) -> None:

@@ -1,0 +1,62 @@
+== A-hw routing baselines ==
+  r1_pair payload_copy_rr deliv 1 4/4 True
+  r1_pair fifo_swap_rr deliv 1 4/4 True
+  r2_order payload_copy_rr deliv 1 4/4 True
+  r2_order fifo_swap_rr deliv 0 4/4 False
+  r3_pairs payload_copy_rr deliv 3 4/4 True
+  r3_pairs fifo_swap_rr deliv 3 4/4 True
+  r4_pressure payload_copy_rr deliv 4 4/4 True
+  r4_pressure fifo_swap_rr deliv 4 4/4 True
+seeded 12 elites
+== C-hw route 6 jobs gps=2500 pop=48 workers=4 ==
+  start s1
+  done route_s1 R=0.960 r4=4 style=shared-window n_eval=135600 283s
+  start s7
+  done route_s7 R=0.840 r4=2 style=shared-window n_eval=240912 302s
+  start s13
+  done route_s13 R=0.940 r4=3 style=shared-window n_eval=240864 319s
+  start s42
+  done route_s42 R=0.960 r4=4 style=shared-window n_eval=123120 197s
+  start s99
+  done route_s99 R=0.830 r4=2 style=shared-window n_eval=252096 477s
+  start s2024
+  done route_s2024 R=0.940 r4=2 style=shared-window n_eval=122880 219s
+wrote experiments/scheduling/results/round8 in 1798.7s
+# Round 8: C-hw routing curriculum
+
+Wall time **1798.7s** (30.0 min), eval_workers=4.
+ISA: opcodes 0–31 unchanged; 32–34 are BLKRD/BLKWR/SVC. No pipe / message-queue opcode.
+Opcode count: **35**.
+gens_per_stage=2500 pop=48 seeds=[1, 7, 13, 42, 99, 2024].
+
+Boot-track embed: [`embed/`](embed/) + [`evoos/export/FORMAT.md`](../../../../evoos/export/FORMAT.md).
+
+## Baselines
+
+| stage | name | train completed | delivered | msg_ok | style | 4/4 |
+| --- | --- | --- | --- | --- | --- | --- |
+| r1_pair | payload_copy_rr | [2] | 1 | [True] | copy-supervisor | True |
+| r1_pair | fifo_swap_rr | [2] | 1 | [True] | copy-supervisor | True |
+| r2_order | payload_copy_rr | [2] | 1 | [True, True, True] | copy-supervisor | True |
+| r2_order | fifo_swap_rr | [1] | 0 | [True, False, False] | copy-supervisor | False |
+| r3_pairs | payload_copy_rr | [6] | 3 | [True, True, True] | copy-supervisor | True |
+| r3_pairs | fifo_swap_rr | [6] | 3 | [True, True, True] | disk-buffer | True |
+| r4_pressure | payload_copy_rr | [8, 8] | 4 | [True, True, True, True] | copy-supervisor | True |
+| r4_pressure | fifo_swap_rr | [8, 8] | 4 | [True, True, True, True] | disk-buffer | True |
+
+## Condition C-hw routing search
+
+| arm | search R mean ± std (best) | 4/4 | r4 delivered mean (best) | mean n_eval |
+| --- | --- | --- | --- | --- |
+| route_curriculum | 0.912 ± 0.055 (0.960) | **0/6** | 2.83 (4) | 185912 |
+
+| seed | R | r1 | r2 n_ok | r3 | r4 train/held | mix | style | shared | stall |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 0.960 | 0 | 1 | 3 | 4/3 | 2 | shared-window | True | None |
+| 7 | 0.840 | 1 | 1 | 2 | 2/2 | 1 | shared-window | True | None |
+| 13 | 0.940 | 1 | 1 | 3 | 3/3 | 2 | shared-window | True | None |
+| 42 | 0.960 | 1 | 1 | 3 | 4/3 | 2 | shared-window | True | None |
+| 99 | 0.830 | 1 | 3 | 2 | 2/2 | 1 | shared-window | True | None |
+| 2024 | 0.940 | 1 | 3 | 2 | 2/2 | 1 | shared-window | True | None |
+
+Styles: ['shared-window']. Orgs: ['blk-user+shared-window', 'fi

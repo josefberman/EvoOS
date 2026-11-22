@@ -46,6 +46,18 @@ def elites_cell(result: EvalResult) -> tuple[int, int]:
     return (x, y)
 
 
+STYLE_CODE = {
+    "none": 0,
+    "copy-supervisor": 1,
+    "shared-window": 2,
+    "disk-buffer": 3,
+    "batch": 4,
+}
+
+# copy-supervisor is the hand-written direct-copy style. Prefer 2–4 at equal correctness.
+NON_BASELINE_STYLES = frozenset({"shared-window", "disk-buffer", "batch"})
+
+
 def hw_cell(result: EvalResult) -> tuple[int, int, int, int, int]:
     """C-hw MAP-Elites: completion × eviction × routing × switch rhythm × isolation."""
     n_done = min(int(result.completed), 8)
@@ -56,21 +68,47 @@ def hw_cell(result: EvalResult) -> tuple[int, int, int, int, int]:
     return (n_done, n_blk, n_svc, sw, isol)
 
 
+def route_cell(result: EvalResult) -> tuple[int, int, int, int, int]:
+    """Routing MAP-Elites: deliveries × payload slots × style × switches × isolation."""
+    n_del = min(int(result.delivered or 0), 8)
+    n_msg = min(sum(1 for x in (result.msg_ok or []) if x), 8)
+    style = STYLE_CODE.get(str(result.route_style or "none"), 0)
+    sw = min(int(result.switch_count) // 4, 7)
+    isol = 1 if result.isolation_ok else 0
+    return (n_del, n_msg, style, sw, isol)
+
+
 def org_label(result: EvalResult) -> str:
     """Behavioral organization label for C-hw traces."""
     if result.completed == 0 and result.switch_count == 0:
         return "no-dispatch"
+    style = str(result.route_style or "none")
     if (result.n_blk_write or 0) >= max(1, result.n_guests - 4) and result.completed > 0:
         base = "fifo-swap-like"
     elif (result.n_blk_read or 0) > 0:
         base = "blk-user"
     else:
         base = "no-swap"
-    if (result.delivered or 0) > 0:
-        return base + "+router"
+    if (result.delivered or 0) > 0 or style not in ("none", ""):
+        tag = style if style not in ("none", "copy-supervisor") else "router"
+        if style == "copy-supervisor":
+            tag = "copy"
+        elif style == "shared-window":
+            tag = "shared-window"
+        elif style == "disk-buffer":
+            tag = "disk-buffer"
+        elif style == "batch":
+            tag = "batch"
+        else:
+            tag = "router"
+        return base + "+" + tag
     if result.switch_count > result.n_guests * 3:
         return base + "+rr"
     return base
+
+
+def is_non_baseline_route(result: EvalResult) -> bool:
+    return str(result.route_style or "") in NON_BASELINE_STYLES and (result.delivered or 0) > 0
 
 
 def milestone_cell(result: EvalResult) -> tuple[int, int, int, int, int]:

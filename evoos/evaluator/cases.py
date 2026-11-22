@@ -27,6 +27,13 @@ def case_vector(
         vals.append(1.0 if (r.n_blk_read or 0) > 0 else 0.0)
         names.append(f"{w}.delivered")
         vals.append(1.0 if (r.delivered or 0) > 0 else 0.0)
+        for mi, ok in enumerate(r.msg_ok or []):
+            names.append(f"{w}.m{mi}.delivered")
+            vals.append(1.0 if ok else 0.0)
+            names.append(f"{w}.m{mi}.payload")
+            vals.append(1.0 if ok else 0.0)
+            names.append(f"{w}.m{mi}.recipient")
+            vals.append(1.0 if ok else 0.0)
         n = r.n_guests
         for g in range(n):
             cover = 1.0 if (r.prot_cover and g < len(r.prot_cover) and r.prot_cover[g]) else 0.0
@@ -72,7 +79,7 @@ def cases_solved(names: list[str], vec: list[float]) -> list[str]:
 
 def summarize_cases(names: list[str], vec: list[float]) -> dict[str, int]:
     """Count solved cases by milestone suffix."""
-    out = {m: 0 for m in ("isolation",) + MILESTONES}
+    out = {m: 0 for m in ("isolation", "delivered", "payload", "recipient") + MILESTONES}
     for n, v in zip(names, vec):
         if v < 1.0:
             continue

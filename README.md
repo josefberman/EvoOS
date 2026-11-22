@@ -77,6 +77,8 @@ python -m evoos.experiments.scheduling.sweep_round5 --out experiments/scheduling
 python -m evoos.experiments.scheduling.sweep_round6 --out experiments/scheduling/results/round6
 # Round 7: close bare; Condition C-hw (hardware-manual pack, pressure+route):
 python -m evoos.experiments.scheduling.sweep_round7 --out experiments/scheduling/results/round7
+# Round 8: C-hw routing curriculum (shared-window QD + embed format):
+python -m evoos.experiments.scheduling.sweep_round8 --out experiments/scheduling/results/round8
 ```
 
 ## Scaled results (measured)
@@ -256,3 +258,30 @@ ISA: opcodes 0–31 unchanged; 32–34 = `BLKRD`/`BLKWR`/`SVC` from the persist-
 | 2024 | [3, 4] | [3, 3] | fifo-swap-like+rr | 210 | 0/4 | pass |
 
 Organizations that emerged: **fifo-swap-like+rr** (5/6; BLKWR eviction + RR RUNCTXI) and **blk-user** (seed 42; BLKRD into frames, almost no evict — matches `place_first_frames_rr`). Routing is a single-pair copy (1/4 delivered) vs the hand-written direct-copy baseline (4/4). Seed 99 is the strongest elite (4/8 pressure, 5/8 route, 8/8 resident, no starved guests on train). Nobody reaches the FIFO baseline's 8/8 under pressure: search invents placement and some swap, not a complete victim-clock. Disassembly: [`round7/examples/`](experiments/scheduling/results/round7/examples/).
+
+## Round 8 (C-hw routing curriculum: shared windows)
+
+Same machine, **30.0 min** wall, 6 seeds, pack `hw`. Curriculum 1 pair → ordered payloads → 3 pairs → 8-guest pressure. Per-message lexicase `{w}.m{i}.{delivered,payload,recipient}`; isolation is hard. MAP-Elites `route_cell` (delivered, n_msg_ok, style, switch_bin, isolation); equal-R prefers non-copy. Tables: [`experiments/scheduling/results/round8/summary.md`](experiments/scheduling/results/round8/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round8 --out experiments/scheduling/results/round8
+```
+
+gens_per_stage=2500, pop=48, 4 workers. **1,115,472** evals (mean 185912/seed). r1/r2 early-stopped; r4 always 2500 gens. ISA still 0–34; no pipe opcode.
+
+**Baselines.** `payload_copy_rr`: r1 1/1, r2 3/3, r3 3/3, r4 4/4, style `copy-supervisor`. `fifo_swap_rr`: r1 1/1, r2 1/3, r3 3/3, r4 4/4 (1-word mailbox; `disk-buffer` under pressure because the consumer is swapped to `home_block`).
+
+**Condition C-hw routing 4/4** (route_4 + mix train **and** held, all guests complete): **0/6**. Search R **0.912 ± 0.055** (best 0.960). Isolation **6/6**.
+
+| seed | R | r1 | r2 n_ok | r3 | r4 train/held | mix | style | org |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 0.960 | 0 | 1 | 3 | 4/3 | 2 | shared-window | blk-user+shared-window |
+| 7 | 0.840 | 1 | 1 | 2 | 2/2 | 1 | shared-window | blk-user+shared-window |
+| 13 | 0.940 | 1 | 1 | 3 | 3/3 | 2 | shared-window | blk-user+shared-window |
+| 42 | 0.960 | 1 | 1 | 3 | 4/3 | 2 | shared-window | blk-user+shared-window |
+| 99 | 0.830 | 1 | 3 | 2 | 2/2 | 1 | shared-window | fifo-swap-like+shared-window |
+| 2024 | 0.940 | 1 | 3 | 2 | 2/2 | 1 | shared-window | blk-user+shared-window |
+
+r4 delivered mean **2.83** (best **4**). **2/6** seeds hit 4/4 messages on the four-pair train (1 and 42) vs round-7 evolved **1/4** and baseline **4/4**. **6/6** elites are `shared-window`: overlapping `CTXSET` windows + `ADDPROT` of the same range to two guest ids. Dual-granted overlap is not a leak. Nobody evolved copy-through-supervisor. Seed 42 is the strongest generalizer (r1=1 and r4=4). Seed 1’s r4=4 elite fails the 2-guest sandbox (specialized to 8 contexts). Ordering (r2 3/3) survives on seeds 99 and 2024 only.
+
+Boot-track embed (`evoos-embed-v1`): lossless JSON 5-tuples + `.bin` quintuples. Spec [`evoos/export/FORMAT.md`](evoos/export/FORMAT.md). Elites [`round8/embed/`](experiments/scheduling/results/round8/embed/). Disassembly [`round8/examples/`](experiments/scheduling/results/round8/examples/).
