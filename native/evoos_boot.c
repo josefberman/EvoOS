@@ -40,6 +40,8 @@ extern const uint8_t guest_put[], guest_put_end[];
 extern const uint8_t guest_get[], guest_get_end[];
 extern const uint8_t guest_pressure[], guest_pressure_end[];
 extern const uint8_t guest_route[], guest_route_end[];
+extern const uint8_t guest_route_prod[], guest_route_prod_end[];
+extern const uint8_t guest_route_cons[], guest_route_cons_end[];
 
 static struct limine_framebuffer *fb;
 static uint32_t fb_white, fb_bg, fb_accent, fb_ok, fb_bad, fb_idle, fb_dim;
@@ -297,6 +299,9 @@ static int32_t fault_events;
 static int want_redraw = 1;
 static int rotating_kind;
 static int drawn;
+static int route_retry;
+static int32_t last_share_mask[HW_N_GUESTS];
+static int route_delivered;
 
 static const char *KINDS[] = {"sum", "fill", "xor", "copyinc", "max", "malicious", "spin"};
 #define N_KINDS 7
@@ -360,6 +365,18 @@ static void note_runctx(int32_t cid, int32_t ran, int32_t fault, int32_t vector)
         if (g->name[0] == 'g' && g->name[1] == 'e') {
             cons_puts(" recall=");
             cons_i32(evoos_hw_word(cid - 1, 2));
+        }
+        if (g->name[0] == 'r' && g->name[1] == 'o' && g->name[6] == 'p') {
+            cons_puts(" route_word=");
+            cons_i32(evoos_hw_word(cid - 1, 2));
+        }
+        if (g->name[0] == 'r' && g->name[1] == 'o' && g->name[6] == 'c') {
+            cons_puts(" route_read=");
+            cons_i32((int32_t)g->rax);
+            if ((int32_t)g->rax == 77) {
+                cons_puts(" route delivered=77");
+                route_delivered = 1;
+            }
         }
         cons_putc('\n');
         want_redraw = 1;
@@ -466,15 +483,41 @@ static void dashboard(void) {
         fb_i32_at(760, 358, st.rollbacks, st.rollbacks ? fb_bad : fb_dim);
     }
     fb_puts_at(24, 380, "1-4 SLOT  S/F/X/C/M KIND  P PRESS  U ROUTE  G EVO  L LINEAGE  W/R/Z  Q", fb_accent);
+    {
+        int s, cid, x = 80;
+        fb_puts_at(24, 392, "SHARE", fb_dim);
+        for (s = 0; s < HW_N_GUESTS; s++) {
+            int n = evoos_hw_slot_share_n(s);
+            if (n < 2) {
+                continue;
+            }
+            fb_i32_at(x, 392, s, fb_ok);
+            x += 16;
+            fb_puts_at(x, 392, ":", fb_ok);
+            x += 12;
+            for (cid = 1; cid < hw.n_contexts; cid++) {
+                if (hw.share_mask[s] & (1 << cid)) {
+                    fb_i32_at(x, 392, cid, fb_accent);
+                    x += 16;
+                    fb_puts_at(x, 392, "+", fb_dim);
+                    x += 12;
+                }
+            }
+            x += 8;
+        }
+        if (route_delivered) {
+            fb_puts_at(520, 392, "DELIVERED 77", fb_ok);
+        }
+    }
     if (hw.has_disk && want_redraw) {
         int b;
-        fb_puts_at(24, 392, "DEVICE BLOCKS", fb_dim);
+        fb_puts_at(24, 408, "DEVICE BLOCKS", fb_dim);
         for (b = 0; b < 32 && b < hw.n_blocks; b++) {
             int32_t st = evoos_hw_blkrd(b, 1700);
             int32_t w0 = st ? 0 : evoos_hw_load(1700);
             uint32_t colr = w0 ? fb_accent : fb_idle;
             int bx = 24 + (b % 16) * 18;
-            int by = 412 + (b / 16) * 18;
+            int by = 424 + (b / 16) * 18;
             fb_rect(bx, by, 14, 14, colr);
         }
     }
@@ -527,6 +570,22 @@ static void inspect(void) {
         cons_i32(g->n_prot);
         cons_puts(" vec=");
         cons_i32(g->last_vector);
+        cons_putc('\n');
+    }
+    for (i = 0; i < HW_N_GUESTS; i++) {
+        int cid, n = evoos_hw_slot_share_n((int)i);
+        if (n < 2) {
+            continue;
+        }
+        cons_puts("  share slot=");
+        cons_i32(i);
+        cons_puts(" ctx=");
+        for (cid = 1; cid < hw.n_contexts; cid++) {
+            if (hw.share_mask[i] & (1 << cid)) {
+                cons_i32(cid);
+                cons_putc('+');
+            }
+        }
         cons_putc('\n');
     }
 }
@@ -606,7 +665,7 @@ static void loader_spawn(int slot, const char *kind) {
     } else if (kind_eq(kind, "malicious")) {
         code = guest_malicious;
         end = guest_malicious_end;
-        name = "malicious_store";
+        name = "malicious_read";
     } else if (kind_eq(kind, "spin")) {
         code = guest_spin;
         end = guest_spin_end;
@@ -646,6 +705,20 @@ static void loader_spawn(int slot, const char *kind) {
         init_off[1] = 2;
         init_val[1] = 77;
         n_init = 2;
+    } else if (kind_eq(kind, "route_prod")) {
+        code = guest_route_prod;
+        end = guest_route_prod_end;
+        name = "route_prod";
+        init_off[0] = 2;
+        init_val[0] = 0;
+        n_init = 1;
+    } else if (kind_eq(kind, "route_cons")) {
+        code = guest_route_cons;
+        end = guest_route_cons_end;
+        name = "route_cons";
+        init_off[0] = 2;
+        init_val[0] = 0;
+        n_init = 1;
     } else {
         cons_puts("loader: unknown kind\n");
         return;
@@ -669,6 +742,62 @@ static void loader_spawn(int slot, const char *kind) {
     cons_putc('\n');
     evoos_meta_record_spawn(slot, kind);
     want_redraw = 1;
+}
+
+static void cons_hex32(uint32_t v) {
+    static const char *d = "0123456789abcdef";
+    char buf[9];
+    int i;
+    for (i = 7; i >= 0; i--) {
+        buf[i] = d[v & 15u];
+        v >>= 4;
+    }
+    buf[8] = 0;
+    cons_puts(buf);
+}
+
+static void log_shares(void) {
+    int s, cid, n, changed = 0;
+    for (s = 0; s < HW_N_GUESTS; s++) {
+        if (hw.share_mask[s] != last_share_mask[s]) {
+            changed = 1;
+            last_share_mask[s] = hw.share_mask[s];
+        }
+    }
+    if (!changed) {
+        return;
+    }
+    for (s = 0; s < HW_N_GUESTS; s++) {
+        n = evoos_hw_slot_share_n(s);
+        if (n < 2) {
+            continue;
+        }
+        cons_puts("shared-window slot=");
+        cons_i32(s);
+        cons_puts(" ctx=");
+        for (cid = 1; cid < hw.n_contexts; cid++) {
+            if (hw.share_mask[s] & (1 << cid)) {
+                cons_i32(cid);
+                cons_putc('+');
+            }
+        }
+        cons_puts(" phys=");
+        cons_hex32((uint32_t)evoos_hw_slot_phys(s));
+        cons_putc('\n');
+    }
+}
+
+static void maybe_retry_route(void) {
+    if (!route_retry) {
+        return;
+    }
+    if (evoos_hw_slot_share_n(0) < 2) {
+        return;
+    }
+    route_retry = 0;
+    cons_puts("route retry shared-window\n");
+    loader_spawn(0, "route_prod");
+    loader_spawn(1, "route_cons");
 }
 
 static char scancode_to_ascii(uint8_t sc) {
@@ -765,9 +894,11 @@ static void handle_key(char ch, uint8_t scan) {
         break;
     }
     case 'u':
-        slot = next_slot % 4;
-        next_slot++;
-        loader_spawn(slot, "route");
+        cons_puts("route shared-window pair\n");
+        loader_spawn(0, "route_prod");
+        loader_spawn(1, "route_cons");
+        route_retry = 1;
+        route_delivered = 0;
         break;
     case 'd':
         evoos_meta_inject_degrader();
@@ -854,6 +985,8 @@ void evoos_firmware_after_runctx(int32_t cid, int32_t ran, int32_t fault, int32_
         evoos_meta_record_svc(hw.last_svc, hw.last_svc_ctx);
     }
     evoos_meta_on_live_metrics(hw.isolation_n);
+    log_shares();
+    maybe_retry_route();
     poll_ps2();
     poll_serial();
     if (want_redraw || (hw.switch_count & 15) == 0) {
@@ -940,6 +1073,8 @@ void kmain(void) {
             evoos_meta_on_live_metrics(hw.isolation_n);
         }
         evoos_meta_tick();
+        log_shares();
+        maybe_retry_route();
         poll_ps2();
         poll_serial();
         if (want_redraw || (hw.switch_count & 31) == 0) {

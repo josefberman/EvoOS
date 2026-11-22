@@ -17,6 +17,8 @@ from evoos.evaluator.workloads import (
     guest_max,
     guest_pressure,
     guest_route,
+    guest_route_cons,
+    guest_route_prod,
     guest_sum,
     guest_xor,
 )
@@ -35,6 +37,8 @@ def _programs() -> list[tuple[str, int, GuestImage]]:
         out.append(("malicious", slot, guest_malicious_store(slot, victim)))
         out.append(("pressure", slot, guest_pressure(slot, 40)))
         out.append(("route", slot, guest_route(slot, 2 if slot != 1 else 3, 77)))
+        out.append(("route_prod", slot, guest_route_prod(slot, 77)))
+        out.append(("route_cons", slot, guest_route_cons(slot, 0)))
         out.append(("put", slot, _put(slot)))
         out.append(("get", slot, _get(slot)))
         out.append(("spin", slot, _spin(slot)))

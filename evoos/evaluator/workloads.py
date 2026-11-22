@@ -289,6 +289,51 @@ def guest_route(slot: int, dest_ctx: int = 2, payload: int = 77) -> GuestImage:
         init={lo: dest_ctx, lo + 2: payload},
         expected={lo + 2: payload},
         needed_cycles=8,
+        role="compute",
+    )
+
+
+def guest_route_prod(slot: int, payload: int = 77) -> GuestImage:
+    """Producer: STORE payload at window[2], then HALT. Live analogue writes 8(%rdi)."""
+    lo, hi = GUEST_SLOTS[slot]
+    src = f"""
+        MOVI r1, {lo}
+        MOVI r2, {payload}
+        STORE r1, r2, 2
+        HALT
+    """
+    return GuestImage(
+        name="route_prod",
+        code=assemble(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 0, lo + 2: 0},
+        expected={lo + 2: payload},
+        needed_cycles=8,
+        role="producer",
+        token=payload,
+    )
+
+
+def guest_route_cons(slot: int, src_slot: int = 0) -> GuestImage:
+    """Consumer: LOAD window[2] of the producer slot. Needs a shared ADDPROT grant."""
+    lo, hi = GUEST_SLOTS[slot]
+    src_lo = GUEST_SLOTS[src_slot][0]
+    src = f"""
+        MOVI r1, {src_lo}
+        LOAD r2, r1, 2
+        HALT
+    """
+    return GuestImage(
+        name="route_cons",
+        code=assemble(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 0, lo + 2: 0},
+        expected={},
+        needed_cycles=8,
+        role="consumer",
+        pair=src_slot + 1,
     )
 
 

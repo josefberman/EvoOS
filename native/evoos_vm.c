@@ -160,6 +160,12 @@ static void ctx_field_set(EvoOSContext *target, int32_t field, int32_t val) {
         target->halted = val ? 1 : 0;
     } else if (field == EVOOS_FLD_FAULT) {
         target->fault = val;
+    } else if (field == EVOOS_FLD_DATA_BASE) {
+        target->data_base = val;
+        target->regs[1] = val;
+    } else if (field == EVOOS_FLD_DATA_BOUND) {
+        target->data_bound = val;
+        target->regs[2] = val;
     }
 }
 

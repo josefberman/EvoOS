@@ -49,7 +49,7 @@ catalogue: guest_catalogue.h supervisor_seed.h
 guest_catalogue.h: ../evoos/boot/catalogue.py ../evoos/evaluator/workloads.py
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.catalogue -o native/guest_catalogue.h
 
-supervisor_seed.h: ../evoos/boot/seed_c.py ../evoos/boot/pack.py
+supervisor_seed.h: ../evoos/boot/seed_c.py ../evoos/boot/pack.py ../evoos/export/embed.py
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.seed_c --supervisor $(LIVE_SUPERVISOR) -o native/supervisor_seed.h
 
 host: $(BUILD)/evoos_host

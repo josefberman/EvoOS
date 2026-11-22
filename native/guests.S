@@ -99,10 +99,10 @@ guest_max:
     int $0x80
 guest_max_end:
 
-    /* RSI = victim window VA (another slot). Store there → #PF if unmapped. */
+    /* RSI = victim window VA (another slot). Load there → #PF if unmapped. */
     .global guest_malicious, guest_malicious_end
 guest_malicious:
-    movl $12345, 8(%rsi)
+    movl 8(%rsi), %eax
     int $0x80
 guest_malicious_end:
 
@@ -152,3 +152,17 @@ guest_route:
     xorl %eax, %eax
     int $0x80
 guest_route_end:
+
+    /* Producer: write 77 at offset 2 of own window (RDI). */
+    .global guest_route_prod, guest_route_prod_end
+guest_route_prod:
+    movl $77, 8(%rdi)
+    int $0x80
+guest_route_prod_end:
+
+    /* Consumer: read offset 2 of peer window (RSI). Needs shared-window grant. */
+    .global guest_route_cons, guest_route_cons_end
+guest_route_cons:
+    movl 8(%rsi), %eax
+    int $0x80
+guest_route_cons_end:

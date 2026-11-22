@@ -320,6 +320,29 @@ static int slot_of_word(int32_t addr) {
     return -1;
 }
 
+static int prot_overlaps_slot(const HwContext *c, int s) {
+    int r;
+    int32_t b = HW_SLOT_BASE(s), e = HW_SLOT_BOUND(s);
+    for (r = 0; r < c->n_prot; r++) {
+        if (c->prot_lo[r] < e && c->prot_hi[r] > b) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void refresh_share_masks(void) {
+    int s, cid;
+    for (s = 0; s < HW_N_GUESTS; s++) {
+        hw.share_mask[s] = 0;
+        for (cid = 1; cid < hw.n_contexts; cid++) {
+            if (prot_overlaps_slot(&hw.ctx[cid], s)) {
+                hw.share_mask[s] |= (1 << cid);
+            }
+        }
+    }
+}
+
 static void apply_prot_maps(int cid) {
     HwContext *c = &hw.ctx[cid];
     uint64_t *pml4 = (uint64_t *)(c->cr3 - g_kphys + g_kvirt);
@@ -332,10 +355,12 @@ static void apply_prot_maps(int cid) {
         for (s = 0; s < HW_N_GUESTS; s++) {
             int32_t b = HW_SLOT_BASE(s), e = HW_SLOT_BOUND(s);
             if (lo < e && hi > b) {
+                /* Same physical frame into this guest's ring-3 AS at the slot VA. */
                 map_user(pml4, HW_DATA_VA_SLOT(s), v2p(hw.slot_page[s]), PTE_P | PTE_W | PTE_U | PTE_NX);
             }
         }
     }
+    refresh_share_masks();
 }
 
 int evoos_hw_addprot(int32_t cid, int32_t lo, int32_t hi) {
@@ -418,6 +443,15 @@ void evoos_hw_ctxset(int32_t cid, int32_t field, int32_t val) {
         c->halted = val;
     } else if (field == HW_FLD_FAULT) {
         c->fault = val;
+    } else if (field == HW_FLD_DATA_BASE) {
+        int s;
+        c->data_base = val;
+        s = slot_of_word(val);
+        if (s >= 0 && cid > 0) {
+            c->rdi = HW_DATA_VA_SLOT(s);
+        }
+    } else if (field == HW_FLD_DATA_BOUND) {
+        c->data_bound = val;
     } else if (field == HW_FLD_LAST_SVC) {
         hw.last_svc = val;
     }
@@ -564,6 +598,27 @@ int32_t evoos_hw_word(int slot, int off) {
         return 0;
     }
     return ((int32_t *)hw.slot_page[slot])[off];
+}
+
+uint64_t evoos_hw_slot_phys(int slot) {
+    if (slot < 0 || slot >= HW_N_GUESTS) {
+        return 0;
+    }
+    return v2p(hw.slot_page[slot]);
+}
+
+int evoos_hw_slot_share_n(int slot) {
+    int n = 0, cid, mask;
+    if (slot < 0 || slot >= HW_N_GUESTS) {
+        return 0;
+    }
+    mask = hw.share_mask[slot];
+    for (cid = 1; cid < HW_N_CTX; cid++) {
+        if (mask & (1 << cid)) {
+            n++;
+        }
+    }
+    return n;
 }
 
 int evoos_hw_install_guest(int slot, const uint8_t *code, uint64_t n_code, const char *name,

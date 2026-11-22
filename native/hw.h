@@ -98,6 +98,7 @@ typedef struct {
     int32_t last_blk_status;
     int32_t n_blocks;
     int32_t has_disk;
+    int32_t share_mask[HW_N_GUESTS];
 } HwMachine;
 
 extern HwMachine hw;
@@ -120,6 +121,8 @@ int evoos_hw_ata_lba(int32_t lba, uint8_t *buf, int wr);
 int evoos_hw_install_guest(int slot, const uint8_t *code, uint64_t n_code, const char *name,
                            const int32_t *init_off, const int32_t *init_val, int n_init);
 int32_t evoos_hw_word(int slot, int off);
+uint64_t evoos_hw_slot_phys(int slot);
+int evoos_hw_slot_share_n(int slot);
 void supervisor_main(void);
 void persist_storage_main(void);
 

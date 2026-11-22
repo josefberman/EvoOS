@@ -215,7 +215,9 @@ def main() -> int:
             wait_serial(serial, "put=", 16.0)
             q.sendkey("u")
             wait_serial(serial, "route", 8.0)
-            got_swap = wait_maybe(serial, "swap id=", 40.0)
+            got_swap = wait_maybe(serial, "swap id=", 50.0)
+            wait_maybe(serial, "shared-window", 20.0)
+            wait_maybe(serial, "route delivered=", 12.0)
             q.sendkey("p")
             wait_serial(serial, "pressure workload", 8.0)
             wait_serial(serial, "evo gen=", 20.0)
@@ -297,9 +299,36 @@ def main() -> int:
         n_rb = text.count("rollback id=")
         pre = text.split("degrade inject")[0] if "degrade inject" in text else text
         real_swaps = [ln for ln in pre.splitlines() if ln.startswith("swap id=")]
+        seeded_mark = ("r8_route", "r7_hw", "r8_share", "persist_rr", "evolved_open", "challenger", " seed")
+        mutant_mark = ("modify_", "insert_", "delete_", "crossover", "shadow")
+        seeded_swaps, mutant_swaps = [], []
+        for ln in real_swaps:
+            if any(m in ln for m in mutant_mark) and "via=" in ln:
+                mutant_swaps.append(ln)
+            elif any(m in ln for m in seeded_mark):
+                seeded_swaps.append(ln)
+            else:
+                mutant_swaps.append(ln)
+        live_rb = [ln for ln in pre.splitlines() if ln.startswith("rollback id=")]
+        survived = []
+        if real_swaps and not live_rb:
+            survived = [real_swaps[-1]]
+        elif real_swaps:
+            # last swap before the last pre-degrade rollback did not survive
+            last_rb_i = max(i for i, ln in enumerate(pre.splitlines()) if ln.startswith("rollback id="))
+            for ln in pre.splitlines()[last_rb_i + 1 :]:
+                if ln.startswith("swap id="):
+                    survived.append(ln)
+        delivered = "route delivered=" in text
+        shares = [ln for ln in text.splitlines() if ln.startswith("shared-window")]
         print(f"hot-swaps={n_swap} real={len(real_swaps)} rollbacks={n_rb}")
+        print(f"seeded_swaps={len(seeded_swaps)} mutant_swaps={len(mutant_swaps)}")
+        print(f"evolved_swap_survived_without_rollback={len(survived)}")
+        print(f"route_delivered={int(delivered)} shared_windows={len(shares)}")
         for line in text.splitlines():
             if line.startswith("swap id=") or line.startswith("swapdelta") or line.startswith("swapdiff"):
+                print(" ", line)
+            if line.startswith("shared-window") or "route delivered=" in line or line.startswith("route retry"):
                 print(" ", line)
         if not real_swaps:
             print("honest: no candidate beat the incumbent on held-out traces", file=sys.stderr)

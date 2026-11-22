@@ -27,6 +27,12 @@ class GuestImage:
     init: dict[int, int]  # absolute address -> value
     expected: dict[int, int]  # absolute address -> value
     needed_cycles: int = 64
+    role: str = "compute"
+    token: int | None = None
+    pair: int | None = None
+    home_block: int | None = None
+    expected_off: dict[int, int] = field(default_factory=dict)
+    messages: tuple[int, ...] | None = None
 
 
 @dataclass
@@ -34,6 +40,7 @@ class Workload:
     name: str
     guests: tuple[GuestImage, ...]
     split: str = "train"  # "train" | "heldout"
+    kind: str = "compute"
 
 
 @dataclass

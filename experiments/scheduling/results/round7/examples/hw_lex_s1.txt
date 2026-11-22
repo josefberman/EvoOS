@@ -1,0 +1,131 @@
+# hw_lex_s1 4/4=False R=0.47212332227015913 org=fifo-swap-like+rr origin=modify_operand
+# diagnose: train completed [2, 5] held [2, 3]; near-zero-cycle guests (train idx) [[1, 3, 7], [1, 3, 7]]; label=round-robin-like
+# blk_r=228 blk_w=57 delivered=0 resident=5
+
+   0:  RUNCTXI  a=1 b=0 c=0 imm=16
+   1:  MOVI     a=4 b=0 c=1 imm=4
+   2:  MOVI     a=3 b=0 c=0 imm=352
+   3:  BLKRD    a=6 b=4 c=3 imm=0
+   4:  CTXGET   a=2 b=0 c=0 imm=14
+   5:  CTXGET   a=2 b=0 c=6 imm=15
+   6:  MOVI     a=3 b=0 c=0 imm=6
+   7:  MOVI     a=1 b=0 c=0 imm=320
+   8:  CTXSET   a=3 b=1 c=0 imm=4
+   9:  MOVI     a=4 b=0 c=0 imm=352
+  10:  CTXSET   a=3 b=4 c=0 imm=5
+  11:  ADDPROT  a=3 b=1 c=4 imm=0
+  12:  MOVI     a=6 b=3 c=0 imm=93
+  13:  CLRPROT  a=5 b=1 c=4 imm=-6
+  14:  SHL      a=4 b=1 c=0 imm=18
+  15:  BGE      a=2 b=0 c=0 imm=8  # -> 24
+  16:  CTXSET   a=3 b=5 c=0 imm=4
+  17:  MOVI     a=6 b=0 c=0 imm=320
+  18:  CTXSET   a=3 b=1 c=0 imm=5
+  19:  BGE      a=5 b=4 c=7 imm=27  # -> 47
+  20:  CTXGET   a=7 b=5 c=1 imm=7
+  21:  ADDI     a=4 b=0 c=3 imm=32
+  22:  CTXGET   a=0 b=2 c=0 imm=20
+  23:  STORE    a=4 b=0 c=4 imm=-27
+  24:  CTXGET   a=5 b=7 c=3 imm=8
+  25:  MUL      a=2 b=7 c=5 imm=18
+  26:  MOVI     a=6 b=0 c=0 imm=1
+  27:  RUNCTX   a=2 b=0 c=0 imm=1
+  28:  ADDI     a=2 b=2 c=0 imm=1
+  29:  CTXGET   a=7 b=0 c=0 imm=6
+  30:  BLT      a=2 b=7 c=4 imm=-4  # -> 27
+  31:  MOVI     a=2 b=0 c=0 imm=3
+  32:  RUNCTXI  a=2 b=0 c=1 imm=128
+  33:  NOP      a=3 b=3 c=5 imm=8
+  34:  RUNCTX   a=2 b=4 c=0 imm=1
+  35:  RUNCTXI  a=2 b=0 c=5 imm=256
+  36:  MOVI     a=6 b=0 c=0 imm=4
+  37:  RUNCTXI  a=2 b=0 c=0 imm=256
+  38:  RUNCTXI  a=3 b=0 c=0 imm=32
+  39:  MOVI     a=6 b=0 c=0 imm=1
+  40:  MOVI     a=3 b=0 c=0 imm=352
+  41:  BLKWR    a=5 b=3 c=0 imm=0
+  42:  BNE      a=0 b=4 c=3 imm=1  # -> 44
+  43:  MOV      a=7 b=1 c=4 imm=24
+  44:  OR       a=3 b=7 c=3 imm=25
+  45:  NOP      a=6 b=3 c=5 imm=-8
+  46:  RDTIME   a=1 b=1 c=5 imm=512
+  47:  MOVI     a=4 b=0 c=6 imm=2
+  48:  RUNCTXI  a=2 b=7 c=5 imm=24
+  49:  BGE      a=5 b=4 c=4 imm=27  # -> 77
+  50:  CTXGET   a=7 b=5 c=1 imm=7
+  51:  ADDI     a=4 b=2 c=4 imm=32
+  52:  NOP      a=3 b=3 c=5 imm=8
+  53:  MOVI     a=2 b=0 c=4 imm=1
+  54:  RUNCTXI  a=5 b=0 c=0 imm=256
+  55:  MOVI     a=1 b=0 c=0 imm=1
+  56:  CTXGET   a=0 b=0 c=0 imm=4
+  57:  ADDPROT  a=1 b=7 c=3 imm=0
+  58:  MOVI     a=3 b=0 c=0 imm=4
+  59:  ADDPROT  a=6 b=1 c=3 imm=0
+  60:  CTXGET   a=1 b=0 c=6 imm=14
+  61:  JAL      a=3 b=3 c=4 imm=0  # -> 62
+  62:  BLKRD    a=0 b=5 c=4 imm=0
+  63:  MOVI     a=6 b=0 c=4 imm=3
+  64:  BLT      a=7 b=0 c=5 imm=320  # -> 385
+  65:  CTXSET   a=6 b=1 c=0 imm=4
+  66:  MOVI     a=2 b=0 c=0 imm=5
+  67:  MOVI     a=3 b=7 c=0 imm=352
+  68:  CTXSET   a=2 b=3 c=0 imm=4
+  69:  MOVI     a=5 b=0 c=0 imm=384
+  70:  CTXSET   a=2 b=5 c=0 imm=5
+  71:  ADDPROT  a=2 b=4 c=5 imm=0
+  72:  MOVI     a=3 b=0 c=0 imm=352
+  73:  CTXSET   a=6 b=2 c=0 imm=5
+  74:  ADDPROT  a=6 b=1 c=3 imm=0
+  75:  CTXGET   a=1 b=0 c=0 imm=14
+  76:  JAL      a=3 b=3 c=4 imm=3  # -> 80
+  77:  SVC      a=4 b=0 c=2 imm=22
+  78:  CTXGET   a=4 b=0 c=1 imm=4
+  79:  STORE    a=5 b=0 c=7 imm=30
+  80:  SHR      a=7 b=2 c=7 imm=3
+  81:  CLRPROT  a=3 b=6 c=0 imm=25
+  82:  RUNCTXI  a=2 b=6 c=1 imm=81
+  83:  JAL      a=7 b=0 c=4 imm=15  # -> 99
+  84:  XOR      a=4 b=1 c=2 imm=9
+  85:  JAL      a=6 b=1 c=3 imm=20  # -> 106
+  86:  BEQ      a=4 b=3 c=0 imm=27  # -> 114
+  87:  CMP      a=6 b=5 c=2 imm=8
+  88:  AND      a=6 b=1 c=5 imm=8
+  89:  ADDI     a=7 b=2 c=3 imm=-4
+  90:  CLRPROT  a=4 b=2 c=2 imm=4
+  91:  BNE      a=0 b=1 c=2 imm=2  # -> 94
+  92:  RUNCTXI  a=5 b=6 c=1 imm=640
+  93:  CTXSET   a=0 b=1 c=2 imm=-1
+  94:  CTXSET   a=1 b=6 c=0 imm=64
+  95:  SHL      a=4 b=7 c=5 imm=10
+  96:  RUNCTXI  a=7 b=1 c=1 imm=16
+  97:  CMP      a=7 b=6 c=7 imm=10
+  98:  MOVI     a=6 b=0 c=0 imm=2
+  99:  MOVI     a=4 b=0 c=2 imm=320
+ 100:  CTXSET   a=6 b=4 c=0 imm=4
+ 101:  MOVI     a=5 b=0 c=0 imm=1
+ 102:  MOVI     a=2 b=0 c=0 imm=7
+ 103:  MOVI     a=5 b=0 c=0 imm=256
+ 104:  CTXSET   a=2 b=5 c=0 imm=4
+ 105:  MOVI     a=1 b=0 c=0 imm=288
+ 106:  CTXSET   a=2 b=1 c=0 imm=5
+ 107:  ADDPROT  a=2 b=2 c=1 imm=0
+ 108:  NOP      a=0 b=0 c=0 imm=0
+ 109:  ADDI     a=5 b=5 c=0 imm=1
+ 110:  CTXGET   a=3 b=0 c=0 imm=6
+ 111:  BLT      a=4 b=7 c=0 imm=-4  # -> 108
+ 112:  MOVI     a=5 b=0 c=0 imm=352
+ 113:  CTXSET   a=6 b=5 c=0 imm=5
+ 114:  SHR      a=4 b=1 c=7 imm=105
+ 115:  MOVI     a=1 b=0 c=0 imm=6
+ 116:  MOVI     a=7 b=0 c=0 imm=2
+ 117:  RUNCTXI  a=6 b=0 c=0 imm=32
+ 118:  MOVI     a=6 b=0 c=0 imm=352
+ 119:  MOVI     a=6 b=0 c=0 imm=3
+ 120:  MOVI     a=3 b=0 c=0 imm=320
+ 121:  MOVI     a=5 b=0 c=0 imm=7
+ 122:  RUNCTXI  a=5 b=0 c=0 imm=16
+ 123:  BLKRD    a=0 b=6 c=3 imm=0
+ 124:  MOVI     a=5 b=0 c=0 imm=320
+ 125:  BLKRD    a=0 b=7 c=3 imm=0
+ 126:  JR       a=6 b=4 c=4 imm=640

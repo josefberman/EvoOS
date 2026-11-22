@@ -12,15 +12,18 @@ loader: slot 0 ctx 1 sum sum_8
 loader: slot 1 ctx 2 fill fill_5
 loader: slot 2 ctx 3 xor xor_5
 loader: slot 3 ctx 4 spin spin
-archive loaded gen=8 inc=2 lineage resume origin=baseline_persist_rr_q32 map=2
-meta online evo=on incumbent=baseline_persist_rr_q32 n=50
+archive loaded gen=16 inc=55 lineage resume origin=modify_op map=4
+meta online evo=on incumbent=modify_op n=22
 guest 1 sum_8 halted cycles=8
+shared-window slot=0 ctx=1+2+ phys=07e1b67c
 guest 2 fill_5 halted cycles=8
 guest 3 xor_5 halted cycles=8
 guest 4 spin preempt vector=32
-evo gen=12 evals=57 map=3 cand=26 fit=560 inc=610 held=725 ih=725 cases=722,607,1000,0 origin=duplicate_block
-evo gen=16 evals=77 map=3 cand=34 fit=658 inc=610 held=725 ih=725 cases=722,607,1000,0 origin=modify_imm
-evo gen=20 evals=97 map=4 cand=42 fit=463 inc=610 held=725 ih=725 cases=722,607,1000,0 origin=modify_imm
+evo gen=20 evals=119 map=5 cand=69 fit=454 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=crossover
+evo gen=24 evals=143 map=5 cand=77 fit=481 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=modify_operand
+evo gen=28 evals=167 map=6 cand=85 fit=481 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=modify_op
+evo gen=32 evals=191 map=6 cand=93 fit=481 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=modify_operand
+evo gen=36 evals=215 map=6 cand=101 fit=416 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=duplicate_block
 evo off
 loader: slot 0 ctx 1 get get
 guest 1 get halted cycles=16 recall=123

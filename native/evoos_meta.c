@@ -164,7 +164,7 @@ static int32_t kind_id(const char *kind) {
     if (scmp(kind, "pressure")) {
         return META_KIND_PRESS;
     }
-    if (scmp(kind, "route")) {
+    if (kind[0] == 'r' && kind[1] == 'o' && kind[2] == 'u') {
         return META_KIND_ROUTE;
     }
     return META_KIND_SUM;
@@ -396,8 +396,12 @@ static void mutate(MetaCand *dst, const MetaCand *parent, const MetaCand *other)
 
 static int install_kind(EvoOSMachine *m, int slot, int32_t kid) {
     const char *k = kind_name(kid);
-    int idx = cat_find(k, slot);
+    int idx;
     const CatProg *p;
+    if (kid == META_KIND_ROUTE) {
+        k = (slot == 1) ? "route_cons" : "route_prod";
+    }
+    idx = cat_find(k, slot);
     if (idx < 0) {
         return -1;
     }
@@ -437,7 +441,7 @@ static int32_t clamp1000(int32_t v) {
 static int32_t score_machine(int want_put, int want_route, int *safe_out, int32_t *sw_out) {
     int i, n_g = 0, progressed = 0, completed = 0, finite = 0, finite_done = 0;
     int32_t fsum = 0, useful = 0, cyc_sum = 0, f, s, e, nh, sw, del, fit, fair;
-    int persist_ok = 0, route_ok = 0;
+    int persist_ok = 0, route_ok = 0, shared = 0;
     int32_t shares[EVOOS_MAX_CTX];
     *safe_out = 0;
     if (sw_out) {
@@ -498,11 +502,26 @@ static int32_t score_machine(int want_put, int want_route, int *safe_out, int32_
         }
     }
     if (want_route) {
-        int cid;
-        for (cid = 1; cid < shadow.n_contexts; cid++) {
-            int32_t base = shadow.contexts[cid].data_base;
-            if (base >= 0 && base + 2 < shadow.mem_words && shadow.mem[base + 2] == 77) {
-                route_ok = 1;
+        int32_t word = (256 + 2 < shadow.mem_words) ? shadow.mem[258] : 0;
+        EvoOSContext *cons = &shadow.contexts[2];
+        if (word == 77 && cons->n_code > 0 && cons->halted && !cons->fault) {
+            route_ok = 1;
+        }
+        {
+            int a, b, pi, pj;
+            for (a = 1; a < shadow.n_contexts && !shared; a++) {
+                for (b = a + 1; b < shadow.n_contexts && !shared; b++) {
+                    EvoOSContext *ca = &shadow.contexts[a];
+                    EvoOSContext *cb = &shadow.contexts[b];
+                    for (pi = 0; pi < ca->n_prot && !shared; pi++) {
+                        for (pj = 0; pj < cb->n_prot; pj++) {
+                            if (ca->prot_lo[pi] < cb->prot_hi[pj] && ca->prot_hi[pi] > cb->prot_lo[pj]) {
+                                shared = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -531,7 +550,10 @@ static int32_t score_machine(int want_put, int want_route, int *safe_out, int32_
         fit += 80;
     }
     if (want_route && route_ok) {
-        fit += 40;
+        fit += 80;
+        if (shared) {
+            fit += 60;
+        }
     }
     fit = clamp1000(fit);
     if (progressed > 0 && nh == 1000) {
@@ -558,10 +580,19 @@ static void replay_range(int start, int n, int *want_put, int *want_route) {
             shadow.last_svc = t.aux;
             shadow.last_svc_ctx = t.slot + 1;
         }
-        evoos_run_slice(&shadow, 120);
+        {
+            int steps = 64;
+            if (n > 1) {
+                steps = 64 + (i * 96) / (n - 1);
+            }
+            evoos_run_slice(&shadow, steps);
+        }
         if (shadow.isolation_n > 0) {
             return;
         }
+    }
+    if (n >= 2) {
+        evoos_run_slice(&shadow, 120);
     }
 }
 
@@ -592,13 +623,24 @@ static int32_t eval_pressure(const MetaCand *c, int *safe, int32_t *sw) {
     return score_machine(0, 0, safe, sw);
 }
 
+static int traces_have_kind(int start, int n, int32_t kid) {
+    int i;
+    for (i = 0; i < n; i++) {
+        int idx = (start + i + META_TRACE) % META_TRACE;
+        if (traces[idx].kind == 1 && traces[idx].aux == kid) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int32_t eval_route(const MetaCand *c, int *safe) {
-    evoos_reset_machine(&shadow, 5, 1024, 1800);
+    evoos_reset_machine(&shadow, 8, 2048, 2400);
     evoos_install_supervisor(&shadow, c->code, c->n);
-    install_kind(&shadow, 0, META_KIND_PUT);
+    install_kind(&shadow, 0, META_KIND_ROUTE);
     install_kind(&shadow, 1, META_KIND_ROUTE);
-    evoos_run_slice(&shadow, 200);
-    return score_machine(1, 1, safe, 0);
+    evoos_run_slice(&shadow, 280);
+    return score_machine(0, 1, safe, 0);
 }
 
 static int32_t eval_live_window(const MetaCand *c, int start, int n, int *safe, int32_t *sw) {
@@ -637,8 +679,13 @@ static void eval_all(MetaCand *c) {
     c->cases[2] = eval_route(c, &s2);
     c->cases[3] = eval_live_window(c, ts, tn, &s3, 0);
     held = hn > 0 ? eval_live_window(c, hs, hn, &sh, &sw) : c->cases[3];
+    if (!traces_have_kind(hs, hn, META_KIND_PRESS)) {
+        held = (held * 2 + c->cases[1]) / 3;
+    }
     c->held = held;
-    c->fit = (c->cases[0] + c->cases[1] + c->cases[2] + c->cases[3] + held) / 5;
+    /* Recent live traces weigh more; pressure is in held even if the window
+     * was only PUT/route (gen-23 starved later slots on live pressure). */
+    c->fit = (c->cases[0] + 2 * c->cases[1] + c->cases[2] + 2 * c->cases[3] + 3 * held) / 9;
     c->switches = sw;
     c->safe = s0 && s1 && s2 && (tn == 0 || s3) && (hn == 0 || sh);
     c->cell_x = c->switches / 4;
@@ -851,8 +898,8 @@ static int archive_load(void) {
         rollbacks = (int32_t)rd32(sec + 28);
         evals = (int32_t)rd32(sec + 32);
         next_id = (int32_t)rd32(sec + 36);
-        if (next_id < 5) {
-            next_id = 5;
+        if (next_id < 32) {
+            next_id = 32;
         }
         lineage_n = (int32_t)rd32(sec + 40);
         if (lineage_n > 8) {
@@ -901,6 +948,8 @@ static void log_swap_diff(const MetaCand *old, const MetaCand *nw) {
     log_i(nw->fit - old->fit);
     log_s(" dheld=");
     log_i(nw->held - old->held);
+    log_s(" dpress=");
+    log_i(nw->cases[1] - old->cases[1]);
     log_s(" n=");
     log_i(old->n);
     log_s("->");
@@ -953,6 +1002,8 @@ static void do_swap(const MetaCand *c, const char *why) {
     log_i(c->fit);
     log_s(" held=");
     log_i(c->held);
+    log_s(" press=");
+    log_i(c->cases[1]);
     log_s(" via=");
     log_s(c->origin);
     log_s(" ");
@@ -1233,11 +1284,15 @@ static int try_swap(MetaCand *c, const char *why) {
     if (!c->safe || c->id == incumbent.id) {
         return 0;
     }
-    if (c->held >= incumbent.held + META_MARGIN_MILLI) {
-        do_swap(c, why);
-        return 1;
+    if (c->held < incumbent.held + META_MARGIN_MILLI) {
+        return 0;
     }
-    return 0;
+    /* Must not regress on the pressure case (held-out mix folds pressure in). */
+    if (c->cases[1] + META_MARGIN_MILLI < incumbent.cases[1]) {
+        return 0;
+    }
+    do_swap(c, why);
+    return 1;
 }
 
 void evoos_meta_tick(void) {
@@ -1392,13 +1447,13 @@ void evoos_meta_init(void) {
     cand_from(&incumbent, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&rollback, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&pop[0], seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
-    cand_from(&pop[1], seed_persist_rr_code, SEED_PERSIST_RR_N, 2, 0, seed_persist_rr_origin);
-    cand_from(&pop[2], seed_fifo_swap_code, SEED_FIFO_SWAP_N, 3, 0, seed_fifo_swap_origin);
-    cand_from(&pop[3], seed_place_first_code, SEED_PLACE_FIRST_N, 4, 0, seed_place_first_origin);
+    cand_from(&pop[1], seed_route_s42_code, SEED_ROUTE_S42_N, 2, 0, seed_route_s42_origin);
+    cand_from(&pop[2], seed_hw_lex_s99_code, SEED_HW_LEX_S99_N, 3, 0, seed_hw_lex_s99_origin);
+    cand_from(&pop[3], seed_share_4g_code, SEED_SHARE_4G_N, 4, 0, seed_share_4g_origin);
     for (i = 4; i < META_POP; i++) {
         mutate(&pop[i], &incumbent, &pop[1]);
     }
-    next_id = 5;
+    next_id = 32;
     lineage_n = 0;
     lineage_push(1);
     live_pc = 0;
@@ -1414,7 +1469,14 @@ void evoos_meta_init(void) {
         log_i(map_n);
         log_s("\n");
     } else {
-        log_s("archive empty; seed s99 fifo place_first persist_rr\n");
+        log_s("archive empty; seed s99 r7/r8 elites share_4g\n");
+        for (i = 0; i < SEED_MAP_N; i++) {
+            MetaCand e;
+            cand_from(&e, SEED_MAP_ELITES[i].code, SEED_MAP_ELITES[i].n, 10 + i, 0,
+                      SEED_MAP_ELITES[i].origin);
+            eval_all(&e);
+            map_add(&e);
+        }
         archive_save();
     }
     log_s("meta online evo=");

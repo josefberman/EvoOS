@@ -304,6 +304,12 @@ class Machine:
             target.halted = bool(val)
         elif field == CtxField.FAULT:
             target.fault = int(val)
+        elif field == CtxField.DATA_BASE:
+            target.data_base = int(val)
+            target.regs[1] = wrap32(val)
+        elif field == CtxField.DATA_BOUND:
+            target.data_bound = int(val)
+            target.regs[2] = wrap32(val)
         elif field == CtxField.LAST_SVC:
             self.last_svc = int(val)
             if val == 0:
