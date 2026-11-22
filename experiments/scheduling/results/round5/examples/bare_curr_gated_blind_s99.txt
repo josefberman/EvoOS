@@ -1,0 +1,37 @@
+# bare_curr_gated_blind_s99 4/4=False stall=k1 R=0.4 label=starving arm=blind
+# diagnose: train completed [1, 1] held [1, 1]; near-zero-cycle guests (train idx) [[0, 2, 3], [0, 2, 3]]; label=starving
+# n_eval=320000 archive=6
+
+   0:  RUNCTXI  a=3 b=3 c=2 imm=3
+   1:  MUL      a=1 b=7 c=3 imm=16
+   2:  CTXSET   a=3 b=5 c=6 imm=64
+   3:  LOAD     a=5 b=1 c=1 imm=3
+   4:  RDFAULT  a=4 b=0 c=6 imm=-6
+   5:  LOAD     a=1 b=7 c=3 imm=26
+   6:  XOR      a=6 b=3 c=1 imm=20
+   7:  SHL      a=1 b=4 c=5 imm=9
+   8:  LOAD     a=2 b=4 c=0 imm=20
+   9:  BGE      a=3 b=3 c=5 imm=16  # -> 26
+  10:  JMP      a=5 b=2 c=3 imm=-5  # -> 6
+  11:  SHR      a=2 b=2 c=0 imm=16
+  12:  OR       a=6 b=1 c=6 imm=22
+  13:  LOAD     a=7 b=4 c=3 imm=18
+  14:  XOR      a=0 b=3 c=7 imm=4
+  15:  BEQ      a=5 b=7 c=0 imm=0  # -> 16
+  16:  XOR      a=2 b=6 c=1 imm=384
+  17:  AND      a=2 b=2 c=6 imm=10
+  18:  SHL      a=5 b=7 c=3 imm=79
+  19:  BEQ      a=2 b=1 c=4 imm=15  # -> 35
+  20:  NOP      a=5 b=3 c=6 imm=0
+  21:  CTXGET   a=6 b=6 c=5 imm=17
+  22:  ADDPROT  a=5 b=6 c=7 imm=-6
+  23:  STORE    a=4 b=1 c=5 imm=6
+  24:  LOAD     a=3 b=6 c=4 imm=384
+  25:  CLRPROT  a=7 b=6 c=4 imm=1
+  26:  SUB      a=7 b=2 c=4 imm=12
+  27:  ADDPROT  a=2 b=4 c=6 imm=40
+  28:  CTXGET   a=4 b=7 c=5 imm=3
+  29:  XOR      a=6 b=6 c=2 imm=50
+  30:  RUNCTX   a=7 b=6 c=2 imm=9
+  31:  RDFAULT  a=7 b=2 c=1 imm=256
+  32:  ADDPROT  a=0 b=1 c=5 imm=21

@@ -68,6 +68,8 @@ python -m evoos.experiments.scheduling.sweep --out experiments/scheduling/result
 python -m evoos.experiments.scheduling.sweep_round3 --out experiments/scheduling/results/round3
 # Round 4: gated vs ungated shaping + milestone MAP-Elites (bare, lenient):
 python -m evoos.experiments.scheduling.sweep_round4 --out experiments/scheduling/results/round4
+# Round 5: learned GRU edit policy vs blind UCB1 (equal evals, gated curriculum):
+python -m evoos.experiments.scheduling.sweep_round5 --out experiments/scheduling/results/round5
 ```
 
 ## Scaled results (measured)
@@ -175,3 +177,21 @@ Gated: entered/progress/complete for a guest count only if that guest retired �
 **0/24** 4/4. Gated kills the R=0.52 trap (flat gated is all `no-dispatch`). It does not compose ADDPROT-then-RUNCTX at this budget except one curriculum seed that covers and completes a single guest. Nothing non-RR/RTC at 4/4 because nothing reached 4/4. Round 3's one flat 4/4 did not replicate under the milestone archive (ungated flat 0/6).
 
 Next: a C/Rust interpreter with golden traces against this Python VM; Limine ISO. The remaining search gap is covering the guest window from random 5-tuples, not ISA design.
+
+## Round 5 (learned edit policy vs blind mutation)
+
+Same machine, **254.1 min**, 6 seeds, bare pack, gated curriculum, **lenient** substrate. Tables: [`experiments/scheduling/results/round5/summary.md`](experiments/scheduling/results/round5/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round5 \
+  --gens-per-stage 1000 --population 64 --eval-workers 4
+```
+
+GRU (instruction tokens + 12-d telemetry) trained with REINFORCE/PPO-clip on child−parent reward, shared across seeds, ε-greedy UCB1 mix. Blind arm: independent UCB1. Equal evals: **320000**/seed (9.5× round-4 curriculum). k1 promotes on a 1/1 protected-complete archive cell. **ISA frozen** (32 opcodes). Search `max_len=64`.
+
+| arm | search R mean ± std (best) | 4/4 train+held | mean n_eval |
+| --- | --- | --- | --- |
+| learned | 0.000 ± 0.000 (0.000) | **0/6** | 320000 |
+| blind | 0.067 ± 0.149 (0.400) | **0/6** (seed 99: 1/4 protected complete) | 320000 |
+
+**0/12** 4/4. The net never left the idle cell (advantages 0; no reward gradient). Blind seed 99 again finds a k4 1/4 cover-then-run stone (archive 6, label `starving`); that is a 4-guest cell, so k1 promotion never fired (0/12). Preferred visit counts: `modify_imm`, `modify_operand`, `crossover`. Nothing non-RR/RTC at 4/4. Covering the guest window from random 5-tuples is still the gap, not the mutation policy.

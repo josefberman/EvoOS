@@ -1,0 +1,24 @@
+# bare_curr_gated_learned_s1 4/4=False stall=k1 R=0.0 label=no-dispatch arm=learned
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=no-dispatch
+# n_eval=320000 archive=1
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  CLRPROT  a=3 b=1 c=7 imm=16
+   2:  MOV      a=6 b=0 c=7 imm=35
+   3:  BNE      a=1 b=5 c=0 imm=3  # -> 7
+   4:  MOV      a=0 b=6 c=3 imm=26
+   5:  ADDPROT  a=3 b=7 c=7 imm=32
+   6:  RUNCTXI  a=3 b=7 c=4 imm=6
+   7:  MOV      a=1 b=2 c=4 imm=27
+   8:  OR       a=6 b=3 c=4 imm=384
+   9:  BLT      a=6 b=0 c=7 imm=16  # -> 26
+  10:  CMP      a=6 b=2 c=5 imm=8
+  11:  RUNCTXI  a=5 b=1 c=7 imm=108
+  12:  ADDI     a=6 b=5 c=7 imm=2
+  13:  MOV      a=6 b=2 c=2 imm=11
+  14:  ADDI     a=3 b=3 c=6 imm=-8
+  15:  ADDI     a=5 b=7 c=4 imm=28
+  16:  RUNCTXI  a=0 b=6 c=2 imm=384
+  17:  CTXGET   a=6 b=0 c=7 imm=3
+  18:  RUNCTX   a=6 b=7 c=5 imm=3
+  19:  CTXSET   a=5 b=7 c=0 imm=26
