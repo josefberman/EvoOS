@@ -77,6 +77,20 @@ class RewardBreakdown:
         }
 
 
+def _revoke_term(train_results: list[EvalResult]) -> tuple[float, float, float]:
+    """CLRPROT after delivery vs leftover pair windows (stale lifetime)."""
+    delivered = [r for r in train_results if (getattr(r, "delivered", 0) or 0) > 0]
+    if not delivered:
+        return 0.0, 0.0, 0.0
+    rev = sum(1.0 if r.revoked else 0.0 for r in delivered) / len(delivered)
+    stale = sum(
+        min(1.0, (getattr(r, "n_stale", 0) or 0) / max(int(r.delivered), 1))
+        for r in delivered
+    ) / len(delivered)
+    clr = sum(min(1.0, (getattr(r, "n_clrprot", 0) or 0) / 8.0) for r in delivered) / len(delivered)
+    return rev, stale, clr
+
+
 def score(
     train_results: list[EvalResult],
     *,
@@ -87,6 +101,7 @@ def score(
     shaping: bool = False,
     rich_efficiency: bool = False,
     gated: bool = False,
+    revoke: bool = False,
 ) -> RewardBreakdown:
     w = (weights or RewardWeights()).normalized()
     if not train_results:
@@ -114,6 +129,7 @@ def score(
     s = sum(s_parts) / len(s_parts)
     e = sum(e_parts) / len(e_parts)
     shape = mean_shape(train_results, gated=gated)
+    rev, stale, clr = _revoke_term(train_results)
     if shaping:
         f = shape.blended()
         if gated:
@@ -135,6 +151,8 @@ def score(
         g = sum(g_parts) / len(g_parts)
 
     n = max(0.0, min(1.0, novelty))
+    if revoke and any((getattr(r, "delivered", 0) or 0) > 0 for r in train_results):
+        f = max(0.0, min(1.0, 0.85 * f + 0.10 * rev + 0.05 * clr - 0.10 * stale))
 
     if hard_fail:
         # Hard constraint: throughput / novelty cannot buy a passing score.
@@ -149,7 +167,13 @@ def score(
             isolation_ok=False,
             completed=completed,
             n_guests=n_guests,
-            details={"reason": "isolation_or_corruption", "shape": shape.as_dict()},
+            details={
+                "reason": "isolation_or_corruption",
+                "shape": shape.as_dict(),
+                "revoke": rev,
+                "stale": stale,
+                "clrprot": clr,
+            },
         )
 
     total = w.f * f + w.s * s + w.e * e + w.g * g + w.n * n
@@ -164,5 +188,10 @@ def score(
         isolation_ok=True,
         completed=completed,
         n_guests=n_guests,
-        details={"shape": shape.as_dict()},
+        details={
+            "shape": shape.as_dict(),
+            "revoke": rev,
+            "stale": stale,
+            "clrprot": clr,
+        },
     )

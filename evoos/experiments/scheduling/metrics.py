@@ -53,6 +53,50 @@ def evaluate_split(
     }
 
 
+def case_failure_table(
+    sandbox: Sandbox,
+    cand: Candidate,
+    train: list[Workload],
+    heldout: list[Workload],
+) -> list[dict]:
+    """Per-guest blockers on the official split (used when 4/4 is 0/N)."""
+    rows = []
+    for split, ws in (("train", train), ("held", heldout)):
+        for w in ws:
+            r = sandbox.evaluate(cand.instrs, w)
+            failed = []
+            for i, o in enumerate(r.outcomes):
+                if o.correct:
+                    continue
+                role = w.guests[i].role if i < len(w.guests) else ""
+                failed.append(
+                    {
+                        "i": i,
+                        "name": o.name,
+                        "role": role,
+                        "halted": o.halted,
+                        "fault": int(o.fault),
+                        "cycles": o.cycles,
+                    }
+                )
+            rows.append(
+                {
+                    "split": split,
+                    "workload": w.name,
+                    "completed": r.completed,
+                    "n_guests": r.n_guests,
+                    "delivered": r.delivered,
+                    "isolation_ok": r.isolation_ok,
+                    "share_leak": bool(r.share_leak),
+                    "n_clrprot": int(r.n_clrprot),
+                    "n_stale": int(getattr(r, "n_stale", 0) or 0),
+                    "style": r.route_style,
+                    "failed": failed,
+                }
+            )
+    return rows
+
+
 def diagnose(row: dict) -> str:
     """Short note when 4/4 failed."""
     if row.get("four_of_four"):

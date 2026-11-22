@@ -46,6 +46,11 @@ Each case is a `Workload`: `kind` (`route` | `pressure` | `mix` | `compute`),
 Delivery: consumer `expected_off[i] == mem[DATA_BASE+i]` (or disk `home_block`
 if unmapped). Isolation is a hard fail.
 
+`audit_pass` on an embed is the on-device 8-context admission gate (`n_contexts=8`,
+pair window `[256,384)`). Ctx ids above `n_guests` are live non-participants.
+A pair-window grant (or subrange) to any other id is a leak. This must match
+boot-track `eval_audit`.
+
 ## What the stub must not add
 
 No `pipe`, `message_queue`, `allocate_page`, or `schedule_process` opcode.

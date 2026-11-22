@@ -73,6 +73,9 @@ def lexicase_select(
     if not use:
         return [rng.choice(ids) for _ in range(max(1, n))]
     scores = [bank[i] for i in use]
+    width = max((len(s) for s in scores), default=0)
+    if any(len(s) != width for s in scores):
+        scores = [list(s) + [0.0] * (width - len(s)) for s in scores]
     out: list[int] = []
     for _ in range(max(1, n)):
         idx = lexicase_index(scores, rng, epsilon=epsilon, auto_epsilon=auto_epsilon)

@@ -6,6 +6,8 @@ The supervisor must place them with ADDPROT / CTXSET / BLKRD. No paging opcode.
 
 from __future__ import annotations
 
+import random
+
 from evoos.vm.instruction_set import assemble
 from evoos.vm.sandbox import GuestImage, Workload
 
@@ -114,11 +116,16 @@ def guest_consumer(
     )
 
 
-def guest_attacker(i: int, kind: str = "store_frames") -> GuestImage:
+def guest_attacker(
+    i: int,
+    kind: str = "store_frames",
+    bases: tuple[int, ...] | None = None,
+) -> GuestImage:
     """Malicious guest: poke likely RAM frames. Must fault unless granted a leak."""
+    poke = tuple(bases) if bases else (256, 288, 320, 352, 384)
     if kind == "load_frames":
         lines = []
-        for base in (256, 288, 320, 352, 384):
+        for base in poke:
             lines.append(f"        MOVI r1, {base}")
             lines.append("        LOAD r3, r1, 0")
         lines.append("        HALT")
@@ -126,7 +133,7 @@ def guest_attacker(i: int, kind: str = "store_frames") -> GuestImage:
         lines = [
             "        MOVI r3, 99",
         ]
-        for base in (256, 288, 320, 352, 384):
+        for base in poke:
             lines.append(f"        MOVI r1, {base}")
             lines.append("        STORE r1, r3, 0")
         lines.append("        HALT")
@@ -141,6 +148,69 @@ def guest_attacker(i: int, kind: str = "store_frames") -> GuestImage:
         home_block=i,
         role="attacker",
     )
+
+
+def _clone_guest(g: GuestImage, *, pair=None, home_block=None) -> GuestImage:
+    return GuestImage(
+        name=g.name,
+        code=g.code,
+        data_base=g.data_base,
+        data_bound=g.data_bound,
+        init=g.init,
+        expected=g.expected,
+        needed_cycles=g.needed_cycles,
+        home_block=g.home_block if home_block is None else home_block,
+        expected_off=g.expected_off,
+        role=g.role,
+        token=g.token,
+        pair=g.pair if pair is None else pair,
+        messages=g.messages,
+    )
+
+
+def attach_attacker(
+    w: Workload,
+    kind: str = "store_frames",
+    *,
+    insert_at: int | None = None,
+    bases: tuple[int, ...] | None = None,
+    name: str | None = None,
+) -> Workload:
+    """Append (or insert) a malicious guest. Pair ctx ids shift on insert."""
+    guests = list(w.guests)
+    idx = len(guests) if insert_at is None else insert_at
+    atk = guest_attacker(idx, kind, bases=bases)
+    if insert_at is None:
+        guests.append(atk)
+    else:
+        guests.insert(insert_at, atk)
+        shift_from = insert_at + 1
+        rewritten = []
+        for gi, g in enumerate(guests):
+            pair = g.pair
+            new_pair = pair + 1 if pair is not None and pair >= shift_from else pair
+            rewritten.append(_clone_guest(g, pair=new_pair, home_block=gi))
+        guests = rewritten
+    return Workload(
+        name=name or f"{w.name}_{kind}_{idx}",
+        guests=tuple(guests),
+        split=w.split,
+        kind=w.kind,
+    )
+
+
+def sample_train_audit(
+    bank: tuple[Workload, ...] | list[Workload],
+    k: int,
+    seed: int,
+    gen: int,
+) -> list[Workload]:
+    """Deterministic rotating sample so a seed cannot memorize one attacker slot."""
+    if not bank or k <= 0:
+        return []
+    rng = random.Random((int(seed) + 1) * 10007 + int(gen) * 17)
+    k = min(int(k), len(bank))
+    return rng.sample(list(bank), k)
 
 
 def pressure_workload(split: str = "train", n: int = N_PRESSURE_GUESTS) -> Workload:
@@ -340,6 +410,78 @@ def audit_workloads() -> tuple[Workload, ...]:
             split="heldout",
             kind="mix",
         ),
+    )
+
+
+def train_audit_bank() -> tuple[Workload, ...]:
+    """Attacker-injected copies sampled into search. Never used as the held-out audit."""
+    r4 = route_workload("train", 4)
+    mix = mixed_pressure_route("train")
+    rev4 = tuple(i ^ 1 for i in range(8))
+    r2 = route_workload("train", 2)
+    return (
+        attach_attacker(r4, "store_frames", name="aud_train_r4_store"),
+        attach_attacker(r4, "load_frames", name="aud_train_r4_load"),
+        attach_attacker(mix, "store_frames", name="aud_train_mix_store"),
+        attach_attacker(mix, "load_frames", name="aud_train_mix_load"),
+        attach_attacker(
+            route_variant("train", pairs=4, perm=rev4, name="gen_rev4_train"),
+            "store_frames",
+            name="aud_train_rev4_store",
+        ),
+        attach_attacker(r2, "store_frames", name="aud_train_r2_store"),
+    )
+
+
+def on_device_audit_workloads() -> tuple[Workload, ...]:
+    """Boot-track admission: pair at ctx 1+2, STORE/LOAD attackers at 3+4, idle 5–7.
+
+    Evaluated with n_contexts=8. Extra ctx ids are live non-participants.
+    """
+    pair = list(route_workload("heldout", 1, name="aud_pair").guests)
+    atk_store = guest_attacker(2, "store_frames")
+    atk_load = guest_attacker(3, "load_frames")
+    return (
+        Workload(
+            "audit_device_pair_atk",
+            tuple(pair + [atk_store, atk_load]),
+            split="heldout",
+            kind="route",
+        ),
+        attach_attacker(
+            route_workload("heldout", 1),
+            "store_frames",
+            name="audit_device_pair_store",
+        ),
+        attach_attacker(
+            route_workload("heldout", 1),
+            "load_frames",
+            name="audit_device_pair_load",
+        ),
+    )
+
+
+def heldout_audit_workloads() -> tuple[Workload, ...]:
+    """Never-trained leak audit: different slots, poke bases, and pair counts."""
+    r3 = route_workload("heldout", 3)
+    mix = mixed_pressure_route("heldout")
+    pair = route_workload("heldout", 1)
+    r2 = route_workload("heldout", 2)
+    mix_rf = mix_variant("heldout", route_first=True, name="gen_mix_rf_held")
+    two = attach_attacker(mix, "store_frames", name="aud_hold_mix_store")
+    two = attach_attacker(two, "load_frames", name="aud_hold_mix_twoatk")
+    return (
+        attach_attacker(r3, "store_frames", name="aud_hold_r3_store"),
+        two,
+        attach_attacker(pair, "store_frames", insert_at=1, name="aud_hold_pair_mid_store"),
+        attach_attacker(
+            r2,
+            "store_frames",
+            bases=(272, 304, 336, 368),
+            name="aud_hold_r2_offbase",
+        ),
+        attach_attacker(mix_rf, "store_frames", name="aud_hold_mixrf_store"),
+        attach_attacker(pair, "load_frames", insert_at=0, name="aud_hold_pair_first_load"),
     )
 
 

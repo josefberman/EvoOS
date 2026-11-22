@@ -24,12 +24,23 @@ from evoos.evaluator.novelty import (
     route_cell,
     opcode_histogram,
 )
+from evoos.evaluator.hw_workloads import sample_train_audit
 from evoos.evaluator.reward import RewardBreakdown, RewardWeights, score
 from evoos.vm.sandbox import EvalResult, Sandbox, Workload
 from evoos.vm.verifier import VerifyError, verify_supervisor
 
 
 INVALID_REWARD = -1.0
+
+
+def _safety_fail(results: list) -> str | None:
+    """Third-guest grant or attacker window = invalid, not a scored parent."""
+    for r in results:
+        if getattr(r, "share_leak", False):
+            return "share_leak"
+        if not getattr(r, "attacker_contained", True):
+            return "attacker_grant"
+    return None
 
 
 def remote_evaluate(payload: dict) -> dict:
@@ -49,11 +60,17 @@ def remote_evaluate(payload: dict) -> dict:
     train = [sb.evaluate(instrs, w) for w in payload["train"]]
     held = [sb.evaluate(instrs, w) for w in payload["held"]] if payload.get("compute_held") else []
     invalid = bool(train and train[0].invalid)
+    reason = train[0].invalid_reason if invalid and train else ""
+    if payload.get("leak_invalid") and not invalid:
+        fail = _safety_fail(train)
+        if fail:
+            invalid = True
+            reason = fail
     return {
         "invalid": invalid,
         "train": train,
         "held": held,
-        "reason": train[0].invalid_reason if invalid and train else "",
+        "reason": reason,
     }
 
 
@@ -145,6 +162,10 @@ class SearchConfig:
     epsilon: float | None = None  # None + epsilon_lexicase => auto MAD
     hw_archive: bool = False
     route_archive: bool = False
+    audit_bank: tuple | None = None
+    audit_sample: int = 0
+    leak_invalid: bool = False
+    revoke_shaping: bool = False
 
 
 @dataclass
@@ -197,6 +218,8 @@ def evaluate_candidate(
     shaping: bool = False,
     rich_efficiency: bool = False,
     gated: bool = False,
+    leak_invalid: bool = False,
+    revoke: bool = False,
 ) -> tuple[RewardBreakdown, list[EvalResult], list[EvalResult], bool]:
     try:
         verify_supervisor(candidate.instrs, sandbox.config)
@@ -217,6 +240,23 @@ def evaluate_candidate(
         return empty, [], [], True
 
     train_results = [sandbox.evaluate(candidate.instrs, w) for w in train]
+    if leak_invalid:
+        fail = _safety_fail(train_results)
+        if fail:
+            empty = RewardBreakdown(
+                total=INVALID_REWARD,
+                f=0,
+                s=0,
+                e=0,
+                g=0,
+                n=0,
+                hard_fail=True,
+                isolation_ok=False,
+                completed=0,
+                n_guests=0,
+                details={"invalid": True, "reason": fail},
+            )
+            return empty, train_results, [], True
     if train_results and train_results[0].invalid:
         empty = RewardBreakdown(
             total=INVALID_REWARD,
@@ -254,6 +294,7 @@ def evaluate_candidate(
         shaping=shaping,
         rich_efficiency=rich_efficiency,
         gated=gated,
+        revoke=revoke,
     )
     return breakdown, train_results, held_results, False
 
@@ -354,11 +395,17 @@ def run_search(
                     del hall[: len(hall) - 32]
         rec.new_cell = new_cell  # type: ignore[attr-defined]
         rec.isolation_ok = (not invalid) and (all(r.isolation_ok for r in tr) if tr else True)  # type: ignore[attr-defined]
+        isol_ok[cand.id] = bool(rec.isolation_ok)
         if tr and not invalid:
             names, vec = case_vector(tr, gated=config.gated)
+            if config.audit_bank:
+                core = {w.name for w in train}
+                filtered = [(n, v) for n, v in zip(names, vec) if n.split(".", 1)[0] in core]
+                if filtered:
+                    names = [n for n, _ in filtered]
+                    vec = [v for _, v in filtered]
             rec.cases = vec  # type: ignore[attr-defined]
             case_bank[cand.id] = vec
-            isol_ok[cand.id] = bool(rec.isolation_ok)
             if not state.case_names:
                 state.case_names = names
             for nm, v in zip(names, vec):
@@ -380,7 +427,7 @@ def run_search(
         bd, tr, ho, invalid = evaluate_candidate(
             sandbox,
             cand,
-            train,
+            active_train,
             heldout,
             novelty,
             weights,
@@ -388,6 +435,8 @@ def run_search(
             shaping=config.shaping,
             rich_efficiency=config.rich_efficiency,
             gated=config.gated,
+            leak_invalid=config.leak_invalid,
+            revoke=config.revoke_shaping,
         )
         return finish_eval(cand, gen, operator, bd, tr, ho, invalid)
 
@@ -404,6 +453,18 @@ def run_search(
             )
         tr = remote.get("train") or []
         ho = remote.get("held") or []
+        if config.leak_invalid:
+            fail = _safety_fail(tr)
+            if fail:
+                return finish_eval(
+                    cand,
+                    gen,
+                    operator,
+                    _invalid_breakdown(fail),
+                    tr,
+                    ho,
+                    True,
+                )
         beh = behavioral_descriptor(tr[0]) if tr else (0.0,)
         hist = opcode_histogram(cand.instrs)
         vec = tuple(beh) + tuple(hist[:8])
@@ -420,6 +481,7 @@ def run_search(
             shaping=config.shaping,
             rich_efficiency=config.rich_efficiency,
             gated=config.gated,
+            revoke=config.revoke_shaping,
         )
         return finish_eval(cand, gen, operator, bd, tr, ho, False)
 
@@ -432,9 +494,10 @@ def run_search(
             {
                 "instrs": [(i.op, i.a, i.b, i.c, i.imm) for i in c.instrs],
                 "machine": _machine_dict(sandbox.config),
-                "train": train,
+                "train": list(active_train),
                 "held": heldout,
                 "compute_held": compute_g,
+                "leak_invalid": bool(config.leak_invalid),
             }
             for c in cands
         ]
@@ -453,7 +516,17 @@ def run_search(
     case_bank: dict[int, list[float]] = {}
     isol_ok: dict[int, bool] = {}
     pool = _make_eval_pool(int(config.eval_workers))
+    active_train: list[Workload] = list(train)
+
+    def rotate_train(gen: int) -> None:
+        active_train[:] = list(train)
+        bank = config.audit_bank
+        k = int(config.audit_sample or 0)
+        if bank and k > 0:
+            active_train.extend(sample_train_audit(tuple(bank), k, config.seed, gen))
+
     try:
+        rotate_train(0)
         init_recs = eval_batch(pop, 0, ["init"] * len(pop), True)
         for cand, rec0 in zip(pop, init_recs):
             parent_r[cand.id] = rec0.reward.total
@@ -467,6 +540,7 @@ def run_search(
                 parent_pool[cand.id] = tuple(dict.fromkeys(list(fw_pool) + seen))
 
         for gen in range(1, config.generations + 1):
+            rotate_train(gen)
             compute_g = config.eval_heldout_every > 0 and (gen % config.eval_heldout_every == 0)
             gen_rewards: list[float] = []
             n_invalid = 0
@@ -674,10 +748,16 @@ def run_search(
                 on_generation(gen, state, row)
             if config.early_stop_complete:
                 rec = state.best_record
+                core = {w.name for w in train}
                 full = (
                     rec is not None
                     and rec.train
-                    and all(r.completed == r.n_guests and r.isolation_ok for r in rec.train)
+                    and any(r.workload in core for r in rec.train)
+                    and all(
+                        r.completed == r.n_guests and r.isolation_ok
+                        for r in rec.train
+                        if r.workload in core
+                    )
                 )
                 n_g = len(train[0].guests) if train else 0
                 stone = archive_has_protected_complete(state, n_g)

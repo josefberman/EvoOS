@@ -13,6 +13,7 @@ from evoos.vm.instruction_set import (
     FW_N_GUESTS,
     MAGIC,
     Instr,
+    Op,
 )
 from evoos.vm.machine import Machine, MachineConfig, Snapshot
 from evoos.vm.verifier import VerifyError, verify_guest, verify_supervisor
@@ -98,6 +99,8 @@ class EvalResult:
     share_leak: bool = False
     revoked: bool = False
     n_clrprot: int = 0
+    n_stale: int = 0
+    n_attackers: int = 0
     attacker_contained: bool = True
 
     @property
@@ -115,6 +118,8 @@ def load_firmware(machine: Machine, workload: Workload) -> None:
     for i, g in enumerate(workload.guests):
         base = FW_GUEST_TABLE + i * FW_GUEST_STRIDE
         ctx_id = i + 1
+        if ctx_id >= cfg.n_contexts:
+            continue
         m[base + 0] = ctx_id
         m[base + 1] = g.data_base
         m[base + 2] = g.data_bound
@@ -147,7 +152,23 @@ def load_firmware(machine: Machine, workload: Workload) -> None:
             for addr, val in g.init.items():
                 m[addr] = val
                 machine.last_writer[addr] = 0
+    idle_halt = (Instr(int(Op.HALT), 0, 0, 0, 0),)
     for extra in range(len(workload.guests) + 1, cfg.n_contexts):
+        # Live non-participant: HALT guest in every unused ctx so ADDPROT is a real grant.
+        ctx = machine.contexts[extra]
+        ctx.code = list(idle_halt)
+        ctx.pc = 0
+        ctx.regs = [0] * cfg.n_regs
+        ctx.halted = False
+        ctx.fault = 0
+        ctx.cycles = 0
+        ctx.halt_cycle = None
+        ctx.prot = []
+        ctx.data_base = 0
+        ctx.data_bound = 0
+        ctx.protected_cycles = 0
+        ctx.ran_protected = False
+        ctx.svc = 0
         machine.legal_store[extra] = None
     if machine.disk is not None:
         machine.disk.n_read = 0
@@ -248,12 +269,43 @@ def _pair_overlap_ranges(machine: Machine, a: int, b: int) -> list[tuple[int, in
     return out
 
 
+# Boot-track machine: supervisor + ctx 1..7 (evoos_reset_machine(..., 8, ...)).
+ON_DEVICE_N_CONTEXTS = 8
+# On-device pair slot 0. Subrange overlap with this window is a leak for a 1-pair audit.
+ON_DEVICE_PAIR_WINDOW = (256, 384)
+
+
+def _pair_windows(machine: Machine, cid: int, partner: int, *, canonical: bool) -> list[tuple[int, int]]:
+    windows: list[tuple[int, int]] = []
+    windows.extend(_pair_overlap_ranges(machine, partner, cid))
+    if 0 < cid < len(machine.contexts):
+        windows.extend(_ctx_ranges(machine.contexts[cid]))
+    if 0 < partner < len(machine.contexts):
+        windows.extend(_ctx_ranges(machine.contexts[partner]))
+    if canonical:
+        windows.append(ON_DEVICE_PAIR_WINDOW)
+    seen: set[tuple[int, int]] = set()
+    out: list[tuple[int, int]] = []
+    for lo, hi in windows:
+        if hi <= lo or (lo, hi) in seen:
+            continue
+        seen.add((lo, hi))
+        out.append((lo, hi))
+    return out
+
+
 def _share_audit(machine: Machine, workload: Workload, outcomes: list[GuestOutcome]) -> dict:
-    """Third-guest grant of a pair window is a leak. Revocation is reported separately."""
+    """Third-guest grant of a pair window (or subrange) is a leak.
+
+    Every context id 1..n_contexts-1 is live. Ids above n_guests are
+    non-participants (on-device idle slots). Skipping them hid ADDPROT of ctx 4.
+    """
     leaks: list[tuple[int, int]] = []
     n_share = 0
     n_open = 0
     delivered = 0
+    n_pairs = sum(1 for g in workload.guests if g.role == "consumer")
+    canonical = n_pairs == 1
     for i, g in enumerate(workload.guests):
         if g.role != "consumer":
             continue
@@ -263,34 +315,32 @@ def _share_audit(machine: Machine, workload: Workload, outcomes: list[GuestOutco
             continue
         if outcomes and i < len(outcomes) and outcomes[i].correct:
             delivered += 1
-        overlap = _pair_overlap_ranges(machine, partner, cid)
-        if overlap:
+        windows = _pair_windows(machine, cid, partner, canonical=canonical)
+        if _pair_overlap_ranges(machine, partner, cid):
             n_share += 1
             n_open += 1
-            for olo, ohi in overlap:
-                for tid in range(1, len(machine.contexts)):
-                    if tid in (cid, partner) or tid > len(workload.guests):
-                        continue
-                    for lo, hi in _ctx_ranges(machine.contexts[tid]):
-                        if _overlaps(lo, hi, olo, ohi):
-                            leaks.append((tid, olo))
-        # Attacker covering a mapped pair member's window even without overlap.
-        for tid, ag in enumerate(workload.guests, start=1):
-            if ag.role != "attacker":
+        participants = {cid, partner}
+        for tid in range(1, len(machine.contexts)):
+            if tid in participants:
                 continue
             for lo, hi in _ctx_ranges(machine.contexts[tid]):
-                for plo, phi in _ctx_ranges(machine.contexts[cid]) + _ctx_ranges(machine.contexts[partner]):
-                    if _overlaps(lo, hi, plo, phi):
+                for wlo, whi in windows:
+                    if _overlaps(lo, hi, wlo, whi):
                         leaks.append((tid, lo))
+                        break
+    n_stale = n_open if delivered > 0 else 0
     revoked = delivered > 0 and n_open == 0
     if delivered == 0:
         revoked = int(getattr(machine, "n_clrprot", 0) or 0) > 0 and n_open == 0
     attacker_ids = {i + 1 for i, g in enumerate(workload.guests) if g.role == "attacker"}
     contained = not any(tid in attacker_ids for tid, _addr in leaks)
+    n_atk = sum(1 for g in workload.guests if g.role == "attacker")
     return {
         "share_leak": bool(leaks),
         "revoked": bool(revoked),
         "n_clrprot": int(getattr(machine, "n_clrprot", 0) or 0),
+        "n_stale": int(n_stale),
+        "n_attackers": int(n_atk),
         "attacker_contained": bool(contained),
         "leak_hits": leaks,
     }
@@ -531,6 +581,8 @@ class Sandbox:
             share_leak=bool(audit["share_leak"]),
             revoked=bool(audit["revoked"]),
             n_clrprot=int(audit["n_clrprot"]),
+            n_stale=int(audit["n_stale"]),
+            n_attackers=int(audit["n_attackers"]),
             attacker_contained=bool(audit["attacker_contained"]),
             **_route_telemetry(machine, workload, outcomes),
         )

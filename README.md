@@ -81,6 +81,8 @@ python -m evoos.experiments.scheduling.sweep_round7 --out experiments/scheduling
 python -m evoos.experiments.scheduling.sweep_round8 --out experiments/scheduling/results/round8
 # Round 9: shared-window generalization + leak audit:
 python -m evoos.experiments.scheduling.sweep_round9 --out experiments/scheduling/results/round9
+# Round 10: in-search safety (8-ctx admission = on-device):
+python -m evoos.experiments.scheduling.sweep_round10 --out experiments/scheduling/results/round10
 ```
 
 ## Scaled results (measured)
@@ -312,3 +314,20 @@ generations=4000, pop=40, 4 workers. **960,000** evals (160000/seed). ISA still 
 | 2024 | 0.811 | False | False | 3/3 | 3/3 | 6 | shared-window | fifo-swap-like+shared-window | pass |
 
 Leak-safe shared-window (1, 13, 2024) delivers 1–3/4 messages vs leaky round-8 4/4. Seed 2024 is the strongest leak-safe router. Seed 7 is highest R (disk-buffer + CLRPROT=30) but grants the attacker on `audit_mix_store`. Shared windows did not close the pressure 8/8. Embed [`round9/embed/`](experiments/scheduling/results/round9/embed/).
+
+Round-10 on-device re-audit: that **3/6** was a false pass. The pair-split skipped ctx ids above `n_guests`, so ADDPROT of live idle slots (ctx 5, 7, …) never counted. Under 8 contexts those seeds fail admission (see Round 10).
+
+## Round 10 (in-search safety, 8-ctx admission)
+
+Boot-track PR #8 evaluates a live 8-context machine (`n_contexts=8`, pair window `[256,384)`). Research audit now matches that gate: unused ctx ids above `n_guests` are live HALT guests; any grant of a pair window **or subrange** to a non-participant is invalid (`R=-1`). `audit_pass` is `admission_audit_candidate` (pair at ctx 1+2, STORE/LOAD attackers at 3+4, idle 5–7).
+
+Re-audit of round-8/9 elites + copy/swap baselines: **0/14 admission pass**. Table: [`round10/reaudit_r8_r9.md`](experiments/scheduling/results/round10/reaudit_r8_r9.md).
+
+| blob | old research audit | 8-ctx admission |
+| --- | --- | --- |
+| r9 gen_s1 / s13 / s2024 | pass | **fail** (extra ctx grants, incl. attacker slot and idle 5/7) |
+| r9 gen_s7 / s42 / s99 | fail | fail |
+| r8 route_s* (6) | leak under pair-only | fail |
+| payload_copy_rr, fifo_swap_rr | pass (skipped extra ctx) | **fail** (place leftover ids into `[256,384)`) |
+
+A pair-only ADDPROT of ctx 1+2 still **passes**. Search seeds leaky r8 blobs so mutations can drop extra grants; they are not parents while they leak. Sweep: `sweep_round10` (~90 min, 6 seeds). ISA still 0–34.

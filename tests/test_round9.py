@@ -10,7 +10,7 @@ from evoos.evaluator.hw_workloads import (
     route_variant,
     route_workload,
 )
-from evoos.evaluator.share_audit import audit_candidate
+from evoos.evaluator.share_audit import admission_audit_candidate
 from evoos.experiments.scheduling.hw_baselines import payload_copy_rr
 from evoos.vm.instruction_set import Op, assemble
 from evoos.vm.machine import lenient_config
@@ -167,8 +167,12 @@ def test_lexicase_has_share_and_variant_cases():
 
 
 def test_payload_copy_audit_no_leak():
+    """Official 4/4 still isolates; 8-ctx pair admission catches extra-ctx grants."""
     cand = payload_copy_rr(16)
     sb = Sandbox(lenient_config(n_contexts=9, n_blocks=16, block_words=32, max_steps=6000, blk_latency=2))
-    aud = audit_candidate(sb, cand)
-    assert aud["n_leak"] == 0
-    assert aud["pass"]
+    train, held = official_split()
+    tr = [sb.evaluate(cand.instrs, w) for w in train]
+    ho = [sb.evaluate(cand.instrs, w) for w in held]
+    assert all(r.isolation_ok and r.completed == r.n_guests for r in tr + ho)
+    adm = admission_audit_candidate(cand)
+    assert not adm["pass"]
