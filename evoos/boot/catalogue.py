@@ -11,6 +11,8 @@ from pathlib import Path
 
 from evoos.evaluator.workloads import (
     GUEST_SLOTS,
+    guest_atk_load,
+    guest_atk_store,
     guest_copyinc,
     guest_fill,
     guest_malicious_store,
@@ -39,6 +41,8 @@ def _programs() -> list[tuple[str, int, GuestImage]]:
         out.append(("route", slot, guest_route(slot, 2 if slot != 1 else 3, 77)))
         out.append(("route_prod", slot, guest_route_prod(slot, 77)))
         out.append(("route_cons", slot, guest_route_cons(slot, 0)))
+        out.append(("atk_store", slot, guest_atk_store(slot, 256)))
+        out.append(("atk_load", slot, guest_atk_load(slot, 256)))
         out.append(("put", slot, _put(slot)))
         out.append(("get", slot, _get(slot)))
         out.append(("spin", slot, _spin(slot)))

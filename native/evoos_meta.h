@@ -49,6 +49,7 @@ void evoos_meta_on_live_metrics(int32_t isolation_n);
 void evoos_meta_show_lineage(void);
 void evoos_meta_inject_degrader(void);
 void evoos_meta_on_supervisor_halt(void);
+void evoos_meta_audit_live(void);
 EvoOSMetaStats evoos_meta_stats(void);
 int evoos_meta_using_interp(void);
 

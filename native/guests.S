@@ -106,6 +106,13 @@ guest_malicious:
     int $0x80
 guest_malicious_end:
 
+    /* Third-guest STORE of the pair window. Must #PF unless the window leaked. */
+    .global guest_malicious_store, guest_malicious_store_end
+guest_malicious_store:
+    movl $99, 8(%rsi)
+    int $0x80
+guest_malicious_store_end:
+
     .global guest_spin, guest_spin_end
 guest_spin:
 1:

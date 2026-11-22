@@ -6,15 +6,13 @@ import argparse
 from pathlib import Path
 
 from evoos.boot.pack import select_supervisor
-from evoos.export.embed import embed_document, read_embed, write_embed
-from evoos.vm.instruction_set import Instr, assemble, parse_disassembly
+from evoos.export.embed import read_embed
+from evoos.vm.instruction_set import Instr, assemble
 
 ROOT = Path(__file__).resolve().parents[2]
-R8_EMBED = ROOT / "experiments/scheduling/results/round8/embed"
-R7_EX = ROOT / "experiments/scheduling/results/round7/examples"
-R7_EMBED = ROOT / "experiments/scheduling/results/round7/embed"
-R8_SEEDS = (1, 7, 13, 42, 99, 2024)
-R7_SEEDS = (1, 7, 13, 42, 99, 2024)
+R9_EMBED = ROOT / "experiments/scheduling/results/round9/embed"
+# Leak-safe round-9 elites only. 7/42/99 fail the third-guest / attacker audit.
+R9_SAFE = (1, 13, 2024)
 
 
 def _emit(name: str, instrs: tuple[Instr, ...], origin: str) -> str:
@@ -30,10 +28,9 @@ def _emit(name: str, instrs: tuple[Instr, ...], origin: str) -> str:
 
 
 def shared_window_rr(quantum: int = 16) -> tuple[tuple[Instr, ...], str]:
-    """4-guest projection of the round-8 shared-window organization.
+    """4-guest pair share: ADDPROT the producer window to ctx 1 and ctx 2 only.
 
-    ADDPROT the same word range to two guest ids (ctx 1 producer, ctx 2
-    consumer), then never-halt RR. Seeded, not discovered.
+    Third guests keep their own disjoint windows. Seeded, not discovered.
     """
     src = f"""
         MOVI r1, 1
@@ -68,45 +65,10 @@ def shared_window_rr(quantum: int = 16) -> tuple[tuple[Instr, ...], str]:
     return assemble(src), "r8_share_4g"
 
 
-def ensure_r7_embed() -> None:
-    R7_EMBED.mkdir(parents=True, exist_ok=True)
-    readme = R7_EMBED / "README.md"
-    if not readme.exists():
-        readme.write_text(
-            "Round-7 C-hw elites converted to `evoos-embed-v1` "
-            "(spec: [`evoos/export/FORMAT.md`](../../../../../evoos/export/FORMAT.md)).\n"
-            "JSON 5-tuples are canonical; `.bin` is the same `i32×5` stream.\n"
-        )
-    for seed in R7_SEEDS:
-        txt = R7_EX / f"hw_lex_s{seed}.txt"
-        out = R7_EMBED / f"hw_lex_s{seed}.json"
-        if not txt.exists():
-            continue
-        instrs = parse_disassembly(txt.read_text())
-        if out.exists():
-            _, have = read_embed(out)
-            if have == instrs:
-                continue
-        doc = embed_document(
-            supervisor=instrs,
-            origin=f"hw_lex_s{seed}",
-            label=f"hw_lex_s{seed}",
-            notes="round-7 C-hw elite (fifo-swap-like+rr / blk-user)",
-        )
-        write_embed(out, doc, instrs)
-
-
-def load_r8(seed: int) -> tuple[tuple[Instr, ...], str]:
-    path = R8_EMBED / f"route_s{seed}.json"
+def load_r9(seed: int) -> tuple[tuple[Instr, ...], str]:
+    path = R9_EMBED / f"gen_s{seed}.json"
     _, instrs = read_embed(path)
-    return instrs, f"r8_route_s{seed}"
-
-
-def load_r7(seed: int) -> tuple[tuple[Instr, ...], str]:
-    ensure_r7_embed()
-    path = R7_EMBED / f"hw_lex_s{seed}.json"
-    _, instrs = read_embed(path)
-    return instrs, f"r7_hw_lex_s{seed}"
+    return instrs, f"r9_gen_s{seed}"
 
 
 def emit_header(kind: str = "evolved_open") -> str:
@@ -130,18 +92,11 @@ def emit_header(kind: str = "evolved_open") -> str:
         _emit("seed_share_4g", share, share_o),
         "",
     ]
-    r8_names: list[str] = []
-    for seed in R8_SEEDS:
-        instrs, origin = load_r8(seed)
-        name = f"seed_route_s{seed}"
-        r8_names.append(name)
-        chunks.append(_emit(name, instrs, origin))
-        chunks.append("")
-    r7_names: list[str] = []
-    for seed in R7_SEEDS:
-        instrs, origin = load_r7(seed)
-        name = f"seed_hw_lex_s{seed}"
-        r7_names.append(name)
+    r9_names: list[str] = []
+    for seed in R9_SAFE:
+        instrs, origin = load_r9(seed)
+        name = f"seed_gen_s{seed}"
+        r9_names.append(name)
         chunks.append(_emit(name, instrs, origin))
         chunks.append("")
     chunks.append("typedef struct {")
@@ -150,16 +105,23 @@ def emit_header(kind: str = "evolved_open") -> str:
     chunks.append("    const char *origin;")
     chunks.append("} SeedElite;")
     chunks.append("")
-    chunks.append("static const SeedElite SEED_MAP_ELITES[] = {")
+    chunks.append("static const SeedElite SEED_AUDIT[] = {")
+    chunks.append("    {seed_s99_code, SEED_S99_N, seed_s99_origin},")
+    chunks.append("    {seed_persist_rr_code, SEED_PERSIST_RR_N, seed_persist_rr_origin},")
     chunks.append("    {seed_share_4g_code, SEED_SHARE_4G_N, seed_share_4g_origin},")
-    for name in r8_names:
-        un = name.upper()
-        chunks.append(f"    {{{name}_code, {un}_N, {name}_origin}},")
-    for name in r7_names:
+    for name in r9_names:
         un = name.upper()
         chunks.append(f"    {{{name}_code, {un}_N, {name}_origin}},")
     chunks.append("};")
-    chunks.append(f"#define SEED_MAP_N ((int)(sizeof(SEED_MAP_ELITES) / sizeof(SEED_MAP_ELITES[0])))")
+    chunks.append("#define SEED_AUDIT_N ((int)(sizeof(SEED_AUDIT) / sizeof(SEED_AUDIT[0])))")
+    chunks.append("")
+    chunks.append("static const SeedElite SEED_MAP_ELITES[] = {")
+    chunks.append("    {seed_share_4g_code, SEED_SHARE_4G_N, seed_share_4g_origin},")
+    for name in r9_names:
+        un = name.upper()
+        chunks.append(f"    {{{name}_code, {un}_N, {name}_origin}},")
+    chunks.append("};")
+    chunks.append("#define SEED_MAP_N ((int)(sizeof(SEED_MAP_ELITES) / sizeof(SEED_MAP_ELITES[0])))")
     chunks.append("")
     chunks.append("#endif")
     chunks.append("")

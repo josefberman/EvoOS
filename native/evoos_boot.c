@@ -35,6 +35,7 @@ extern const uint8_t guest_xor[], guest_xor_end[];
 extern const uint8_t guest_copyinc[], guest_copyinc_end[];
 extern const uint8_t guest_max[], guest_max_end[];
 extern const uint8_t guest_malicious[], guest_malicious_end[];
+extern const uint8_t guest_malicious_store[], guest_malicious_store_end[];
 extern const uint8_t guest_spin[], guest_spin_end[];
 extern const uint8_t guest_put[], guest_put_end[];
 extern const uint8_t guest_get[], guest_get_end[];
@@ -525,7 +526,7 @@ static void dashboard(void) {
 }
 
 static void print_help(void) {
-    cons_puts("keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage  d degrade\n");
+    cons_puts("keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  a audit  g evo  l lineage  d degrade\n");
     cons_puts("w put  r get  z pull-plug  i inspect  q quit\n");
     cons_puts("loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM\n");
 }
@@ -662,10 +663,14 @@ static void loader_spawn(int slot, const char *kind) {
             init_val[n_init] = mv[i];
             n_init++;
         }
-    } else if (kind_eq(kind, "malicious")) {
+    } else if (kind_eq(kind, "malicious") || kind_eq(kind, "atk_load")) {
         code = guest_malicious;
         end = guest_malicious_end;
-        name = "malicious_read";
+        name = kind_eq(kind, "atk_load") ? "atk_load" : "malicious_read";
+    } else if (kind_eq(kind, "atk_store")) {
+        code = guest_malicious_store;
+        end = guest_malicious_store_end;
+        name = "atk_store";
     } else if (kind_eq(kind, "spin")) {
         code = guest_spin;
         end = guest_spin_end;
@@ -838,6 +843,8 @@ static char scancode_to_ascii(uint8_t sc) {
         return 'l';
     case 0x16:
         return 'u';
+    case 0x1e:
+        return 'a';
     case 0x17:
         return 'i';
     case 0x23:
@@ -899,6 +906,12 @@ static void handle_key(char ch, uint8_t scan) {
         loader_spawn(1, "route_cons");
         route_retry = 1;
         route_delivered = 0;
+        break;
+    case 'a':
+        cons_puts("audit third-guest store/load\n");
+        loader_spawn(2, "atk_store");
+        loader_spawn(3, "atk_load");
+        evoos_meta_audit_live();
         break;
     case 'd':
         evoos_meta_inject_degrader();

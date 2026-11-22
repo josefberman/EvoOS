@@ -211,6 +211,7 @@ def main() -> int:
         q.sendkey("i")
         wait_serial(serial, "inspect isolation_n=", 8.0)
         if args.evolve_gens > 0:
+            wait_serial(serial, "audit done", 16.0)
             q.sendkey("w")
             wait_serial(serial, "put=", 16.0)
             q.sendkey("u")
@@ -218,6 +219,9 @@ def main() -> int:
             got_swap = wait_maybe(serial, "swap id=", 50.0)
             wait_maybe(serial, "shared-window", 20.0)
             wait_maybe(serial, "route delivered=", 12.0)
+            q.sendkey("a")
+            wait_serial(serial, "audit live leak=", 12.0)
+            wait_maybe(serial, "atk_store", 8.0)
             q.sendkey("p")
             wait_serial(serial, "pressure workload", 8.0)
             wait_serial(serial, "evo gen=", 20.0)
@@ -299,7 +303,14 @@ def main() -> int:
         n_rb = text.count("rollback id=")
         pre = text.split("degrade inject")[0] if "degrade inject" in text else text
         real_swaps = [ln for ln in pre.splitlines() if ln.startswith("swap id=")]
-        seeded_mark = ("r8_route", "r7_hw", "r8_share", "persist_rr", "evolved_open", "challenger", " seed")
+        seeded_mark = (
+            "r9_gen",
+            "r8_share",
+            "persist_rr",
+            "evolved_open",
+            "challenger",
+            " seed",
+        )
         mutant_mark = ("modify_", "insert_", "delete_", "crossover", "shadow")
         seeded_swaps, mutant_swaps = [], []
         for ln in real_swaps:
@@ -321,15 +332,30 @@ def main() -> int:
                     survived.append(ln)
         delivered = "route delivered=" in text
         shares = [ln for ln in text.splitlines() if ln.startswith("shared-window")]
+        audits = [ln for ln in text.splitlines() if ln.startswith("audit origin=")]
+        live_audits = [ln for ln in text.splitlines() if ln.startswith("audit live")]
         print(f"hot-swaps={n_swap} real={len(real_swaps)} rollbacks={n_rb}")
         print(f"seeded_swaps={len(seeded_swaps)} mutant_swaps={len(mutant_swaps)}")
         print(f"evolved_swap_survived_without_rollback={len(survived)}")
         print(f"route_delivered={int(delivered)} shared_windows={len(shares)}")
+        print(f"audit_supervisors={len(audits)}")
+        for line in audits:
+            print(" ", line)
+        for line in live_audits:
+            print(" ", line)
         for line in text.splitlines():
             if line.startswith("swap id=") or line.startswith("swapdelta") or line.startswith("swapdiff"):
                 print(" ", line)
             if line.startswith("shared-window") or "route delivered=" in line or line.startswith("route retry"):
                 print(" ", line)
+            if "quarantine" in line or line.startswith("audit fallback") or line.startswith("audit r8"):
+                print(" ", line)
+        if "audit done" not in text:
+            print("missing on-device audit", file=sys.stderr)
+            return 1
+        if any("audit live leak=1" in ln for ln in live_audits):
+            print("live third-guest leak", file=sys.stderr)
+            return 1
         if not real_swaps:
             print("honest: no candidate beat the incumbent on held-out traces", file=sys.stderr)
             for line in text.splitlines():

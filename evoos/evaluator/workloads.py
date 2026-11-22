@@ -337,6 +337,47 @@ def guest_route_cons(slot: int, src_slot: int = 0) -> GuestImage:
     )
 
 
+def guest_atk_store(slot: int, target: int = 256) -> GuestImage:
+    """Third-guest STORE into the pair window. Must fault unless the window leaked."""
+    lo, hi = GUEST_SLOTS[slot]
+    src = f"""
+        MOVI r1, {target}
+        MOVI r2, 99
+        STORE r1, r2, 2
+        HALT
+    """
+    return GuestImage(
+        name="atk_store",
+        code=assemble(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 0},
+        expected={},
+        needed_cycles=8,
+        role="attacker",
+    )
+
+
+def guest_atk_load(slot: int, target: int = 256) -> GuestImage:
+    """Third-guest LOAD of the pair window. Must fault unless the window leaked."""
+    lo, hi = GUEST_SLOTS[slot]
+    src = f"""
+        MOVI r1, {target}
+        LOAD r2, r1, 2
+        HALT
+    """
+    return GuestImage(
+        name="atk_load",
+        code=assemble(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 0},
+        expected={},
+        needed_cycles=8,
+        role="attacker",
+    )
+
+
 def guest_malicious_store(slot: int, target_addr: int) -> GuestImage:
     """Writes outside its slot. Used to test isolation detection."""
     lo, hi = GUEST_SLOTS[slot]

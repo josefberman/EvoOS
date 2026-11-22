@@ -19,6 +19,12 @@
 #define META_KIND_GET 8
 #define META_KIND_PRESS 9
 #define META_KIND_ROUTE 10
+#define META_KIND_ATK_STORE 11
+#define META_KIND_ATK_LOAD 12
+#define PAIR_LO 256
+#define PAIR_HI 384
+#define PAIR_PROD 1
+#define PAIR_CONS 2
 
 typedef struct {
     EvoOSInstr code[META_MAX_CODE];
@@ -32,6 +38,8 @@ typedef struct {
     int32_t cell_y;
     int32_t switches;
     int32_t safe;
+    int32_t leak;
+    int32_t contain;
     char origin[24];
 } MetaCand;
 
@@ -166,6 +174,12 @@ static int32_t kind_id(const char *kind) {
     }
     if (kind[0] == 'r' && kind[1] == 'o' && kind[2] == 'u') {
         return META_KIND_ROUTE;
+    }
+    if (kind[0] == 'a' && kind[1] == 't' && kind[4] == 's') {
+        return META_KIND_ATK_STORE;
+    }
+    if (kind[0] == 'a' && kind[1] == 't' && kind[4] == 'l') {
+        return META_KIND_ATK_LOAD;
     }
     return META_KIND_SUM;
 }
@@ -401,6 +415,12 @@ static int install_kind(EvoOSMachine *m, int slot, int32_t kid) {
     if (kid == META_KIND_ROUTE) {
         k = (slot == 1) ? "route_cons" : "route_prod";
     }
+    if (kid == META_KIND_ATK_STORE) {
+        k = "atk_store";
+    }
+    if (kid == META_KIND_ATK_LOAD) {
+        k = "atk_load";
+    }
     idx = cat_find(k, slot);
     if (idx < 0) {
         return -1;
@@ -634,12 +654,100 @@ static int traces_have_kind(int start, int n, int32_t kid) {
     return 0;
 }
 
+static int ranges_overlap(int32_t lo, int32_t hi, int32_t lo2, int32_t hi2) {
+    return lo < hi && lo2 < hi2 && lo < hi2 && hi > lo2;
+}
+
+static int ctx_covers(const EvoOSContext *c, int32_t lo, int32_t hi) {
+    int i;
+    if (c->data_bound > c->data_base && ranges_overlap(c->data_base, c->data_bound, lo, hi)) {
+        return 1;
+    }
+    for (i = 0; i < c->n_prot; i++) {
+        if (ranges_overlap(c->prot_lo[i], c->prot_hi[i], lo, hi)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Third-guest rule: any ctx other than the pair covering the pair window is a leak. */
+static int third_guest_leak(int prod, int cons) {
+    int tid;
+    for (tid = 1; tid < shadow.n_contexts; tid++) {
+        if (tid == prod || tid == cons) {
+            continue;
+        }
+        if (ctx_covers(&shadow.contexts[tid], PAIR_LO, PAIR_HI)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int eval_audit(const MetaCand *c, int *leak_out, int *contain_out) {
+    int leak, contain, granted, store_ran, load_ran;
+    EvoOSContext *atk_s, *atk_l;
+    evoos_reset_machine(&shadow, 8, 2048, 2400);
+    evoos_install_supervisor(&shadow, c->code, c->n);
+    if (install_kind(&shadow, 0, META_KIND_ROUTE) < 0 ||
+        install_kind(&shadow, 1, META_KIND_ROUTE) < 0 ||
+        install_kind(&shadow, 2, META_KIND_ATK_STORE) < 0 ||
+        install_kind(&shadow, 3, META_KIND_ATK_LOAD) < 0) {
+        if (leak_out) {
+            *leak_out = 1;
+        }
+        if (contain_out) {
+            *contain_out = 0;
+        }
+        return 0;
+    }
+    evoos_run_slice(&shadow, 320);
+    leak = third_guest_leak(PAIR_PROD, PAIR_CONS);
+    granted = ctx_covers(&shadow.contexts[3], PAIR_LO, PAIR_HI) ||
+              ctx_covers(&shadow.contexts[4], PAIR_LO, PAIR_HI);
+    atk_s = &shadow.contexts[3];
+    atk_l = &shadow.contexts[4];
+    store_ran = atk_s->cycles > 0 || atk_s->fault || atk_s->halted;
+    load_ran = atk_l->cycles > 0 || atk_l->fault || atk_l->halted;
+    contain = !granted && shadow.isolation_n == 0;
+    if (store_ran && !atk_s->fault) {
+        contain = 0;
+    }
+    if (load_ran && !atk_l->fault) {
+        contain = 0;
+    }
+    if (leak_out) {
+        *leak_out = leak || granted;
+    }
+    if (contain_out) {
+        *contain_out = contain;
+    }
+    return contain && !leak && !granted && shadow.isolation_n == 0;
+}
+
+static void log_audit(const char *origin, int leak, int contain, int pass) {
+    log_s("audit origin=");
+    log_s(origin);
+    log_s(" leak=");
+    log_i(leak);
+    log_s(" contain=");
+    log_i(contain);
+    log_s(" pass=");
+    log_i(pass);
+    log_s("\n");
+}
+
 static int32_t eval_route(const MetaCand *c, int *safe) {
     evoos_reset_machine(&shadow, 8, 2048, 2400);
     evoos_install_supervisor(&shadow, c->code, c->n);
     install_kind(&shadow, 0, META_KIND_ROUTE);
     install_kind(&shadow, 1, META_KIND_ROUTE);
     evoos_run_slice(&shadow, 280);
+    if (third_guest_leak(PAIR_PROD, PAIR_CONS)) {
+        *safe = 0;
+        return 0;
+    }
     return score_machine(0, 1, safe, 0);
 }
 
@@ -687,7 +795,16 @@ static void eval_all(MetaCand *c) {
      * was only PUT/route (gen-23 starved later slots on live pressure). */
     c->fit = (c->cases[0] + 2 * c->cases[1] + c->cases[2] + 2 * c->cases[3] + 3 * held) / 9;
     c->switches = sw;
-    c->safe = s0 && s1 && s2 && (tn == 0 || s3) && (hn == 0 || sh);
+    {
+        int leak = 0, contain = 0, ap = eval_audit(c, &leak, &contain);
+        c->leak = leak;
+        c->contain = contain;
+        if (!ap) {
+            c->safe = 0;
+        } else {
+            c->safe = s0 && s1 && s2 && (tn == 0 || s3) && (hn == 0 || sh);
+        }
+    }
     c->cell_x = c->switches / 4;
     if (c->cell_x >= META_MAP_X) {
         c->cell_x = META_MAP_X - 1;
@@ -701,7 +818,7 @@ static void eval_all(MetaCand *c) {
 
 static void map_add(const MetaCand *c) {
     int idx;
-    if (!c->safe || c->n <= 0) {
+    if (!c->safe || c->leak || c->n <= 0) {
         return;
     }
     idx = c->cell_y * META_MAP_X + c->cell_x;
@@ -1237,10 +1354,21 @@ void evoos_meta_record_svc(int32_t code, int32_t ctx) {
     }
 }
 
+static int live_third_guest(void) {
+    /* Pair window is slot 0. Extra bits beyond ctx 1+2 are a leak. */
+    int extra = hw.share_mask[0] & ~((1 << PAIR_PROD) | (1 << PAIR_CONS));
+    return extra != 0;
+}
+
 void evoos_meta_on_live_metrics(int32_t isolation_n) {
     int i, progressed = 0, n_g = 0;
     if (isolation_n > iso_at_swap && swapped_live) {
         do_rollback("live isolation");
+        return;
+    }
+    if (live_third_guest() && swapped_live) {
+        evoos_meta_audit_live();
+        do_rollback("third-guest leak");
         return;
     }
     for (i = 1; i < hw.n_contexts; i++) {
@@ -1281,7 +1409,7 @@ void evoos_meta_inject_degrader(void) {
 }
 
 static int try_swap(MetaCand *c, const char *why) {
-    if (!c->safe || c->id == incumbent.id) {
+    if (!c->safe || c->leak || c->id == incumbent.id) {
         return 0;
     }
     if (c->held < incumbent.held + META_MARGIN_MILLI) {
@@ -1438,8 +1566,20 @@ EvoOSMetaStats evoos_meta_stats(void) {
 
 int evoos_meta_using_interp(void) { return 1; }
 
+void evoos_meta_audit_live(void) {
+    int extra = hw.share_mask[0] & ~((1 << PAIR_PROD) | (1 << PAIR_CONS));
+    log_s("audit live leak=");
+    log_i(extra != 0);
+    log_s(" extra=");
+    log_i(extra);
+    log_s(" isolation_n=");
+    log_i(hw.isolation_n);
+    log_s("\n");
+}
+
 void evoos_meta_init(void) {
-    int i;
+    int i, leak, contain, pass;
+    int s99_ok = 0, share_ok = 0, g2024_ok = 0, g1_ok = 0, g13_ok = 0;
     rng_s = 0xA341316Cu;
     (void)seed_s99_code;
     mset(map_el, 0, sizeof(map_el));
@@ -1447,9 +1587,62 @@ void evoos_meta_init(void) {
     cand_from(&incumbent, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&rollback, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
     cand_from(&pop[0], seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
-    cand_from(&pop[1], seed_route_s42_code, SEED_ROUTE_S42_N, 2, 0, seed_route_s42_origin);
-    cand_from(&pop[2], seed_hw_lex_s99_code, SEED_HW_LEX_S99_N, 3, 0, seed_hw_lex_s99_origin);
-    cand_from(&pop[3], seed_share_4g_code, SEED_SHARE_4G_N, 4, 0, seed_share_4g_origin);
+    log_s("audit begin\n");
+    for (i = 0; i < SEED_AUDIT_N; i++) {
+        MetaCand e;
+        const char *origin = SEED_AUDIT[i].origin;
+        cand_from(&e, SEED_AUDIT[i].code, SEED_AUDIT[i].n, 10 + i, 0, origin);
+        leak = 0;
+        contain = 0;
+        pass = eval_audit(&e, &leak, &contain);
+        e.leak = leak;
+        e.contain = contain;
+        e.safe = pass;
+        log_audit(origin, leak, contain, pass);
+        if (pass) {
+            if (SEED_AUDIT[i].code == seed_s99_code) {
+                s99_ok = 1;
+            }
+            if (SEED_AUDIT[i].code == seed_share_4g_code) {
+                share_ok = 1;
+            }
+            if (SEED_AUDIT[i].code == seed_gen_s2024_code) {
+                g2024_ok = 1;
+            }
+            if (SEED_AUDIT[i].code == seed_gen_s1_code) {
+                g1_ok = 1;
+            }
+            if (SEED_AUDIT[i].code == seed_gen_s13_code) {
+                g13_ok = 1;
+            }
+        }
+    }
+    log_s("audit quarantine r8_route_* r7_hw_lex_* r9_gen_s7 r9_gen_s42 r9_gen_s99\n");
+    log_s("audit done\n");
+    if (!s99_ok) {
+        log_s("audit s99 leak; keeping as last-resort boot seed\n");
+    }
+    if (g2024_ok) {
+        cand_from(&pop[1], seed_gen_s2024_code, SEED_GEN_S2024_N, 2, 0, seed_gen_s2024_origin);
+    } else if (share_ok) {
+        log_s("audit fallback challenger r8_share_4g\n");
+        cand_from(&pop[1], seed_share_4g_code, SEED_SHARE_4G_N, 2, 0, seed_share_4g_origin);
+    } else {
+        pop[1] = incumbent;
+    }
+    if (g1_ok) {
+        cand_from(&pop[2], seed_gen_s1_code, SEED_GEN_S1_N, 3, 0, seed_gen_s1_origin);
+    } else {
+        pop[2] = incumbent;
+    }
+    if (share_ok) {
+        cand_from(&pop[3], seed_share_4g_code, SEED_SHARE_4G_N, 4, 0, seed_share_4g_origin);
+    } else if (g13_ok) {
+        log_s("audit r8_share_4g leak; fallback r9_gen_s13\n");
+        cand_from(&pop[3], seed_gen_s13_code, SEED_GEN_S13_N, 4, 0, seed_gen_s13_origin);
+    } else {
+        pop[3] = incumbent;
+    }
     for (i = 4; i < META_POP; i++) {
         mutate(&pop[i], &incumbent, &pop[1]);
     }
@@ -1468,13 +1661,41 @@ void evoos_meta_init(void) {
         log_s(" map=");
         log_i(map_n);
         log_s("\n");
+        leak = 0;
+        contain = 0;
+        pass = eval_audit(&incumbent, &leak, &contain);
+        log_audit(incumbent.origin, leak, contain, pass);
+        if (!pass) {
+            log_s("archive quarantine leak origin=");
+            log_s(incumbent.origin);
+            log_s("\n");
+            cand_from(&incumbent, seed_incumbent_code, SEED_INCUMBENT_N, 1, 0, seed_incumbent_origin);
+            rollback = incumbent;
+            live_pc = 0;
+            mset(live_r, 0, sizeof(live_r));
+        }
+        for (i = 0; i < META_MAP_X * META_MAP_Y; i++) {
+            if (map_el[i].n > 0) {
+                leak = 0;
+                contain = 0;
+                pass = eval_audit(&map_el[i], &leak, &contain);
+                log_audit(map_el[i].origin, leak, contain, pass);
+                if (!pass) {
+                    mset(&map_el[i], 0, sizeof(map_el[i]));
+                    if (map_n > 0) {
+                        map_n--;
+                    }
+                }
+            }
+        }
     } else {
-        log_s("archive empty; seed s99 r7/r8 elites share_4g\n");
+        log_s("archive empty; seed leak-safe r9 + share_4g\n");
         for (i = 0; i < SEED_MAP_N; i++) {
             MetaCand e;
             cand_from(&e, SEED_MAP_ELITES[i].code, SEED_MAP_ELITES[i].n, 10 + i, 0,
                       SEED_MAP_ELITES[i].origin);
             eval_all(&e);
+            log_audit(e.origin, e.leak, e.contain, e.safe && !e.leak);
             map_add(&e);
         }
         archive_save();

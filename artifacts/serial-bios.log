@@ -5,14 +5,28 @@ firmware is not a kernel; supervisor=evolved_open_arrival_gadgets_s99
 storage=evolved_persist_crossover
 meta=online-evolve seed=s99
 device attached blocks=32
-keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage  d degrade
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  a audit  g evo  l lineage  d degrade
 w put  r get  z pull-plug  i inspect  q quit
 loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
 loader: slot 0 ctx 1 sum sum_8
 loader: slot 1 ctx 2 fill fill_5
 loader: slot 2 ctx 3 xor xor_5
 loader: slot 3 ctx 4 spin spin
-archive empty; seed s99 r7/r8 elites share_4g
+audit begin
+audit origin=evolved_open_arrival_gadgets_s99 leak=0 contain=1 pass=1
+audit origin=baseline_persist_rr_q32 leak=0 contain=1 pass=1
+audit origin=r8_share_4g leak=0 contain=1 pass=1
+audit origin=r9_gen_s1 leak=1 contain=0 pass=0
+audit origin=r9_gen_s13 leak=1 contain=0 pass=0
+audit origin=r9_gen_s2024 leak=1 contain=0 pass=0
+audit quarantine r8_route_* r7_hw_lex_* r9_gen_s7 r9_gen_s42 r9_gen_s99
+audit done
+audit fallback challenger r8_share_4g
+archive empty; seed leak-safe r9 + share_4g
+audit origin=r8_share_4g leak=0 contain=1 pass=1
+audit origin=r9_gen_s1 leak=1 contain=0 pass=0
+audit origin=r9_gen_s13 leak=1 contain=0 pass=0
+audit origin=r9_gen_s2024 leak=1 contain=0 pass=0
 meta online evo=on incumbent=evolved_open_arrival_ga n=62
 guest 1 sum_8 halted cycles=8
 guest 3 xor_5 halted cycles=8
@@ -26,87 +40,105 @@ swapdiff pc=6 op 26->19 imm 5->-6
 swapdiff pc=7 op 28->3 imm 0->1
 swapdiff pc=8 op 3->26 imm 1->4
 swapdiff len 62->22
-swap id=4 from=0 fit=654 held=783 press=908 via=r8_share_4g seed
-evo gen=1 evals=17 map=4 inc=654 held=783
+swap id=2 from=0 fit=654 held=783 press=908 via=r8_share_4g challenger
+evo gen=1 evals=6 map=1 inc=654 held=783
 shared-window slot=0 ctx=1+2+ phys=07e1567c
-evo gen=4 evals=32 map=4 cand=37 fit=540 inc=654 held=783 ih=783 cases=722,908,1000,0 origin=modify_imm
-evo gen=8 evals=52 map=4 cand=45 fit=594 inc=654 held=783 ih=783 cases=722,908,1000,0 origin=insert_runctx_gadget
-evo gen=12 evals=72 map=4 cand=53 fit=654 inc=654 held=783 ih=783 cases=722,908,1000,0 origin=modify_operand
-swapdelta dfit=45 dheld=102 dpress=0 n=22->22
-swapdiff pc=16 op 18->24 imm 1->1
-swap id=55 from=10 fit=699 held=885 press=908 via=modify_op shadow
-evo gen=13 evals=77 cand=55 fit=699 held=885 inc=885 origin=modify_op
-evo gen=16 evals=95 map=4 cand=61 fit=679 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=modify_op
-evo gen=20 evals=119 map=4 cand=69 fit=205 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=insert
-evo gen=24 evals=143 map=6 cand=77 fit=272 inc=699 held=885 ih=885 cases=826,908,1000,0 origin=modify_imm
-keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage  d degrade
+swapdelta dfit=18 dheld=56 dpress=-3 n=22->26
+swapdiff pc=8 op 26->3 imm 4->4
+swapdiff pc=9 op 26->26 imm 5->4
+swapdiff pc=10 op 3->26 imm 2->5
+swapdiff pc=12 op 3->26 imm 1->4
+swapdiff pc=13 op 26->26 imm 1->5
+swapdiff pc=14 op 18->3 imm 3->2
+swapdiff len 22->26
+swap id=36 from=10 fit=672 held=839 press=905 via=insert_mmu_gadget shadow
+evo gen=4 evals=20 cand=36 fit=672 held=839 inc=839 origin=insert_mmu_gadget
+evo gen=8 evals=44 map=4 cand=44 fit=622 inc=672 held=839 ih=839 cases=722,905,1000,0 origin=insert_mmu_gadget
+evo gen=12 evals=68 map=4 cand=52 fit=675 inc=672 held=839 ih=839 cases=722,905,1000,0 origin=remove
+evo gen=16 evals=92 map=5 cand=60 fit=675 inc=672 held=839 ih=839 cases=722,905,1000,0 origin=modify_op
+evo gen=20 evals=116 map=5 cand=68 fit=205 inc=672 held=839 ih=839 cases=722,905,1000,0 origin=insert
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  a audit  g evo  l lineage  d degrade
 w put  r get  z pull-plug  i inspect  q quit
 loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
+evo gen=24 evals=140 map=5 cand=76 fit=676 inc=672 held=839 ih=839 cases=722,905,1000,0 origin=insert_runctx_gadget
 loader: slot 0 ctx 1 malicious malicious_read
 guest 1 malicious_read fault=1 vector=14 cr2=6295560 #PF isolation_n=0
 loader: slot 1 ctx 2 sum sum_8
 guest 2 sum_8 halted cycles=8
-evo gen=28 evals=167 map=7 cand=85 fit=549 inc=697 held=878 ih=878 cases=826,908,1000,0 origin=insert_runctx_gadget
-inspect isolation_n=0 switches=275 cycles=3473 disk=1 last_svc=0 evo gen=28 inc=55 swaps=2 evals=167
+inspect isolation_n=0 switches=226 cycles=3329 disk=1 last_svc=0 evo gen=27 inc=36 swaps=2 evals=158
   ctx 1 malicious_read halt=0 fault=1 cyc=1 prot=4 vec=14
   ctx 2 sum_8 halt=1 fault=0 cyc=8 prot=4 vec=128
   ctx 3 xor_5 halt=1 fault=0 cyc=8 prot=3 vec=128
-  ctx 4 spin halt=0 fault=0 cyc=3440 prot=4 vec=32
+  ctx 4 spin halt=0 fault=0 cyc=3296 prot=4 vec=32
   share slot=0 ctx=1+2+
+evo gen=28 evals=164 map=5 cand=84 fit=604 inc=655 held=789 ih=789 cases=722,905,1000,0 origin=control_flow
 loader: slot 2 ctx 3 put put
 guest 3 put halted cycles=16 put=123
-evo gen=32 evals=191 map=8 cand=93 fit=891 inc=889 held=882 ih=882 cases=826,908,1000,859 origin=modify_op
+evo gen=32 evals=188 map=6 cand=92 fit=795 inc=867 held=843 ih=843 cases=722,905,1000,872 origin=insert_runctx_gadget
 route shared-window pair
 loader: slot 0 ctx 1 route_prod route_prod
 loader: slot 1 ctx 2 route_cons route_cons
-rollback id=4 live fitness
+rollback id=2 live fitness
 route retry shared-window
 loader: slot 0 ctx 1 route_prod route_prod
 loader: slot 1 ctx 2 route_cons route_cons
 guest 1 route_prod halted cycles=8 route_word=0
 guest 2 route_cons halted cycles=8 route_read=77 route delivered=77
-swapdelta dfit=101 dheld=122 dpress=0 n=22->22
-swapdiff pc=16 op 18->24 imm 1->1
-swap id=55 from=10 fit=886 held=868 press=908 via=modify_op seed
-evo gen=35 evals=205 map=9 inc=886 held=868
-evo gen=36 evals=211 map=9 cand=99 fit=784 inc=886 held=868 ih=868 cases=826,908,1000,864 origin=insert
+swapdelta dfit=40 dheld=66 dpress=-3 n=22->26
+swapdiff pc=8 op 26->3 imm 4->4
+swapdiff pc=9 op 26->26 imm 5->4
+swapdiff pc=10 op 3->26 imm 2->5
+swapdiff pc=12 op 3->26 imm 1->4
+swapdiff pc=13 op 26->26 imm 1->5
+swapdiff pc=14 op 18->3 imm 3->2
+swapdiff len 22->26
+swap id=36 from=10 fit=825 held=812 press=905 via=insert_mmu_gadget seed
+evo gen=33 evals=190 map=7 inc=825 held=812
+audit third-guest store/load
+loader: slot 2 ctx 3 atk_store atk_store
+loader: slot 3 ctx 4 atk_load atk_load
+audit live leak=0 extra=0 isolation_n=0
+guest 3 atk_store fault=1 vector=14 cr2=6291464 #PF isolation_n=0
+guest 4 atk_load fault=1 vector=14 cr2=6291464 #PF isolation_n=0
+evo gen=36 evals=208 map=7 cand=98 fit=874 inc=873 held=903 ih=903 cases=722,905,1000,808 origin=crossover
+evo gen=40 evals=232 map=7 cand=106 fit=832 inc=873 held=903 ih=903 cases=722,905,1000,808 origin=insert_mmu_gadget
 pressure workload
 loader: slot 0 ctx 1 pressure pressure
 loader: slot 1 ctx 2 pressure pressure
 loader: slot 2 ctx 3 pressure pressure
 loader: slot 3 ctx 4 spin spin
-guest 1 pressure preempt vector=32
-rollback id=4 live fitness
 guest 2 pressure preempt vector=32
+rollback id=2 live fitness
+guest 1 pressure preempt vector=32
 guest 3 pressure preempt vector=32
 guest 4 spin preempt vector=32
-inspect isolation_n=0 switches=441 cycles=4817 disk=1 last_svc=0 evo gen=37 inc=4 swaps=3 evals=217
-  ctx 1 pressure halt=0 fault=0 cyc=112 prot=4 vec=32
-  ctx 2 pressure halt=0 fault=0 cyc=96 prot=4 vec=32
+inspect isolation_n=0 switches=311 cycles=4627 disk=1 last_svc=0 evo gen=42 inc=2 swaps=3 evals=244
+  ctx 1 pressure halt=0 fault=0 cyc=96 prot=4 vec=32
+  ctx 2 pressure halt=0 fault=0 cyc=112 prot=4 vec=32
   ctx 3 pressure halt=0 fault=0 cyc=96 prot=4 vec=32
-  ctx 4 spin halt=0 fault=0 cyc=96 prot=4 vec=32
+  ctx 4 spin halt=0 fault=0 cyc=80 prot=4 vec=32
   share slot=0 ctx=1+2+
 degrade inject
-swapdelta dfit=-907 dheld=-877 dpress=-908 n=22->1
+swapdelta dfit=-905 dheld=-870 dpress=-908 n=22->1
 swapdiff pc=0 op 3->0 imm 1->0
 swapdiff len 22->1
-swap id=104 from=4 fit=0 held=0 press=0 via=degrader_halt test-degrade
-supervisor halted isolation_n=0 switches=453
-rollback id=4 supervisor halt
-lineage n=5 inc=4 parent=0 origin=r8_share_4g ids=1,4,55,55,104
-evo gen=40 evals=235 map=9 cand=108 fit=918 inc=907 held=877 ih=877 cases=722,908,1000,1000 origin=crossover
-inspect isolation_n=0 switches=502 cycles=5793 disk=1 last_svc=0 evo gen=41 inc=4 swaps=4 evals=241
-  ctx 1 pressure halt=0 fault=0 cyc=368 prot=4 vec=32
-  ctx 2 pressure halt=0 fault=0 cyc=336 prot=4 vec=32
+swap id=111 from=2 fit=0 held=0 press=0 via=degrader_halt test-degrade
+supervisor halted isolation_n=0 switches=328
+rollback id=2 supervisor halt
+lineage n=5 inc=2 parent=0 origin=r8_share_4g ids=1,2,36,36,111
+evo gen=44 evals=256 map=7 cand=115 fit=912 inc=905 held=870 ih=870 cases=722,908,1000,1000 origin=modify_op
+inspect isolation_n=0 switches=374 cycles=5635 disk=1 last_svc=0 evo gen=45 inc=2 swaps=4 evals=262
+  ctx 1 pressure halt=0 fault=0 cyc=352 prot=4 vec=32
+  ctx 2 pressure halt=0 fault=0 cyc=368 prot=4 vec=32
   ctx 3 pressure halt=0 fault=0 cyc=336 prot=4 vec=32
   ctx 4 spin halt=0 fault=0 cyc=336 prot=4 vec=32
   share slot=0 ctx=1+2+
-evo gen=44 evals=259 map=9 cand=116 fit=699 inc=907 held=877 ih=877 cases=722,908,1000,1000 origin=insert_runctx_gadget
-evo gen=48 evals=283 map=9 cand=124 fit=576 inc=907 held=877 ih=877 cases=722,908,1000,1000 origin=duplicate_block
-evo gen=52 evals=307 map=9 cand=132 fit=915 inc=907 held=877 ih=877 cases=722,908,1000,1000 origin=duplicate_block
-evo gen=56 evals=331 map=9 cand=140 fit=916 inc=907 held=877 ih=877 cases=722,908,1000,1000 origin=control_flow
-evo gen=60 evals=355 map=9 cand=148 fit=921 inc=907 held=877 ih=877 cases=722,908,1000,1000 origin=insert_runctx_gadget
-EvoOS quit isolation_n=0 spawns=15
+evo gen=48 evals=280 map=7 cand=123 fit=827 inc=905 held=870 ih=870 cases=722,908,1000,1000 origin=modify_op
+evo gen=52 evals=304 map=7 cand=131 fit=827 inc=905 held=870 ih=870 cases=722,908,1000,1000 origin=remove
+evo gen=56 evals=328 map=7 cand=139 fit=891 inc=905 held=870 ih=870 cases=722,908,1000,1000 origin=duplicate_block
+evo gen=60 evals=352 map=7 cand=147 fit=827 inc=905 held=870 ih=870 cases=722,908,1000,1000 origin=insert_mmu_gadget
+evo gen=64 evals=376 map=7 cand=155 fit=911 inc=905 held=870 ih=870 cases=722,908,1000,1000 origin=modify_op
+EvoOS quit isolation_n=0 spawns=17
 
 --- reboot ---
 EvoOS firmware starting
@@ -116,19 +148,50 @@ firmware is not a kernel; supervisor=evolved_open_arrival_gadgets_s99
 storage=evolved_persist_crossover
 meta=online-evolve seed=s99
 device attached blocks=32
-keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage  d degrade
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  a audit  g evo  l lineage  d degrade
 w put  r get  z pull-plug  i inspect  q quit
 loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
 loader: slot 0 ctx 1 sum sum_8
 loader: slot 1 ctx 2 fill fill_5
 loader: slot 2 ctx 3 xor xor_5
 loader: slot 3 ctx 4 spin spin
-archive loaded gen=60 inc=4 lineage resume origin=r8_share_4g map=9
+audit begin
+audit origin=evolved_open_arrival_gadgets_s99 leak=0 contain=1 pass=1
+audit origin=baseline_persist_rr_q32 leak=0 contain=1 pass=1
+audit origin=r8_share_4g leak=0 contain=1 pass=1
+audit origin=r9_gen_s1 leak=1 contain=0 pass=0
+audit origin=r9_gen_s13 leak=1 contain=0 pass=0
+audit origin=r9_gen_s2024 leak=1 contain=0 pass=0
+audit quarantine r8_route_* r7_hw_lex_* r9_gen_s7 r9_gen_s42 r9_gen_s99
+audit done
+audit fallback challenger r8_share_4g
+archive loaded gen=64 inc=2 lineage resume origin=r8_share_4g map=7
+audit origin=r8_share_4g leak=0 contain=1 pass=1
+audit origin=modify_imm leak=0 contain=1 pass=1
+audit origin=modify_operand leak=0 contain=1 pass=1
+audit origin=insert_mmu_gadget leak=0 contain=1 pass=1
+audit origin=duplicate_block leak=0 contain=1 pass=1
+audit origin=insert_runctx_gadget leak=0 contain=1 pass=1
+audit origin=modify_operand leak=0 contain=1 pass=1
+audit origin=insert_runctx_gadget leak=0 contain=1 pass=1
 meta online evo=on incumbent=r8_share_4g n=22
 guest 1 sum_8 halted cycles=8
-shared-window slot=0 ctx=1+2+ phys=07e1967c
+shared-window slot=0 ctx=1+2+ phys=07e1567c
 guest 2 fill_5 halted cycles=8
 guest 3 xor_5 halted cycles=8
 guest 4 spin preempt vector=32
-lineage n=5 inc=4 parent=0 origin=r8_share_4g ids=1,4,55,55,104
+lineage n=5 inc=2 parent=0 origin=r8_share_4g ids=1,2,36,36,111
+swapdelta dfit=22 dheld=61 dpress=10 n=22->30
+swapdiff pc=8 op 26->3 imm 4->4
+swapdiff pc=9 op 26->26 imm 5->4
+swapdiff pc=10 op 3->26 imm 2->5
+swapdiff pc=11 op 28->3 imm 0->3
+swapdiff pc=12 op 3->25 imm 1->32
+swapdiff pc=13 op 26->28 imm 1->0
+swapdiff len 22->30
+swap id=156 from=107 fit=676 held=844 press=918 via=modify_operand shadow
+evo gen=65 evals=380 cand=156 fit=676 held=844 inc=844 origin=modify_operand
+shared-window slot=0 ctx=1+2+ phys=07e1567c
+shared-window slot=2 ctx=2+3+ phys=07e1767c
+shared-window slot=3 ctx=2+4+ phys=07e1867c
 EvoOS quit isolation_n=0 spawns=4
