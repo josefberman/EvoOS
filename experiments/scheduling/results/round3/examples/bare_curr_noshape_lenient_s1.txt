@@ -1,0 +1,49 @@
+# bare_curr_noshape_lenient_s1 4/4=False stall=k1 R=0.36000000000000004
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 2, 3], [0, 2, 3]]; label=other
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  RDTIME   a=3 b=1 c=7 imm=16
+   2:  MOV      a=6 b=0 c=7 imm=35
+   3:  BNE      a=1 b=5 c=0 imm=4  # -> 8
+   4:  MOV      a=0 b=6 c=3 imm=26
+   5:  NOT      a=6 b=1 c=7 imm=-8
+   6:  ADDPROT  a=5 b=1 c=6 imm=10
+   7:  CTXGET   a=7 b=2 c=2 imm=32
+   8:  CMP      a=2 b=6 c=3 imm=16
+   9:  SUB      a=5 b=0 c=2 imm=19
+  10:  ADDPROT  a=3 b=7 c=7 imm=32
+  11:  RUNCTXI  a=3 b=7 c=4 imm=6
+  12:  MOV      a=1 b=2 c=4 imm=27
+  13:  OR       a=6 b=3 c=4 imm=384
+  14:  BLT      a=6 b=0 c=7 imm=16  # -> 31
+  15:  CMP      a=6 b=2 c=5 imm=8
+  16:  RUNCTXI  a=5 b=1 c=7 imm=108
+  17:  BNE      a=1 b=5 c=0 imm=3  # -> 21
+  18:  MOV      a=0 b=6 c=3 imm=26
+  19:  ADDI     a=6 b=1 c=7 imm=-8
+  20:  ADDPROT  a=5 b=1 c=6 imm=10
+  21:  CTXGET   a=7 b=2 c=2 imm=48
+  22:  CMP      a=2 b=6 c=3 imm=16
+  23:  SUB      a=5 b=3 c=2 imm=19
+  24:  ADDPROT  a=3 b=7 c=7 imm=32
+  25:  RUNCTXI  a=3 b=7 c=4 imm=6
+  26:  MOV      a=1 b=2 c=4 imm=27
+  27:  OR       a=6 b=3 c=4 imm=384
+  28:  BLT      a=6 b=0 c=7 imm=16  # -> 45
+  29:  CMP      a=6 b=2 c=5 imm=8
+  30:  RUNCTXI  a=5 b=1 c=7 imm=108
+  31:  ADDI     a=6 b=5 c=7 imm=2
+  32:  RUNCTXI  a=3 b=3 c=4 imm=512
+  33:  XOR      a=1 b=1 c=5 imm=23
+  34:  SUB      a=5 b=0 c=1 imm=75
+  35:  RUNCTXI  a=3 b=7 c=1 imm=-8
+  36:  BLT      a=6 b=0 c=7 imm=16  # -> 53
+  37:  CMP      a=6 b=2 c=5 imm=8
+  38:  RUNCTXI  a=5 b=1 c=7 imm=108
+  39:  ADDI     a=6 b=5 c=7 imm=2
+  40:  JAL      a=3 b=3 c=6 imm=-8  # -> 33
+  41:  ADDI     a=5 b=7 c=4 imm=28
+  42:  RUNCTXI  a=0 b=6 c=2 imm=384
+  43:  CTXGET   a=6 b=0 c=7 imm=3
+  44:  RUNCTX   a=6 b=7 c=5 imm=3
+  45:  CTXSET   a=5 b=7 c=0 imm=26

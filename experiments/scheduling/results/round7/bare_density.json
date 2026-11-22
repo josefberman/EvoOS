@@ -1,0 +1,76 @@
+{
+  "analytic": {
+    "n_template": 840,
+    "space_instr_eff": 634880,
+    "p_exact_4": 5.170263788595899e-21,
+    "p_in_len24": 1.0857553956051388e-19,
+    "expected_evals_one_cover_analytic": 9.210177578188837e+18,
+    "expected_evals_4of4_independent": 7.1956828744654305e+75,
+    "note": "Effective imm alphabet 40 from random_instr mix; not 2^21."
+  },
+  "gadget_family": {
+    "family_size": 840,
+    "slots": [
+      [
+        256,
+        384
+      ],
+      [
+        384,
+        512
+      ],
+      [
+        512,
+        640
+      ],
+      [
+        640,
+        768
+      ]
+    ]
+  },
+  "empirical_random_k1": {
+    "n": 20000,
+    "length": 24,
+    "k1": true,
+    "cover_hits": 0,
+    "cover_and_run_hits": 0,
+    "p_cover": 0.0,
+    "expected_evals": Infinity
+  },
+  "empirical_random_k4": {
+    "n": 10000,
+    "length": 24,
+    "k1": false,
+    "cover_hits": 0,
+    "cover_and_run_hits": 0,
+    "p_cover": 0.0,
+    "expected_evals": Infinity
+  },
+  "empirical_mutate": {
+    "n": 10000,
+    "cover_hits": 0,
+    "p_cover": 0.0,
+    "first_hit_eval": null,
+    "expected_evals": Infinity
+  },
+  "empirical_restricted": {
+    "n": 20000,
+    "ops": "MOVI|CTXGET|ADDPROT",
+    "cover_hits": 1,
+    "p_cover": 5e-05,
+    "expected_evals": 20000.0
+  },
+  "observed_round6": {
+    "sweep_evals": 3840000,
+    "cover_events": 1,
+    "p_hat": 2.604166666666667e-07,
+    "expected_evals_from_sweep": 3840000,
+    "seed99_first_cover_eval": 270656,
+    "seed99_stage_gen": 229,
+    "lexicase_cover_events": 0,
+    "four_of_four": 0
+  },
+  "budget_50pct_4of4_from_emp": 1.5071287638586582e+26,
+  "budget_50pct_4of4_from_sweep_phat": 1.5071287638586582e+26
+}

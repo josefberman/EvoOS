@@ -1,0 +1,30 @@
+# bare_flat_ungated_s7 4/4=False stall=None R=0.36000000000000004 label=starving
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=starving
+
+   0:  ADDPROT  a=1 b=3 c=7 imm=21
+   1:  NOP      a=6 b=1 c=3 imm=256
+   2:  CTXSET   a=5 b=5 c=3 imm=10
+   3:  BNE      a=3 b=0 c=6 imm=5  # -> 9
+   4:  CTXSET   a=1 b=2 c=1 imm=8
+   5:  SUB      a=4 b=1 c=6 imm=4
+   6:  ADDI     a=3 b=1 c=7 imm=4
+   7:  RUNCTX   a=1 b=7 c=2 imm=10
+   8:  SHL      a=2 b=0 c=2 imm=19
+   9:  BLT      a=0 b=1 c=1 imm=120  # -> 130
+  10:  JMP      a=4 b=5 c=2 imm=6  # -> 17
+  11:  RUNCTX   a=2 b=7 c=7 imm=9
+  12:  NOT      a=6 b=3 c=2 imm=-3
+  13:  BEQ      a=6 b=1 c=3 imm=1  # -> 15
+  14:  NOP      a=1 b=4 c=5 imm=14
+  15:  RUNCTXI  a=7 b=3 c=4 imm=86
+  16:  CTXGET   a=2 b=5 c=5 imm=13
+  17:  ADDI     a=4 b=2 c=0 imm=3
+  18:  RUNCTXI  a=4 b=4 c=1 imm=16
+  19:  CTXSET   a=2 b=0 c=4 imm=30
+  20:  BNE      a=7 b=5 c=7 imm=32  # -> 53
+  21:  CMP      a=6 b=4 c=4 imm=640
+  22:  CTXGET   a=4 b=7 c=5 imm=-56
+  23:  LOAD     a=5 b=4 c=7 imm=640
+  24:  RUNCTX   a=3 b=3 c=6 imm=15
+  25:  BEQ      a=0 b=4 c=0 imm=384  # -> 410
+  26:  HALT     a=0 b=0 c=0 imm=0

@@ -1,0 +1,61 @@
+seed,arm,stage,n_guests,gens_ran,n_eval,best_reward,completed,entered,entered_protected,completed_protected,prot_cover,shape_f,promoted,stalled
+1,learned,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+1,learned,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+1,learned,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+1,learned,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+1,learned,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+7,learned,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+7,learned,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+7,learned,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+7,learned,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+7,learned,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+13,learned,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+13,learned,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+13,learned,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+13,learned,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+13,learned,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+42,learned,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+42,learned,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+42,learned,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+42,learned,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+42,learned,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+99,learned,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+99,learned,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+99,learned,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+99,learned,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+99,learned,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+2024,learned,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+2024,learned,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+2024,learned,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+2024,learned,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,learned,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+1,blind,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+1,blind,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+1,blind,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+1,blind,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+1,blind,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+7,blind,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+7,blind,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+7,blind,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+7,blind,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+7,blind,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+13,blind,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+13,blind,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+13,blind,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+13,blind,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+13,blind,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+42,blind,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+42,blind,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+42,blind,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+42,blind,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+42,blind,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False
+99,blind,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+99,blind,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+99,blind,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+99,blind,k4,4,1000,64000,0.4,[1],[1],[1],[1],"[[false, true, false, false]]",0.25,False,True
+99,blind,k4_hard,4,1000,64000,0.4,[1],[1],[1],[1],"[[false, true, false, false]]",0.25,False,False
+2024,blind,k1,1,1000,64000,0.0,[0],[0],[0],[0],[[false]],0.0,False,True
+2024,blind,k2,2,1000,64000,0.0,[0],[0],[0],[0],"[[false, false]]",0.0,False,True
+2024,blind,k3,3,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false]]",0.0,False,True
+2024,blind,k4,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,blind,k4_hard,4,1000,64000,0.0,[0],[0],[0],[0],"[[false, false, false, false]]",0.0,False,False

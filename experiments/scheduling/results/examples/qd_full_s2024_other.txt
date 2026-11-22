@@ -1,0 +1,54 @@
+# c_qd_full_s2024 label=other searchR=0.8735413310379396 held=[4, 4] train=[4, 4]
+   0:  MOVI     a=7 b=0 c=0 imm=4
+   1:  RUNCTXI  a=6 b=0 c=0 imm=128
+   2:  CTXGET   a=5 b=7 c=0 imm=5
+   3:  ADDPROT  a=7 b=2 c=5 imm=0
+   4:  MOVI     a=6 b=0 c=0 imm=4
+   5:  MOVI     a=1 b=0 c=0 imm=2
+   6:  MOVI     a=7 b=0 c=0 imm=4
+   7:  RUNCTXI  a=7 b=0 c=0 imm=47
+   8:  CTXGET   a=3 b=1 c=0 imm=4
+   9:  MOVI     a=5 b=0 c=0 imm=1
+  10:  CTXGET   a=3 b=5 c=0 imm=4
+  11:  CTXGET   a=6 b=5 c=0 imm=5
+  12:  ADDPROT  a=5 b=3 c=6 imm=0
+  13:  MOVI     a=3 b=0 c=0 imm=3
+  14:  CTXGET   a=5 b=3 c=0 imm=4
+  15:  CTXGET   a=2 b=3 c=0 imm=5
+  16:  ADDPROT  a=3 b=5 c=2 imm=0
+  17:  CTXGET   a=2 b=1 c=0 imm=5
+  18:  ADDPROT  a=1 b=3 c=2 imm=0
+  19:  RUNCTXI  a=6 b=0 c=0 imm=128
+  20:  MOVI     a=2 b=0 c=0 imm=1
+  21:  RUNCTXI  a=2 b=4 c=5 imm=12
+  22:  ADDI     a=2 b=2 c=0 imm=1
+  23:  CTXGET   a=7 b=0 c=0 imm=6
+  24:  BLT      a=2 b=7 c=0 imm=-4  # -> 21
+  25:  RUNCTXI  a=7 b=0 c=0 imm=64
+  26:  MOVI     a=3 b=0 c=0 imm=1
+  27:  RUNCTXI  a=3 b=0 c=7 imm=128
+  28:  RDFAULT  a=4 b=0 c=0 imm=1
+  29:  MOVI     a=6 b=0 c=0 imm=4
+  30:  NOP      a=0 b=0 c=0 imm=0
+  31:  ADDI     a=4 b=4 c=0 imm=1
+  32:  CTXGET   a=7 b=0 c=0 imm=6
+  33:  BEQ      a=5 b=4 c=0 imm=5  # -> 39
+  34:  MOVI     a=4 b=0 c=0 imm=3
+  35:  RUNCTXI  a=4 b=0 c=0 imm=256
+  36:  RUNCTXI  a=1 b=7 c=2 imm=20
+  37:  ADDPROT  a=1 b=3 c=2 imm=0
+  38:  RUNCTXI  a=6 b=0 c=0 imm=128
+  39:  RUNCTXI  a=2 b=4 c=5 imm=12
+  40:  ADDI     a=2 b=2 c=0 imm=1
+  41:  CTXGET   a=7 b=0 c=0 imm=6
+  42:  BLT      a=2 b=7 c=7 imm=-4  # -> 39
+  43:  MOVI     a=7 b=0 c=0 imm=2
+  44:  RUNCTXI  a=7 b=0 c=0 imm=64
+  45:  MOVI     a=6 b=0 c=0 imm=1
+  46:  RUNCTXI  a=6 b=0 c=0 imm=128
+  47:  CTXGET   a=5 b=6 c=0 imm=4
+  48:  CTXGET   a=1 b=6 c=0 imm=5
+  49:  JAL      a=6 b=5 c=1 imm=116  # -> 166
+  50:  MOVI     a=3 b=0 c=0 imm=1
+  51:  MOVI     a=1 b=5 c=0 imm=1
+  52:  RUNCTXI  a=1 b=0 c=0 imm=16

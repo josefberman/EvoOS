@@ -1,0 +1,35 @@
+# bare_flat_shape_lenient_s13 4/4=False stall=None R=0.32
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=starving
+
+   0:  MOVI     a=5 b=7 c=5 imm=93
+   1:  AND      a=6 b=2 c=2 imm=-34
+   2:  RDTIME   a=6 b=4 c=1 imm=21
+   3:  BLT      a=2 b=3 c=2 imm=256  # -> 260
+   4:  STORE    a=2 b=1 c=3 imm=2
+   5:  BLT      a=0 b=4 c=2 imm=0  # -> 6
+   6:  MUL      a=7 b=6 c=2 imm=3
+   7:  BEQ      a=7 b=6 c=5 imm=6  # -> 14
+   8:  ADDPROT  a=1 b=5 c=4 imm=256
+   9:  CLRPROT  a=2 b=7 c=7 imm=384
+  10:  ADDPROT  a=2 b=5 c=4 imm=4
+  11:  RUNCTX   a=4 b=6 c=2 imm=30
+  12:  CTXGET   a=3 b=3 c=5 imm=7
+  13:  XOR      a=7 b=6 c=0 imm=32
+  14:  ADDPROT  a=3 b=2 c=7 imm=-53
+  15:  CLRPROT  a=6 b=4 c=5 imm=2
+  16:  ADDI     a=5 b=2 c=3 imm=256
+  17:  MOVI     a=0 b=0 c=5 imm=31
+  18:  BLT      a=2 b=4 c=3 imm=5  # -> 24
+  19:  SHR      a=1 b=3 c=2 imm=32
+  20:  SUB      a=0 b=7 c=5 imm=30
+  21:  MUL      a=4 b=1 c=6 imm=0
+  22:  BGE      a=1 b=7 c=5 imm=80  # -> 103
+  23:  MOVI     a=2 b=7 c=7 imm=2
+  24:  STORE    a=0 b=6 c=2 imm=4
+  25:  SHL      a=4 b=6 c=3 imm=5
+  26:  JR       a=1 b=6 c=3 imm=64
+  27:  JR       a=6 b=7 c=1 imm=12
+  28:  SUB      a=0 b=4 c=3 imm=64
+  29:  CLRPROT  a=6 b=5 c=0 imm=27
+  30:  BLT      a=2 b=0 c=1 imm=0  # -> 31
+  31:  HALT     a=0 b=0 c=0 imm=0

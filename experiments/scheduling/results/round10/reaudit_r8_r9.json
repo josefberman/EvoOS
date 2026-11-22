@@ -1,0 +1,870 @@
+[
+  {
+    "name": "payload_copy_rr",
+    "origin": "baseline_payload_copy",
+    "n_instr": 73,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 4,
+        "style": "copy-supervisor"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "copy-supervisor"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "copy-supervisor"
+      }
+    ]
+  },
+  {
+    "name": "fifo_swap_rr",
+    "origin": "baseline_fifo_rr",
+    "n_instr": 70,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 0,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": true,
+        "revoked": true,
+        "n_clrprot": 5,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 4,
+        "style": "copy-supervisor"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": true,
+        "revoked": true,
+        "n_clrprot": 5,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "copy-supervisor"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": true,
+        "revoked": true,
+        "n_clrprot": 5,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "copy-supervisor"
+      }
+    ]
+  },
+  {
+    "name": "route_s1",
+    "origin": "route_s1",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 4,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "route_s13",
+    "origin": "route_s13",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "route_s2024",
+    "origin": "route_s2024",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "route_s42",
+    "origin": "route_s42",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 4,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "route_s7",
+    "origin": "route_s7",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "route_s99",
+    "origin": "route_s99",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 3,
+        "n_guests": 4,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 3,
+        "n_guests": 3,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 3,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "gen_s1",
+    "origin": "gen_s1",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 0,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 0,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 0,
+        "n_guests": 3,
+        "style": "none"
+      }
+    ]
+  },
+  {
+    "name": "gen_s13",
+    "origin": "gen_s13",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 3,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "none"
+      }
+    ]
+  },
+  {
+    "name": "gen_s2024",
+    "origin": "gen_s2024",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 4,
+        "n_guests": 4,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 3,
+        "n_guests": 3,
+        "style": "shared-window"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 1,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 3,
+        "n_guests": 3,
+        "style": "shared-window"
+      }
+    ]
+  },
+  {
+    "name": "gen_s42",
+    "origin": "gen_s42",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 2,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": false,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      }
+    ]
+  },
+  {
+    "name": "gen_s7",
+    "origin": "gen_s7",
+    "n_instr": 128,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 3,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 4,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 4,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 4,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 4,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 0,
+        "completed": 1,
+        "n_guests": 3,
+        "style": "none"
+      }
+    ]
+  },
+  {
+    "name": "gen_s99",
+    "origin": "gen_s99",
+    "n_instr": 126,
+    "admission_pass": false,
+    "admission_n_leak": 3,
+    "admission_n_attacker_fail": 1,
+    "fail_cases": [
+      "audit_device_pair_atk",
+      "audit_device_pair_load",
+      "audit_device_pair_store"
+    ],
+    "n_contexts": 8,
+    "pair_window": [
+      256,
+      384
+    ],
+    "cases": [
+      {
+        "name": "audit_device_pair_atk",
+        "share_leak": true,
+        "attacker_contained": false,
+        "revoked": true,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 2,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 3,
+        "n_guests": 4,
+        "style": "copy-supervisor"
+      },
+      {
+        "name": "audit_device_pair_store",
+        "share_leak": true,
+        "attacker_contained": true,
+        "revoked": true,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "copy-supervisor"
+      },
+      {
+        "name": "audit_device_pair_load",
+        "share_leak": true,
+        "attacker_contained": true,
+        "revoked": true,
+        "n_clrprot": 0,
+        "n_stale": 0,
+        "n_attackers": 1,
+        "isolation_ok": false,
+        "delivered": 1,
+        "completed": 2,
+        "n_guests": 3,
+        "style": "copy-supervisor"
+      }
+    ]
+  }
+]

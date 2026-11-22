@@ -1,0 +1,74 @@
+== A ==
+  run_to_completion [4, 4] 4/4 True
+  round_robin_q16 [4, 4] 4/4 True
+  selfish_first [1, 1] 4/4 False
+== C learned vs blind: 12 jobs, eval_workers=4, gps=1000 pop=64 ~320000 evals/seed ==
+  start learned s1
+  done bare_curr_gated_learned_s1 R=0.000 4/4=False stall=k1 n_eval=320000 1139s
+  start learned s7
+  done bare_curr_gated_learned_s7 R=0.000 4/4=False stall=k1 n_eval=320000 1263s
+  start learned s13
+  done bare_curr_gated_learned_s13 R=0.000 4/4=False stall=k1 n_eval=320000 1239s
+  start learned s42
+  done bare_curr_gated_learned_s42 R=0.000 4/4=False stall=k1 n_eval=320000 1188s
+  start learned s99
+  done bare_curr_gated_learned_s99 R=0.000 4/4=False stall=k1 n_eval=320000 1560s
+  start learned s2024
+  done bare_curr_gated_learned_s2024 R=0.000 4/4=False stall=k1 n_eval=320000 1567s
+  start blind s1
+  done bare_curr_gated_blind_s1 R=0.000 4/4=False stall=k1 n_eval=320000 1090s
+  start blind s7
+  done bare_curr_gated_blind_s7 R=0.000 4/4=False stall=k1 n_eval=320000 1171s
+  start blind s13
+  done bare_curr_gated_blind_s13 R=0.000 4/4=False stall=k1 n_eval=320000 1146s
+  start blind s42
+  done bare_curr_gated_blind_s42 R=0.000 4/4=False stall=k1 n_eval=320000 1110s
+  start blind s99
+  done bare_curr_gated_blind_s99 R=0.400 4/4=False stall=k1 n_eval=320000 1368s
+  start blind s2024
+  done bare_curr_gated_blind_s2024 R=0.000 4/4=False stall=k1 n_eval=320000 1401s
+wrote experiments/scheduling/results/round5 in 15246.5s
+# Round 5: learned edit policy vs blind mutation
+
+Wall time **15246.5s** (254.1 min), eval_workers=4.
+Search: gens/stage=1000 pop=64 seeds `[1, 7, 13, 42, 99, 2024]`. Operator pack **bare**. Substrate **lenient**. Gated curriculum + milestone MAP-Elites. k1 promotes on a 1/1 protected-complete stone.
+Target evals/seed ≈ 320000 (5 stages, before early-stop). Round 4 was 120×56×5 = 33600; this run is ~9.5× that budget.
+
+## ISA freeze
+
+ISA freeze: opcodes HALT..RDFAULT remain 0..31; CTXGET fields including LAST_RUN_* are unchanged. Round 5 trains an edit policy over existing 5-tuples. A C interpreter/boot stub must match the existing encoding only.
+Opcode count: **32** (`HALT`=0 … `RDFAULT`=31).
+
+## Policy
+
+Learned arm: GRU over instruction tokens (op,a,b,c,imm) plus a 12-d telemetry/milestone vector. Heads: edit kind, position, opcode, registers, immediate table. REINFORCE with a value baseline on (child−parent) reward, plus a new-cell bonus from the MAP-Elites archive. ε-greedy mixes a UCB1 operator arm. One network is shared across seeds (online). Blind arm: UCB1 over the same bare operators, independent per seed.
+
+Shaping weights: `{'entered': 0.15, 'prot_cover': 0.2, 'progress': 0.25, 'complete': 0.4}`
+
+```
+Behavioral shaping terms. None of these matches an instruction sequence.
+
+Each term is an *observable* of the machine after a run. A supervisor can
+satisfy them with any bytecode that produces that machine state. They are
+not `schedule_process`, not `ADDPROT` opcode bonuses, not run-queue hints.
+
+| Term | Observation | Why it is not an architectural prior |
+| --- | --- | --- |
+| entered | Fraction of guests that retired ≥1 instruction | Any context-switch primitive posts this; we do not care *how* RUNCTX was reached |
+| prot_cover | Guest's assigned data window is inside some installed MMU range | Hardware protection *state*, not “emit ADDPROT in this order” |
+| progress | Guest executed >0 cycles (same as entered here, kept distinct for heartbeats later) | Work happened |
+| complete | Gue
+```
+
+## Condition A (lenient, handwritten)
+
+| name | held complete | 4/4 | held R | label |
+| --- | --- | --- | --- | --- |
+| run_to_completion | [4, 4] | True | 1.000 | run-to-completion-like |
+| round_robin_q16 | [4, 4] | True | 1.000 | round-robin-like |
+| selfish_first | [1, 1] | False | 0.400 | starving |
+
+## Condition C — learned vs blind, equal eval budget
+
+| arm | n | search R mean | std | best | 4/4 train+held | mean n_eval | stall stages | labels |
+| --- |

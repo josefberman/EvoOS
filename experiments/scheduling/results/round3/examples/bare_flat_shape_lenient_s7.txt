@@ -1,0 +1,37 @@
+# bare_flat_shape_lenient_s7 4/4=True stall=None R=1.0
+# diagnose: 4/4 train+heldout with isolation
+
+   0:  SHL      a=4 b=1 c=7 imm=5
+   1:  XOR      a=1 b=2 c=7 imm=-3
+   2:  CTXGET   a=6 b=6 c=4 imm=256
+   3:  SUB      a=3 b=6 c=6 imm=12
+   4:  SHR      a=6 b=5 c=6 imm=32
+   5:  RUNCTXI  a=6 b=4 c=7 imm=17
+   6:  ADD      a=7 b=4 c=1 imm=17
+   7:  SHR      a=2 b=3 c=7 imm=32
+   8:  ADDI     a=5 b=0 c=5 imm=-3
+   9:  RUNCTXI  a=6 b=5 c=4 imm=-7
+  10:  ADDI     a=3 b=1 c=1 imm=-36
+  11:  BEQ      a=4 b=2 c=6 imm=3  # -> 15
+  12:  ADDPROT  a=6 b=4 c=3 imm=-3
+  13:  BNE      a=6 b=1 c=4 imm=7  # -> 21
+  14:  MOV      a=4 b=1 c=3 imm=512
+  15:  SUB      a=7 b=7 c=5 imm=-1
+  16:  RUNCTXI  a=7 b=0 c=3 imm=9
+  17:  OR       a=0 b=2 c=3 imm=3
+  18:  BGE      a=3 b=4 c=7 imm=32  # -> 51
+  19:  ADDI     a=5 b=0 c=4 imm=4
+  20:  MOVI     a=3 b=7 c=3 imm=24
+  21:  CLRPROT  a=7 b=6 c=4 imm=19
+  22:  XOR      a=5 b=5 c=4 imm=44
+  23:  LOAD     a=3 b=2 c=6 imm=23
+  24:  JR       a=0 b=1 c=4 imm=-31
+  25:  BEQ      a=7 b=5 c=1 imm=26  # -> 52
+  26:  BLT      a=2 b=4 c=7 imm=3  # -> 30
+  27:  NOP      a=5 b=3 c=0 imm=13
+  28:  BGE      a=0 b=5 c=6 imm=3  # -> 32
+  29:  MUL      a=3 b=3 c=0 imm=24
+  30:  MUL      a=2 b=6 c=0 imm=-3
+  31:  CTXGET   a=3 b=1 c=2 imm=11
+  32:  JMP      a=7 b=2 c=4 imm=12  # -> 45
+  33:  SHL      a=6 b=2 c=0 imm=24

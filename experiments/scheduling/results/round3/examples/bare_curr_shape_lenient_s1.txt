@@ -1,0 +1,53 @@
+# bare_curr_shape_lenient_s1 4/4=False stall=k1 R=0.6000000000000001
+# diagnose: train completed [2, 2] held [2, 2]; near-zero-cycle guests (train idx) [[2, 3], [2, 3]]; label=batched/priority-like
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  RDTIME   a=3 b=1 c=7 imm=16
+   2:  ADDPROT  a=3 b=7 c=7 imm=32
+   3:  BLT      a=6 b=0 c=7 imm=16  # -> 20
+   4:  CLRPROT  a=7 b=2 c=2 imm=32
+   5:  CMP      a=2 b=6 c=3 imm=16
+   6:  SUB      a=5 b=0 c=2 imm=19
+   7:  MOV      a=6 b=0 c=7 imm=35
+   8:  BNE      a=1 b=5 c=0 imm=3  # -> 12
+   9:  MOV      a=0 b=6 c=3 imm=26
+  10:  ADDI     a=6 b=1 c=7 imm=-8
+  11:  ADDPROT  a=5 b=1 c=6 imm=10
+  12:  ADDPROT  a=5 b=1 c=6 imm=10
+  13:  CLRPROT  a=7 b=2 c=2 imm=32
+  14:  CMP      a=2 b=6 c=3 imm=16
+  15:  SUB      a=5 b=0 c=2 imm=19
+  16:  ADDPROT  a=3 b=7 c=7 imm=32
+  17:  CLRPROT  a=7 b=2 c=2 imm=32
+  18:  CMP      a=2 b=6 c=3 imm=16
+  19:  SUB      a=5 b=0 c=2 imm=19
+  20:  ADDPROT  a=3 b=7 c=7 imm=32
+  21:  MOV      a=2 b=2 c=4 imm=27
+  22:  OR       a=6 b=3 c=4 imm=384
+  23:  LOAD     a=2 b=6 c=3 imm=1
+  24:  BLT      a=6 b=0 c=7 imm=16  # -> 41
+  25:  CMP      a=6 b=2 c=5 imm=8
+  26:  RUNCTXI  a=5 b=1 c=7 imm=108
+  27:  BNE      a=6 b=5 c=7 imm=-3  # -> 25
+  28:  MOV      a=6 b=2 c=2 imm=11
+  29:  ADDPROT  a=3 b=7 c=7 imm=32
+  30:  ADDPROT  a=5 b=1 c=6 imm=10
+  31:  CLRPROT  a=7 b=2 c=2 imm=32
+  32:  ADDPROT  a=3 b=4 c=2 imm=27
+  33:  CMP      a=2 b=6 c=3 imm=16
+  34:  CTXSET   a=5 b=0 c=2 imm=19
+  35:  ADDPROT  a=3 b=7 c=7 imm=32
+  36:  RUNCTXI  a=3 b=7 c=4 imm=6
+  37:  MOV      a=1 b=2 c=4 imm=27
+  38:  OR       a=6 b=3 c=4 imm=384
+  39:  BLT      a=6 b=0 c=7 imm=16  # -> 56
+  40:  CMP      a=6 b=2 c=5 imm=8
+  41:  RUNCTXI  a=5 b=1 c=7 imm=108
+  42:  BNE      a=6 b=5 c=7 imm=-41  # -> 2
+  43:  MOV      a=6 b=2 c=2 imm=11
+  44:  ADDI     a=3 b=3 c=6 imm=-8
+  45:  ADDI     a=5 b=7 c=4 imm=28
+  46:  RUNCTXI  a=0 b=6 c=2 imm=384
+  47:  CTXGET   a=6 b=0 c=7 imm=-1
+  48:  CTXSET   a=5 b=7 c=0 imm=26
+  49:  RUNCTX   a=5 b=7 c=4 imm=28

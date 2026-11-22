@@ -1,0 +1,181 @@
+seed,config,stage,n_guests,gens_ran,best_reward,completed,entered,prot_cover,shape_f,promoted,stalled
+1,bare_curr_shape_hostile_s1,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+1,bare_curr_shape_hostile_s1,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+1,bare_curr_shape_hostile_s1,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+1,bare_curr_shape_hostile_s1,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+1,bare_curr_shape_hostile_s1,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+1,bare_curr_noshape_lenient_s1,k1,1,100,0.36000000000000004,[0],[1],[[false]],0.4,False,True
+1,bare_curr_noshape_lenient_s1,k2,2,100,0.36000000000000004,[0],[2],"[[false, false]]",0.4,False,True
+1,bare_curr_noshape_lenient_s1,k3,3,100,0.36000000000000004,[0],[3],"[[false, false, false]]",0.4,False,True
+1,bare_curr_noshape_lenient_s1,k4,4,100,0.36000000000000004,[0],[4],"[[false, false, false, false]]",0.4,False,True
+1,bare_curr_noshape_lenient_s1,k4_hard,4,100,0.36000000000000004,[0],[4],"[[false, false, false, false]]",0.4,False,False
+1,bare_curr_shape_lenient_s1,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+1,bare_curr_shape_lenient_s1,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+1,bare_curr_shape_lenient_s1,k3,3,100,0.7333333333333334,[2],[2],"[[true, true, false]]",0.6666666666666667,False,True
+1,bare_curr_shape_lenient_s1,k4,4,100,0.6000000000000001,[2],[2],"[[true, true, false, false]]",0.5,False,True
+1,bare_curr_shape_lenient_s1,k4_hard,4,100,0.6000000000000001,[2],[2],"[[true, true, false, false]]",0.5,False,False
+1,bare_curr_shape_lenient_no_memerr_s1,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+1,bare_curr_shape_lenient_no_memerr_s1,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+1,bare_curr_shape_lenient_no_memerr_s1,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+1,bare_curr_shape_lenient_no_memerr_s1,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+1,bare_curr_shape_lenient_no_memerr_s1,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+1,bare_curr_shape_lenient_no_resume_s1,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+1,bare_curr_shape_lenient_no_resume_s1,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+1,bare_curr_shape_lenient_no_resume_s1,k3,3,100,0.5733333333333334,[1],[2],"[[true, false, false]]",0.4666666666666667,False,True
+1,bare_curr_shape_lenient_no_resume_s1,k4,4,100,0.6000000000000001,[1],[3],"[[true, true, false, false]]",0.5,False,True
+1,bare_curr_shape_lenient_no_resume_s1,k4_hard,4,100,0.72,[1],[4],"[[true, true, false, true]]",0.65,False,False
+1,bare_curr_shape_lenient_no_status_s1,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+1,bare_curr_shape_lenient_no_status_s1,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+1,bare_curr_shape_lenient_no_status_s1,k3,3,100,0.8400000000000001,[2],[3],"[[true, true, false]]",0.8,False,True
+1,bare_curr_shape_lenient_no_status_s1,k4,4,100,0.76,[2],[4],"[[true, true, false, false]]",0.7,False,True
+1,bare_curr_shape_lenient_no_status_s1,k4_hard,4,100,0.76,[2],[4],"[[true, true, false, false]]",0.7,False,False
+7,bare_curr_shape_lenient_s7,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+7,bare_curr_shape_lenient_s7,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_s7,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_s7,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_s7,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+7,bare_curr_noshape_lenient_s7,k1,1,100,0.36000000000000004,[0],[1],[[false]],0.4,False,True
+7,bare_curr_noshape_lenient_s7,k2,2,100,0.28,[0],[1],"[[false, false]]",0.2,False,True
+7,bare_curr_noshape_lenient_s7,k3,3,100,0.25333333333333335,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+7,bare_curr_noshape_lenient_s7,k4,4,100,0.32000000000000006,[0],[3],"[[false, false, false, false]]",0.3,False,True
+7,bare_curr_noshape_lenient_s7,k4_hard,4,100,0.32000000000000006,[0],[3],"[[false, false, false, false]]",0.3,False,False
+7,bare_curr_shape_hostile_s7,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+7,bare_curr_shape_hostile_s7,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+7,bare_curr_shape_hostile_s7,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+7,bare_curr_shape_hostile_s7,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+7,bare_curr_shape_hostile_s7,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+13,bare_curr_shape_lenient_s13,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+13,bare_curr_shape_lenient_s13,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_s13,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_s13,k4,4,100,0.6400000000000001,[1],[4],"[[true, false, false, false]]",0.55,False,True
+13,bare_curr_shape_lenient_s13,k4_hard,4,100,0.76,[2],[4],"[[true, true, false, false]]",0.7,False,False
+7,bare_curr_shape_lenient_no_resume_s7,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+7,bare_curr_shape_lenient_no_resume_s7,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_resume_s7,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_resume_s7,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_resume_s7,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+7,bare_curr_shape_lenient_no_memerr_s7,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+7,bare_curr_shape_lenient_no_memerr_s7,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_memerr_s7,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_memerr_s7,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_memerr_s7,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+7,bare_curr_shape_lenient_no_status_s7,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+7,bare_curr_shape_lenient_no_status_s7,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_status_s7,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_status_s7,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+7,bare_curr_shape_lenient_no_status_s7,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+13,bare_curr_noshape_lenient_s13,k1,1,100,0.36000000000000004,[0],[1],[[false]],0.4,False,True
+13,bare_curr_noshape_lenient_s13,k2,2,100,0.36000000000000004,[0],[2],"[[false, false]]",0.4,False,True
+13,bare_curr_noshape_lenient_s13,k3,3,100,0.36000000000000004,[0],[3],"[[false, false, false]]",0.4,False,True
+13,bare_curr_noshape_lenient_s13,k4,4,100,0.32000000000000006,[0],[3],"[[false, false, false, false]]",0.3,False,True
+13,bare_curr_noshape_lenient_s13,k4_hard,4,100,0.32000000000000006,[0],[3],"[[false, false, false, false]]",0.3,False,False
+13,bare_curr_shape_hostile_s13,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+13,bare_curr_shape_hostile_s13,k2,2,100,0.76,[1],[2],"[[true, false]]",0.7,False,True
+13,bare_curr_shape_hostile_s13,k3,3,100,0.6799999999999999,[1],[3],"[[true, false, false]]",0.6,False,True
+13,bare_curr_shape_hostile_s13,k4,4,100,0.56,[1],[3],"[[true, false, false, false]]",0.44999999999999996,False,True
+13,bare_curr_shape_hostile_s13,k4_hard,4,100,0.6000000000000001,[1],[3],"[[true, true, false, false]]",0.5,False,False
+13,bare_curr_shape_lenient_no_resume_s13,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+13,bare_curr_shape_lenient_no_resume_s13,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_no_resume_s13,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_no_resume_s13,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_no_resume_s13,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+13,bare_curr_shape_lenient_no_memerr_s13,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+13,bare_curr_shape_lenient_no_memerr_s13,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_no_memerr_s13,k3,3,100,0.52,[0],[3],"[[false, false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_no_memerr_s13,k4,4,100,0.56,[0],[4],"[[false, true, false, false]]",0.45,False,True
+13,bare_curr_shape_lenient_no_memerr_s13,k4_hard,4,100,0.6799999999999999,[1],[4],"[[true, true, false, false]]",0.6,False,False
+13,bare_curr_shape_lenient_no_status_s13,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+13,bare_curr_shape_lenient_no_status_s13,k2,2,100,0.52,[0],[2],"[[false, false]]",0.4,False,True
+13,bare_curr_shape_lenient_no_status_s13,k3,3,100,0.6799999999999999,[1],[3],"[[true, false, false]]",0.6,False,True
+13,bare_curr_shape_lenient_no_status_s13,k4,4,100,0.76,[2],[4],"[[true, false, true, false]]",0.7,False,True
+13,bare_curr_shape_lenient_no_status_s13,k4_hard,4,100,0.6599999999999999,[2],[4],"[[true, true, false, false]]",0.7,False,False
+42,bare_curr_shape_lenient_s42,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+42,bare_curr_shape_lenient_s42,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+42,bare_curr_shape_lenient_s42,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+42,bare_curr_shape_lenient_s42,k4,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,True
+42,bare_curr_shape_lenient_s42,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+42,bare_curr_shape_hostile_s42,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+42,bare_curr_shape_hostile_s42,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+42,bare_curr_shape_hostile_s42,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+42,bare_curr_shape_hostile_s42,k4,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,True
+42,bare_curr_shape_hostile_s42,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+42,bare_curr_noshape_lenient_s42,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+42,bare_curr_noshape_lenient_s42,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+42,bare_curr_noshape_lenient_s42,k3,3,100,0.25333333333333335,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+42,bare_curr_noshape_lenient_s42,k4,4,100,0.24000000000000002,[0],[1],"[[false, false, false, false]]",0.1,False,True
+42,bare_curr_noshape_lenient_s42,k4_hard,4,100,0.36000000000000004,[0],[4],"[[false, false, false, false]]",0.4,False,False
+42,bare_curr_shape_lenient_no_resume_s42,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+42,bare_curr_shape_lenient_no_resume_s42,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+42,bare_curr_shape_lenient_no_resume_s42,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+42,bare_curr_shape_lenient_no_resume_s42,k4,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,True
+42,bare_curr_shape_lenient_no_resume_s42,k4_hard,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,False
+42,bare_curr_shape_lenient_no_memerr_s42,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+42,bare_curr_shape_lenient_no_memerr_s42,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+42,bare_curr_shape_lenient_no_memerr_s42,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+42,bare_curr_shape_lenient_no_memerr_s42,k4,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,True
+42,bare_curr_shape_lenient_no_memerr_s42,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+42,bare_curr_shape_lenient_no_status_s42,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+42,bare_curr_shape_lenient_no_status_s42,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+42,bare_curr_shape_lenient_no_status_s42,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+42,bare_curr_shape_lenient_no_status_s42,k4,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,True
+42,bare_curr_shape_lenient_no_status_s42,k4_hard,4,100,0.44,[0],[3],"[[false, false, false, false]]",0.3,False,False
+99,bare_curr_shape_lenient_s99,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+99,bare_curr_shape_lenient_s99,k2,2,100,0.36000000000000004,[0],[1],"[[false, false]]",0.2,False,True
+99,bare_curr_shape_lenient_s99,k3,3,100,0.41333333333333333,[0],[2],"[[false, false, false]]",0.26666666666666666,False,True
+99,bare_curr_shape_lenient_s99,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+99,bare_curr_shape_lenient_s99,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+99,bare_curr_noshape_lenient_s99,k1,1,100,0.36000000000000004,[0],[1],[[false]],0.4,False,True
+99,bare_curr_noshape_lenient_s99,k2,2,100,0.28,[0],[1],"[[false, false]]",0.2,False,True
+99,bare_curr_noshape_lenient_s99,k3,3,100,0.25333333333333335,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+99,bare_curr_noshape_lenient_s99,k4,4,100,0.24000000000000002,[0],[1],"[[false, false, false, false]]",0.1,False,True
+99,bare_curr_noshape_lenient_s99,k4_hard,4,100,0.24000000000000002,[0],[1],"[[false, false, false, false]]",0.1,False,False
+99,bare_curr_shape_hostile_s99,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+99,bare_curr_shape_hostile_s99,k2,2,100,0.36000000000000004,[0],[1],"[[false, false]]",0.2,False,True
+99,bare_curr_shape_hostile_s99,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+99,bare_curr_shape_hostile_s99,k4,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,True
+99,bare_curr_shape_hostile_s99,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+99,bare_curr_shape_lenient_no_resume_s99,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+99,bare_curr_shape_lenient_no_resume_s99,k2,2,100,0.36000000000000004,[0],[1],"[[false, false]]",0.2,False,True
+99,bare_curr_shape_lenient_no_resume_s99,k3,3,100,0.41333333333333333,[0],[2],"[[false, false, false]]",0.26666666666666666,False,True
+99,bare_curr_shape_lenient_no_resume_s99,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+99,bare_curr_shape_lenient_no_resume_s99,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+99,bare_curr_shape_lenient_no_status_s99,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+99,bare_curr_shape_lenient_no_status_s99,k2,2,100,0.36000000000000004,[0],[1],"[[false, false]]",0.2,False,True
+99,bare_curr_shape_lenient_no_status_s99,k3,3,100,0.41333333333333333,[0],[2],"[[false, false, false]]",0.26666666666666666,False,True
+99,bare_curr_shape_lenient_no_status_s99,k4,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,True
+99,bare_curr_shape_lenient_no_status_s99,k4_hard,4,100,0.52,[0],[4],"[[false, false, false, false]]",0.4,False,False
+99,bare_curr_shape_lenient_no_memerr_s99,k1,1,100,0.52,[0],[1],[[false]],0.4,False,True
+99,bare_curr_shape_lenient_no_memerr_s99,k2,2,100,0.36000000000000004,[0],[1],"[[false, false]]",0.2,False,True
+99,bare_curr_shape_lenient_no_memerr_s99,k3,3,100,0.3066666666666667,[0],[1],"[[false, false, false]]",0.13333333333333333,False,True
+99,bare_curr_shape_lenient_no_memerr_s99,k4,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,True
+99,bare_curr_shape_lenient_no_memerr_s99,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+2024,bare_curr_shape_lenient_s2024,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+2024,bare_curr_shape_lenient_s2024,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_s2024,k3,3,100,0.0,[0],[0],"[[false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_s2024,k4,4,100,0.0,[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_s2024,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+2024,bare_curr_noshape_lenient_s2024,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+2024,bare_curr_noshape_lenient_s2024,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+2024,bare_curr_noshape_lenient_s2024,k3,3,100,0.0,[0],[0],"[[false, false, false]]",0.0,False,True
+2024,bare_curr_noshape_lenient_s2024,k4,4,100,0.0,[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,bare_curr_noshape_lenient_s2024,k4_hard,4,100,0.24000000000000002,[0],[1],"[[false, false, false, false]]",0.1,False,False
+2024,bare_curr_shape_hostile_s2024,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+2024,bare_curr_shape_hostile_s2024,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+2024,bare_curr_shape_hostile_s2024,k3,3,100,0.0,[0],[0],"[[false, false, false]]",0.0,False,True
+2024,bare_curr_shape_hostile_s2024,k4,4,100,0.0,[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,bare_curr_shape_hostile_s2024,k4_hard,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,False
+2024,bare_curr_shape_lenient_no_resume_s2024,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+2024,bare_curr_shape_lenient_no_resume_s2024,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_resume_s2024,k3,3,100,0.0,[0],[0],"[[false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_resume_s2024,k4,4,100,0.0,[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_resume_s2024,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+2024,bare_curr_shape_lenient_no_status_s2024,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+2024,bare_curr_shape_lenient_no_status_s2024,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_status_s2024,k3,3,100,0.0,[0],[0],"[[false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_status_s2024,k4,4,100,0.0,[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_status_s2024,k4_hard,4,100,0.28,[0],[1],"[[false, false, false, false]]",0.1,False,False
+2024,bare_curr_shape_lenient_no_memerr_s2024,k1,1,100,0.0,[0],[0],[[false]],0.0,False,True
+2024,bare_curr_shape_lenient_no_memerr_s2024,k2,2,100,0.0,[0],[0],"[[false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_memerr_s2024,k3,3,100,0.0,[0],[0],"[[false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_memerr_s2024,k4,4,100,0.0,[0],[0],"[[false, false, false, false]]",0.0,False,True
+2024,bare_curr_shape_lenient_no_memerr_s2024,k4_hard,4,100,0.36000000000000004,[0],[2],"[[false, false, false, false]]",0.2,False,False

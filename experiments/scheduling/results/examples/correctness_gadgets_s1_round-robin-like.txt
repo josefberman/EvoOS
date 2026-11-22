@@ -1,0 +1,35 @@
+# c_correctness_gadgets_s1 label=round-robin-like searchR=1.0 held=[4, 4] train=[4, 4]
+   0:  MOVI     a=5 b=0 c=0 imm=2
+   1:  CTXGET   a=6 b=5 c=0 imm=4
+   2:  CTXGET   a=4 b=5 c=0 imm=5
+   3:  ADDPROT  a=5 b=6 c=4 imm=0
+   4:  MOVI     a=3 b=0 c=0 imm=2
+   5:  MOVI     a=4 b=0 c=0 imm=3
+   6:  CTXGET   a=5 b=4 c=0 imm=4
+   7:  CTXGET   a=7 b=4 c=0 imm=5
+   8:  ADDPROT  a=4 b=5 c=7 imm=0
+   9:  RUNCTXI  a=3 b=0 c=0 imm=128
+  10:  MOVI     a=5 b=0 c=0 imm=1
+  11:  CTXGET   a=7 b=5 c=0 imm=4
+  12:  CTXGET   a=4 b=5 c=0 imm=5
+  13:  ADDPROT  a=5 b=7 c=4 imm=0
+  14:  ADDI     a=7 b=2 c=1 imm=5
+  15:  MOVI     a=6 b=0 c=0 imm=4
+  16:  CTXGET   a=1 b=6 c=0 imm=4
+  17:  CTXGET   a=2 b=6 c=0 imm=5
+  18:  ADDPROT  a=6 b=1 c=2 imm=0
+  19:  AND      a=2 b=5 c=5 imm=21
+  20:  MOVI     a=6 b=0 c=0 imm=4
+  21:  RUNCTXI  a=6 b=0 c=0 imm=256
+  22:  MOVI     a=1 b=0 c=0 imm=3
+  23:  RUNCTXI  a=1 b=0 c=0 imm=64
+  24:  BNE      a=7 b=7 c=4 imm=16  # -> 41
+  25:  BGE      a=5 b=4 c=2 imm=8  # -> 34
+  26:  MOVI     a=3 b=0 c=0 imm=1
+  27:  RUNCTXI  a=3 b=0 c=0 imm=8
+  28:  AND      a=2 b=7 c=1 imm=20
+  29:  ADDPROT  a=5 b=7 c=5 imm=12
+  30:  JR       a=7 b=2 c=7 imm=80
+  31:  RUNCTXI  a=0 b=5 c=3 imm=4
+  32:  RDFAULT  a=7 b=6 c=0 imm=3
+  33:  SHL      a=6 b=1 c=2 imm=11

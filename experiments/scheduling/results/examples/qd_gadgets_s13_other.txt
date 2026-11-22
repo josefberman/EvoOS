@@ -1,0 +1,65 @@
+# c_qd_gadgets_s13 label=other searchR=0.8790190893097751 held=[4, 4] train=[4, 4]
+   0:  MOVI     a=6 b=0 c=0 imm=2
+   1:  MOVI     a=6 b=0 c=0 imm=1
+   2:  CTXGET   a=5 b=6 c=0 imm=4
+   3:  CTXGET   a=1 b=6 c=0 imm=5
+   4:  ADDPROT  a=6 b=5 c=1 imm=0
+   5:  CTXGET   a=7 b=6 c=0 imm=0
+   6:  CTXGET   a=5 b=6 c=0 imm=5
+   7:  ADDI     a=4 b=5 c=2 imm=1
+   8:  MOVI     a=3 b=0 c=0 imm=2
+   9:  CTXGET   a=7 b=3 c=0 imm=4
+  10:  CTXGET   a=1 b=3 c=0 imm=5
+  11:  ADDPROT  a=3 b=7 c=1 imm=0
+  12:  MOVI     a=1 b=0 c=0 imm=2
+  13:  MOVI     a=1 b=0 c=0 imm=4
+  14:  CTXGET   a=2 b=1 c=0 imm=4
+  15:  CTXGET   a=6 b=1 c=0 imm=5
+  16:  ADDPROT  a=1 b=2 c=6 imm=0
+  17:  RUNCTXI  a=1 b=0 c=0 imm=128
+  18:  BNE      a=6 b=6 c=0 imm=512  # -> 531
+  19:  OR       a=5 b=0 c=0 imm=21
+  20:  MOV      a=0 b=0 c=1 imm=30
+  21:  RUNCTXI  a=1 b=2 c=3 imm=-7
+  22:  MOVI     a=7 b=0 c=0 imm=1
+  23:  RUNCTXI  a=7 b=0 c=0 imm=128
+  24:  CTXSET   a=4 b=3 c=1 imm=16
+  25:  CLRPROT  a=6 b=1 c=0 imm=0
+  26:  ADDI     a=3 b=2 c=7 imm=3
+  27:  STORE    a=0 b=2 c=1 imm=75
+  28:  MOVI     a=3 b=0 c=0 imm=1
+  29:  RUNCTXI  a=3 b=0 c=0 imm=256
+  30:  MOVI     a=5 b=0 c=0 imm=3
+  31:  CTXGET   a=7 b=5 c=0 imm=4
+  32:  CTXGET   a=2 b=5 c=0 imm=5
+  33:  ADDPROT  a=5 b=7 c=2 imm=0
+  34:  RUNCTXI  a=7 b=0 c=0 imm=256
+  35:  MOVI     a=4 b=0 c=0 imm=3
+  36:  RUNCTXI  a=4 b=0 c=0 imm=64
+  37:  MOVI     a=5 b=0 c=0 imm=3
+  38:  RUNCTXI  a=5 b=0 c=0 imm=16
+  39:  SUB      a=2 b=2 c=2 imm=384
+  40:  ADDI     a=3 b=0 c=3 imm=10
+  41:  LOAD     a=1 b=0 c=5 imm=4
+  42:  MOVI     a=0 b=3 c=1 imm=2
+  43:  RUNCTX   a=5 b=0 c=2 imm=640
+  44:  MOVI     a=2 b=0 c=0 imm=2
+  45:  RUNCTXI  a=2 b=0 c=0 imm=256
+  46:  CLRPROT  a=4 b=2 c=5 imm=4
+  47:  BNE      a=0 b=1 c=2 imm=2  # -> 50
+  48:  RUNCTXI  a=2 b=6 c=1 imm=640
+  49:  BEQ      a=0 b=1 c=2 imm=43  # -> 93
+  50:  CTXSET   a=1 b=6 c=0 imm=68
+  51:  SHL      a=4 b=7 c=5 imm=10
+  52:  RUNCTXI  a=2 b=1 c=1 imm=16
+  53:  CMP      a=7 b=6 c=7 imm=10
+  54:  SHR      a=4 b=1 c=7 imm=105
+  55:  MOVI     a=1 b=3 c=3 imm=4
+  56:  OR       a=4 b=3 c=4 imm=16
+  57:  CTXGET   a=2 b=7 c=6 imm=3
+  58:  RDTIME   a=1 b=6 c=1 imm=24
+  59:  LOAD     a=1 b=0 c=5 imm=64
+  60:  ADDI     a=4 b=1 c=6 imm=23
+  61:  MUL      a=3 b=6 c=7 imm=-24
+  62:  CTXGET   a=6 b=0 c=7 imm=19
+  63:  BLT      a=4 b=4 c=3 imm=32  # -> 96

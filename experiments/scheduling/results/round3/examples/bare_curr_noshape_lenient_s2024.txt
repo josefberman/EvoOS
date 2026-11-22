@@ -1,0 +1,6 @@
+# bare_curr_noshape_lenient_s2024 4/4=False stall=k1 R=0.24000000000000002
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=starving
+
+   0:  RDTIME   a=4 b=6 c=3 imm=0
+   1:  RUNCTXI  a=4 b=3 c=7 imm=384
+   2:  HALT     a=0 b=0 c=0 imm=0

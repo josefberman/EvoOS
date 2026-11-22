@@ -1,0 +1,35 @@
+# bare_curr_shape_lenient_s7 4/4=False stall=k1 R=0.52
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=other
+
+   0:  JAL      a=2 b=0 c=3 imm=16  # -> 17
+   1:  ADDPROT  a=1 b=6 c=0 imm=7
+   2:  RUNCTX   a=0 b=6 c=0 imm=6
+   3:  STORE    a=4 b=6 c=2 imm=0
+   4:  ADDPROT  a=2 b=1 c=3 imm=11
+   5:  RUNCTX   a=0 b=3 c=7 imm=-4
+   6:  ADDPROT  a=7 b=7 c=5 imm=12
+   7:  BGE      a=3 b=1 c=6 imm=3  # -> 11
+   8:  CTXGET   a=7 b=4 c=1 imm=13
+   9:  OR       a=5 b=2 c=7 imm=2
+  10:  CTXSET   a=5 b=5 c=5 imm=-4
+  11:  JMP      a=1 b=1 c=4 imm=21  # -> 33
+  12:  RDFAULT  a=0 b=4 c=7 imm=1
+  13:  RUNCTXI  a=5 b=0 c=7 imm=256
+  14:  JR       a=7 b=0 c=3 imm=-1
+  15:  BLT      a=6 b=6 c=7 imm=7  # -> 23
+  16:  MUL      a=4 b=2 c=6 imm=17
+  17:  RUNCTXI  a=5 b=6 c=3 imm=18
+  18:  ADD      a=1 b=2 c=1 imm=11
+  19:  MOVI     a=4 b=4 c=0 imm=-18
+  20:  SHL      a=5 b=2 c=0 imm=15
+  21:  RDTIME   a=6 b=6 c=6 imm=110
+  22:  CTXGET   a=6 b=0 c=3 imm=32
+  23:  SUB      a=5 b=1 c=5 imm=48
+  24:  JMP      a=2 b=1 c=5 imm=-8  # -> 17
+  25:  MOV      a=6 b=2 c=4 imm=5
+  26:  JR       a=1 b=1 c=7 imm=16
+  27:  SHL      a=3 b=3 c=0 imm=1
+  28:  SHL      a=1 b=1 c=5 imm=-5
+  29:  CTXGET   a=0 b=4 c=1 imm=26
+  30:  BEQ      a=5 b=3 c=5 imm=18  # -> 49
+  31:  HALT     a=0 b=0 c=0 imm=0

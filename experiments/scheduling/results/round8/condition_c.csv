@@ -1,0 +1,7 @@
+condition,name,seed,search_reward,r1_delivered,r2_n_ok,r3_delivered,r4_delivered,r4_held_delivered,mix_delivered,style,org,shared_window,four_of_four,elapsed_sec,n_eval,stall_stage
+C-hw-route,route_s1,1,0.96,0,1,3,4,3,2,shared-window,blk-user+shared-window,True,False,283.4089289849944,135600,
+C-hw-route,route_s7,7,0.8400000000000001,1,1,2,2,2,1,shared-window,blk-user+shared-window,True,False,302.3442742420011,240912,
+C-hw-route,route_s13,13,0.9400000000000002,1,1,3,3,3,2,shared-window,blk-user+shared-window,True,False,318.8736298750009,240864,
+C-hw-route,route_s42,42,0.96,1,1,3,4,3,2,shared-window,blk-user+shared-window,True,False,196.82459123099397,123120,
+C-hw-route,route_s99,99,0.8300000000000001,1,3,2,2,2,1,shared-window,fifo-swap-like+shared-window,True,False,477.35154629500175,252096,
+C-hw-route,route_s2024,2024,0.9400000000000002,1,3,2,2,2,1,shared-window,blk-user+shared-window,True,False,219.29652318499575,122880,

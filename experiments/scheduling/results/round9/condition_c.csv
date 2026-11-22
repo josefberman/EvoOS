@@ -1,0 +1,7 @@
+condition,name,seed,search_reward,four_of_four,r7_four_of_four,r4_delivered,r4_held_delivered,mix_completed,mix_held_completed,shuf_completed,style,org,shared_window,revoked,share_leak,audit_pass,audit_n_leak,elapsed_sec,n_eval,gens_ran
+C-hw-gen,gen_s1,1,0.6826666666666666,False,False,1,0,5,5,4,shared-window,blk-user+shared-window,True,False,False,True,0,690.2591111120055,160000,4000
+C-hw-gen,gen_s7,7,0.8533333333333333,False,False,3,2,4,4,4,disk-buffer,fifo-swap-like+disk-buffer,False,True,False,False,1,1064.710546907998,160000,4000
+C-hw-gen,gen_s13,13,0.768,False,False,1,1,3,3,4,shared-window,blk-user+shared-window,True,False,False,True,0,800.366810650994,160000,4000
+C-hw-gen,gen_s42,42,0.784,False,False,0,0,2,2,4,none,blk-user+rr,False,False,False,False,3,812.4310488510018,160000,4000
+C-hw-gen,gen_s99,99,0.7146666666666668,False,False,2,2,3,3,4,shared-window,fifo-swap-like+shared-window,True,False,False,False,2,942.7296476510019,160000,4000
+C-hw-gen,gen_s2024,2024,0.8106666666666669,False,False,3,3,3,3,6,shared-window,fifo-swap-like+shared-window,True,False,False,True,0,1059.4222251559986,160000,4000

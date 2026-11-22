@@ -1,0 +1,72 @@
+# c_correctness_full_s1 label=round-robin-like searchR=1.0 held=[4, 4] train=[4, 4]
+   0:  MOVI     a=6 b=0 c=0 imm=4
+   1:  CTXGET   a=1 b=6 c=0 imm=4
+   2:  CTXGET   a=4 b=6 c=0 imm=5
+   3:  ADDPROT  a=6 b=1 c=4 imm=0
+   4:  MOVI     a=7 b=0 c=0 imm=3
+   5:  CTXGET   a=1 b=7 c=0 imm=4
+   6:  CTXGET   a=4 b=7 c=0 imm=5
+   7:  ADDPROT  a=7 b=1 c=4 imm=0
+   8:  MOVI     a=2 b=0 c=0 imm=4
+   9:  RUNCTXI  a=2 b=0 c=0 imm=8
+  10:  RUNCTX   a=7 b=7 c=0 imm=3
+  11:  RUNCTX   a=0 b=7 c=2 imm=31
+  12:  MOVI     a=1 b=0 c=0 imm=2
+  13:  CTXGET   a=5 b=1 c=0 imm=4
+  14:  CTXGET   a=6 b=1 c=0 imm=5
+  15:  ADDPROT  a=1 b=5 c=6 imm=0
+  16:  MOVI     a=2 b=0 c=0 imm=2
+  17:  RUNCTXI  a=2 b=0 c=0 imm=32
+  18:  MOVI     a=3 b=0 c=0 imm=2
+  19:  RUNCTXI  a=3 b=0 c=0 imm=64
+  20:  ADDI     a=7 b=1 c=5 imm=17
+  21:  MOVI     a=2 b=0 c=0 imm=1
+  22:  CTXGET   a=1 b=2 c=0 imm=4
+  23:  CTXGET   a=6 b=2 c=0 imm=5
+  24:  ADDPROT  a=2 b=1 c=6 imm=0
+  25:  MOVI     a=3 b=0 c=0 imm=1
+  26:  RUNCTXI  a=3 b=0 c=0 imm=256
+  27:  BEQ      a=5 b=2 c=2 imm=2  # -> 30
+  28:  CTXGET   a=6 b=7 c=7 imm=27
+  29:  ADDI     a=4 b=3 c=4 imm=2
+  30:  SHL      a=5 b=1 c=6 imm=640
+  31:  RUNCTXI  a=2 b=7 c=7 imm=32
+  32:  ADDPROT  a=0 b=1 c=1 imm=5
+  33:  AND      a=7 b=6 c=2 imm=0
+  34:  RDFAULT  a=0 b=3 c=7 imm=29
+  35:  MOVI     a=5 b=0 c=0 imm=3
+  36:  RUNCTXI  a=5 b=0 c=0 imm=256
+  37:  ADDPROT  a=2 b=1 c=6 imm=0
+  38:  MOVI     a=3 b=0 c=0 imm=1
+  39:  RUNCTXI  a=3 b=0 c=0 imm=256
+  40:  BEQ      a=5 b=2 c=2 imm=2  # -> 43
+  41:  CTXGET   a=6 b=7 c=7 imm=27
+  42:  MOVI     a=2 b=4 c=2 imm=14
+  43:  MOV      a=1 b=3 c=7 imm=512
+  44:  MOVI     a=3 b=0 c=0 imm=1
+  45:  MOVI     a=2 b=0 c=0 imm=1
+  46:  RUNCTX   a=2 b=7 c=2 imm=31
+  47:  ADDI     a=2 b=2 c=0 imm=1
+  48:  CTXGET   a=7 b=0 c=0 imm=6
+  49:  BLT      a=2 b=7 c=0 imm=-4  # -> 46
+  50:  RUNCTXI  a=3 b=0 c=0 imm=256
+  51:  ADDI     a=3 b=3 c=0 imm=1
+  52:  BLT      a=3 b=7 c=0 imm=-4  # -> 49
+  53:  JMP      a=6 b=0 c=7 imm=-2  # -> 52
+  54:  BNE      a=5 b=1 c=2 imm=55  # -> 110
+  55:  CTXGET   a=7 b=2 c=5 imm=18
+  56:  SHL      a=3 b=3 c=3 imm=0
+  57:  RDTIME   a=1 b=1 c=6 imm=2
+  58:  ADD      a=5 b=4 c=6 imm=15
+  59:  NOP      a=4 b=4 c=6 imm=20
+  60:  JMP      a=2 b=1 c=7 imm=10  # -> 71
+  61:  NOT      a=1 b=1 c=5 imm=21
+  62:  JMP      a=5 b=5 c=7 imm=62  # -> 125
+  63:  JMP      a=3 b=2 c=3 imm=17  # -> 81
+  64:  ADDPROT  a=3 b=0 c=5 imm=30
+  65:  ADD      a=5 b=5 c=5 imm=-7
+  66:  JMP      a=6 b=3 c=4 imm=256  # -> 323
+  67:  STORE    a=2 b=0 c=6 imm=16
+  68:  JR       a=3 b=3 c=1 imm=512
+  69:  JMP      a=1 b=6 c=0 imm=10  # -> 80
+  70:  JR       a=2 b=1 c=2 imm=18

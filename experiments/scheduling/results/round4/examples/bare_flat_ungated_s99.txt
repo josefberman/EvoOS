@@ -1,0 +1,34 @@
+# bare_flat_ungated_s99 4/4=False stall=None R=0.36000000000000004 label=starving
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=starving
+
+   0:  ADD      a=5 b=0 c=5 imm=384
+   1:  ADDI     a=7 b=5 c=4 imm=16
+   2:  BLT      a=5 b=1 c=2 imm=30  # -> 33
+   3:  RDTIME   a=2 b=7 c=2 imm=22
+   4:  RUNCTXI  a=2 b=0 c=0 imm=18
+   5:  STORE    a=6 b=4 c=4 imm=32
+   6:  MOVI     a=7 b=6 c=3 imm=1
+   7:  NOT      a=6 b=5 c=5 imm=13
+   8:  BNE      a=4 b=0 c=1 imm=18  # -> 27
+   9:  NOT      a=0 b=7 c=7 imm=-8
+  10:  RUNCTXI  a=7 b=1 c=5 imm=21
+  11:  NOT      a=7 b=7 c=2 imm=16
+  12:  JR       a=6 b=7 c=2 imm=26
+  13:  XOR      a=2 b=5 c=4 imm=64
+  14:  BEQ      a=2 b=7 c=4 imm=0  # -> 15
+  15:  RUNCTXI  a=4 b=2 c=6 imm=512
+  16:  NOP      a=6 b=5 c=0 imm=-2
+  17:  JMP      a=4 b=2 c=3 imm=3  # -> 21
+  18:  BLT      a=7 b=2 c=7 imm=64  # -> 83
+  19:  AND      a=5 b=6 c=7 imm=8
+  20:  MUL      a=7 b=0 c=0 imm=14
+  21:  AND      a=0 b=3 c=3 imm=39
+  22:  ADDI     a=7 b=1 c=1 imm=-3
+  23:  SUB      a=3 b=6 c=5 imm=-4
+  24:  JR       a=3 b=4 c=4 imm=28
+  25:  RUNCTXI  a=5 b=6 c=7 imm=-2
+  26:  MOVI     a=2 b=2 c=1 imm=4
+  27:  RUNCTX   a=6 b=3 c=7 imm=32
+  28:  BNE      a=6 b=4 c=2 imm=-6  # -> 23
+  29:  MOVI     a=0 b=7 c=2 imm=56
+  30:  HALT     a=0 b=0 c=0 imm=0

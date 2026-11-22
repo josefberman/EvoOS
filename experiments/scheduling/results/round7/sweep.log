@@ -1,0 +1,184 @@
+== density ==
+# Why bare-bits discovery fails
+
+Rounds 3–6 searched random 5-tuples (bare pack) with four methods: UCB1, curriculum+shaping, learned GRU edits, and lexicase+dataflow. Combined 4/4 count on the gated 4-guest mix: **1/42** (round 3, ungated flat, did not replicate) then **0/24 + 0/12 + 0/12**. The bottleneck is the **cover** event: `ADDPROT` must contain a guest's `[DATA_BASE, DATA_BOUND)`.
+
+## Analytic density
+
+Calling-convention family size (length-4 MMU gadget): **840** (4 ctx ids × P(7,3) distinct regs). Guest windows: `[(256, 384), (384, 512), (512, 640), (640, 768)]`.
+
+Effective per-instruction alphabet used by `random_instr` ≈ `6.35e+05` (31 ops × 8³ regs × 40 immediates). Four-instruction space ≈ `1.62e+23`.
+
+P(a uniform length-4 block **is** the gadget) ≈ `5.17e-21`.
+P(a length-24 random program contains that block) ≈ `1.09e-19`.
+Expected evals to first such block: **9.21e+18**.
+If four independent copies were required for 4/4: **7.2e+75** evals.
+
+A loop over `N_CONTEXTS` (the `insert_ctx_scan` gadget) is **not** in the bare pack. Bare search must invent that five-instruction scan as well as the MMU calling convention.
+
+## Empirical density (this run)
+
+Random bare length-24 on k1 (20000 programs): cover hits **0**, p̂=`0`, E[evals]=`inf` (cover+run **0**).
+
+Random bare length-24 on 4-guest train (10000 programs): cover hits **0**, p̂=`0`, E[evals]=`inf`.
+
+Single-lineage bare mutate (10000 evals): cover hits **0**, first hit at eval `None`, p̂=`0`.
+
+Restricted length-4
+== A / A-hw ==
+  old4 run_to_completion [4, 4] 4/4 True
+  old4 round_robin_q16 [4, 4] 4/4 True
+  old4 selfish_first [1, 1] 4/4 False
+  hw fifo_swap_rr [8, 8] 4/4 True
+  hw direct_copy_router [8, 8] 4/4 True
+  hw place_first_frames_rr [4, 4] 4/4 False
+  hw fifo_swap_deaf [8, 4] 4/4 False
+seeded 6 round-2 gadget elites
+== C-hw 6 jobs gps=8000 pop=64 workers=4 ==
+  start s1
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/concurrent/futures/process.py", line 263, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/process.py", line 212, in _process_chunk
+    return [fn(*args) for args in chunk]
+            ^^^^^^^^^
+  File "/workspace/evoos/agent/evolutionary_search.py", line 47, in remote_evaluate
+    train = [sb.evaluate(instrs, w) for w in payload["train"]]
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/evoos/vm/sandbox.py", line 261, in evaluate
+    w = machine.last_writer[addr]
+        ~~~~~~~~~~~~~~~~~~~^^^^^^
+IndexError: list index out of range
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/evoos/experiments/scheduling/sweep_round7.py", line 462, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/workspace/evoos/experiments/scheduling/sweep_round7.py", line 445, in main
+    row = run_c_hw(job, gadget_seeds, ckpt_cb=live_ckpt)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/evoos/experiments/scheduling/sweep_round7.py", line 150, in run_c_hw
+    state = run_search(
+            ^^^^^^^^^^^
+  File "/workspace/evoos/agent/evolutionary_search.py", line 572, in run_search
+    recs = eval_batch(
+           ^^^^^^^^^^^
+  File "/workspace/evoos/agent/evolutionary_search.py", line 429, in eval_batch
+    remotes = list(
+              ^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/process.py", line 642, in _chain_from_iterable_of_lists
+    for element in iterable:
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+IndexError: list index out of range
+== density ==
+reused experiments/scheduling/results/round7/bare_density.json
+== A / A-hw ==
+  old4 run_to_completion [4, 4] 4/4 True
+  old4 round_robin_q16 [4, 4] 4/4 True
+  old4 selfish_first [1, 1] 4/4 False
+  hw fifo_swap_rr [8, 8] 4/4 True
+  hw direct_copy_router [8, 8] 4/4 True
+  hw place_first_frames_rr [4, 4] 4/4 False
+  hw fifo_swap_deaf [8, 4] 4/4 False
+seeded 6 round-2 gadget elites
+resuming with 0 C-hw rows
+== C-hw 6 jobs gps=8000 pop=64 workers=4 ==
+  start s1
+== density ==
+reused experiments/scheduling/results/round7/bare_density.json
+== A / A-hw ==
+  old4 run_to_completion [4, 4] 4/4 True
+  old4 round_robin_q16 [4, 4] 4/4 True
+  old4 selfish_first [1, 1] 4/4 False
+  hw fifo_swap_rr [8, 8] 4/4 True
+  hw direct_copy_router [8, 8] 4/4 True
+  hw place_first_frames_rr [4, 4] 4/4 False
+  hw fifo_swap_deaf [8, 4] 4/4 False
+seeded 6 round-2 gadget elites
+resuming with 0 C-hw rows
+== C-hw 6 jobs gps=4000 pop=64 workers=4 ==
+  start s1
+  done hw_lex_s1 R=0.472 4/4=False org=fifo-swap-like+rr n_eval=256000 1867s
+  start s7
+  done hw_lex_s7 R=0.553 4/4=False org=fifo-swap-like+rr n_eval=256000 2059s
+  start s13
+  done hw_lex_s13 R=0.507 4/4=False org=fifo-swap-like+rr n_eval=256000 2049s
+  start s42
+  done hw_lex_s42 R=0.509 4/4=False org=blk-user n_eval=256000 1891s
+  start s99
+  done hw_lex_s99 R=0.596 4/4=False org=fifo-swap-like+rr n_eval=256000 1934s
+  start s2024
+  done hw_lex_s2024 R=0.545 4/4=False org=fifo-swap-like+rr n_eval=256000 2090s
+wrote experiments/scheduling/results/round7 in 11891.7s
+# Round 7: close bare-bits; Condition C-hw
+
+Wall time **11891.7s** (198.2 min), eval_workers=4.
+ISA: opcodes 0–31 unchanged; 32–34 are BLKRD/BLKWR/SVC from the persist-blk boot track. No pager, pipe, or schedule_process opcode.
+Opcode count: **35** (`HALT`=0 … `SVC`=34).
+
+Bare-line close: [`why_bare_fails.md`](why_bare_fails.md).
+
+## Condition A / A-hw
+
+| suite | name | train completed | held completed | 4/4 | held R |
+| --- | --- | --- | --- | --- | --- |
+| old4 | run_to_completion | [4, 4] | [4, 4] | True | 1.000 |
+| old4 | round_robin_q16 | [4, 4] | [4, 4] | True | 1.000 |
+| old4 | selfish_first | [1, 1] | [1, 1] | False | 0.400 |
+| hw | fifo_swap_rr | [8, 8] | [8, 6] | True | 1.000 |
+| hw | direct_copy_router | [8, 8] | [8, 6] | True | 1.000 |
+| hw | place_first_frames_rr | [4, 4] | [4, 4] | False | 0.667 |
+| hw | fifo_swap_deaf | [8, 4] | [8, 3] | False | 0.840 |
+
+## Condition C-hw (hardware-manual pack, pressure+route)
+
+Pack `hw` = gadgets + ctx-scan + BLKRD/BLKWR calling-convention snippets. Honestly framed as the hardware manual, not bare bits. Environment: 8 guests / 4 RAM frames + block device; 4 producer/consumer pairs via SVC PUT/GET. QD MAP-Elites cell `(completed, blk_writes, svc+delivered, switch_bin, isolation)` + epsilon-lexicase. Seeded from round-2 gadget elites.
+
+| arm | search R mean ± std (best) | 4/4 train+held | mean n_eval |
+| --- | --- | --- | --- |
+| hw_lexicase | 0.530 ± 0.040 (0.596) | **0/6** | 256000 |
+
+| seed | R | train completed | held completed | org | blk_w | delivered | archive |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 0.472 | [2, 5] | [2, 3] | fifo-swap-like+rr | 57 | 0 | 2379 |
+| 7 | 0.553 | [1, 5] | [1, 4] | fifo-swap-like+rr | 122 | 0 | 2888 |
+| 13 | 0.507 | [3, 5] | [3, 4] | fifo-swap-like+rr | 39 | 0 | 2445 |
+| 42 | 0.509 | [4, 4] | [4, 4] | blk-user | 2 | 0 | 3855 |
+| 99 | 0.596 | [4, 5] | [4, 4] | fifo-swap-like+rr | 7 | 0 | 3724 |
+| 2024 | 0.545 | [3, 4] | [3, 3] | fifo-swap-like+rr | 210 | 0 | 2126 |
+
+Organizations observed: ['blk-user', 'fifo-swap-like+rr'].
+No 4/4 elites on the pressure+route mix.
+
+Best elite `hw_lex_s99` org=`fifo-swap-like+rr`:
+
+```
+   0:  CTXSET   a=1 b=5 c=0 imm=5
+   1:  ADDPROT  a=1 b=3 c=5 imm=0
+   2:  BLKWR    a=4 b=3 c=4 imm=320
+   3:  MOVI     a=4 b=0 c=0 imm=3
+   4:  CTXGET   a=3 b=4 c=0 imm=4
+   5:  MOVI     a=3 b=0 c=0 imm=3
+   6:  MOVI     a=5 b=0 c=0 imm=352
+   7:  CTXSET   a=3 b=5 c=0 imm=4
+   8:  MOVI     a=4 b=0 c=0 imm=384
+   9:  CTXSET   a=3 b=4 c=0 imm=5
+ 

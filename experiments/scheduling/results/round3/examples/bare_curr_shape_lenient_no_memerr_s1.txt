@@ -1,0 +1,74 @@
+# bare_curr_shape_lenient_no_memerr_s1 4/4=False stall=k1 R=0.52
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[2, 3], [2, 3]]; label=other
+
+   0:  RUNCTX   a=4 b=1 c=7 imm=-48
+   1:  RDTIME   a=3 b=2 c=6 imm=-5
+   2:  CLRPROT  a=3 b=1 c=7 imm=16
+   3:  MOV      a=6 b=0 c=7 imm=35
+   4:  BNE      a=1 b=5 c=0 imm=3  # -> 8
+   5:  MOV      a=0 b=6 c=3 imm=26
+   6:  ADDI     a=6 b=1 c=7 imm=-8
+   7:  ADDPROT  a=5 b=1 c=6 imm=10
+   8:  CTXGET   a=7 b=2 c=2 imm=32
+   9:  CMP      a=2 b=6 c=3 imm=16
+  10:  SUB      a=5 b=0 c=2 imm=19
+  11:  ADDPROT  a=3 b=7 c=7 imm=32
+  12:  RUNCTXI  a=3 b=7 c=4 imm=6
+  13:  MOV      a=1 b=2 c=4 imm=27
+  14:  OR       a=6 b=3 c=4 imm=384
+  15:  BLT      a=6 b=0 c=7 imm=16  # -> 32
+  16:  CMP      a=6 b=2 c=5 imm=8
+  17:  RUNCTXI  a=5 b=1 c=7 imm=108
+  18:  ADDI     a=6 b=5 c=7 imm=2
+  19:  RUNCTXI  a=6 b=2 c=2 imm=11
+  20:  ADDI     a=6 b=1 c=7 imm=-8
+  21:  ADDPROT  a=5 b=1 c=6 imm=10
+  22:  CTXGET   a=7 b=2 c=2 imm=32
+  23:  CMP      a=2 b=6 c=3 imm=16
+  24:  SUB      a=5 b=0 c=2 imm=19
+  25:  ADDPROT  a=3 b=7 c=7 imm=32
+  26:  RUNCTXI  a=3 b=7 c=4 imm=6
+  27:  MOV      a=1 b=2 c=4 imm=27
+  28:  STORE    a=6 b=3 c=4 imm=384
+  29:  MOV      a=1 b=2 c=4 imm=27
+  30:  BLT      a=6 b=0 c=7 imm=16  # -> 47
+  31:  CMP      a=6 b=2 c=5 imm=8
+  32:  RUNCTXI  a=5 b=1 c=7 imm=108
+  33:  ADDI     a=6 b=5 c=7 imm=2
+  34:  MOV      a=6 b=2 c=2 imm=11
+  35:  RUNCTXI  a=0 b=6 c=2 imm=384
+  36:  CTXGET   a=6 b=0 c=7 imm=3
+  37:  ADDI     a=6 b=1 c=7 imm=-8
+  38:  ADDPROT  a=5 b=1 c=6 imm=10
+  39:  CTXGET   a=7 b=2 c=2 imm=32
+  40:  BLT      a=2 b=6 c=3 imm=16  # -> 57
+  41:  SUB      a=5 b=0 c=2 imm=19
+  42:  ADDPROT  a=3 b=7 c=7 imm=32
+  43:  RUNCTXI  a=3 b=7 c=4 imm=6
+  44:  MOV      a=1 b=2 c=4 imm=27
+  45:  OR       a=6 b=3 c=4 imm=384
+  46:  BLT      a=6 b=0 c=7 imm=16  # -> 63
+  47:  CMP      a=6 b=2 c=5 imm=8
+  48:  MOV      a=5 b=3 c=6 imm=18
+  49:  RUNCTXI  a=5 b=1 c=7 imm=108
+  50:  ADDI     a=6 b=5 c=7 imm=2
+  51:  RUNCTXI  a=6 b=2 c=2 imm=11
+  52:  ADDI     a=6 b=1 c=7 imm=-8
+  53:  ADDPROT  a=5 b=1 c=6 imm=10
+  54:  CTXGET   a=7 b=2 c=2 imm=32
+  55:  CMP      a=2 b=6 c=7 imm=16
+  56:  SUB      a=5 b=0 c=2 imm=19
+  57:  ADDPROT  a=3 b=7 c=7 imm=32
+  58:  RUNCTXI  a=3 b=7 c=4 imm=6
+  59:  MOV      a=1 b=2 c=4 imm=27
+  60:  OR       a=6 b=3 c=4 imm=384
+  61:  MOV      a=1 b=2 c=4 imm=27
+  62:  BLT      a=6 b=0 c=7 imm=16  # -> 79
+  63:  CMP      a=6 b=2 c=5 imm=8
+  64:  RUNCTXI  a=5 b=1 c=7 imm=108
+  65:  ADDI     a=6 b=5 c=7 imm=2
+  66:  MOV      a=6 b=2 c=2 imm=11
+  67:  RUNCTXI  a=0 b=6 c=2 imm=384
+  68:  CTXGET   a=6 b=0 c=7 imm=3
+  69:  RUNCTX   a=6 b=7 c=5 imm=3
+  70:  CTXSET   a=5 b=7 c=0 imm=26

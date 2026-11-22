@@ -1,0 +1,55 @@
+# bare_flat_shape_lenient_s1 4/4=False stall=None R=0.36000000000000004
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 2, 3], [0, 2, 3]]; label=starving
+
+   0:  ADD      a=5 b=0 c=1 imm=8
+   1:  RDTIME   a=5 b=7 c=2 imm=-50
+   2:  BGE      a=4 b=1 c=1 imm=0  # -> 3
+   3:  MUL      a=1 b=6 c=5 imm=46
+   4:  RUNCTXI  a=7 b=7 c=6 imm=-21
+   5:  BLT      a=3 b=3 c=3 imm=16  # -> 22
+   6:  XOR      a=0 b=7 c=7 imm=9
+   7:  NOT      a=4 b=2 c=1 imm=26
+   8:  NOT      a=2 b=6 c=2 imm=2
+   9:  LOAD     a=4 b=5 c=2 imm=512
+  10:  RUNCTXI  a=5 b=0 c=3 imm=18
+  11:  SHR      a=1 b=3 c=0 imm=0
+  12:  ADDPROT  a=0 b=2 c=0 imm=32
+  13:  ADDI     a=4 b=7 c=5 imm=11
+  14:  CLRPROT  a=7 b=1 c=1 imm=-64
+  15:  ADDPROT  a=5 b=7 c=4 imm=16
+  16:  XOR      a=4 b=7 c=2 imm=0
+  17:  RUNCTX   a=7 b=3 c=7 imm=127
+  18:  ADDPROT  a=2 b=5 c=6 imm=19
+  19:  STORE    a=7 b=4 c=1 imm=64
+  20:  ADDI     a=4 b=0 c=4 imm=0
+  21:  BGE      a=1 b=7 c=4 imm=14  # -> 36
+  22:  MOVI     a=5 b=5 c=3 imm=9
+  23:  CMP      a=4 b=1 c=3 imm=61
+  24:  CTXSET   a=6 b=7 c=6 imm=2
+  25:  STORE    a=1 b=6 c=6 imm=24
+  26:  ADDI     a=2 b=0 c=2 imm=31
+  27:  RDTIME   a=1 b=4 c=3 imm=26
+  28:  JMP      a=4 b=6 c=7 imm=-60  # -> -31
+  29:  BEQ      a=1 b=0 c=4 imm=512  # -> 542
+  30:  ADDPROT  a=3 b=5 c=6 imm=2
+  31:  NOP      a=3 b=1 c=3 imm=3
+  32:  AND      a=3 b=0 c=6 imm=32
+  33:  JAL      a=7 b=3 c=0 imm=-8  # -> 26
+  34:  MOVI     a=0 b=3 c=5 imm=1
+  35:  BGE      a=1 b=6 c=7 imm=-64  # -> -28
+  36:  MUL      a=7 b=3 c=5 imm=29
+  37:  RDFAULT  a=3 b=7 c=5 imm=12
+  38:  STORE    a=0 b=3 c=1 imm=27
+  39:  SUB      a=3 b=5 c=6 imm=30
+  40:  BLT      a=4 b=4 c=5 imm=10  # -> 51
+  41:  STORE    a=2 b=5 c=4 imm=16
+  42:  JR       a=5 b=0 c=0 imm=70
+  43:  MUL      a=5 b=3 c=4 imm=22
+  44:  CTXGET   a=5 b=2 c=2 imm=34
+  45:  ADDPROT  a=2 b=3 c=4 imm=31
+  46:  ADDPROT  a=5 b=4 c=7 imm=8
+  47:  CLRPROT  a=6 b=0 c=1 imm=27
+  48:  BGE      a=1 b=1 c=3 imm=2  # -> 51
+  49:  RUNCTX   a=2 b=4 c=1 imm=10
+  50:  XOR      a=5 b=3 c=5 imm=61
+  51:  HALT     a=0 b=0 c=0 imm=0

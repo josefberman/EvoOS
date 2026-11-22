@@ -1,0 +1,37 @@
+# bare_curr_gated_learned_s7 4/4=False stall=k1 R=0.0 label=no-dispatch arm=learned
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=no-dispatch
+# n_eval=320000 archive=1
+
+   0:  SHL      a=1 b=1 c=5 imm=-5
+   1:  BLT      a=3 b=0 c=1 imm=24  # -> 26
+   2:  ADDPROT  a=1 b=6 c=0 imm=7
+   3:  RUNCTX   a=0 b=6 c=0 imm=6
+   4:  STORE    a=4 b=6 c=2 imm=0
+   5:  ADDPROT  a=2 b=1 c=3 imm=11
+   6:  RUNCTX   a=0 b=3 c=7 imm=-4
+   7:  ADDPROT  a=7 b=7 c=5 imm=12
+   8:  BGE      a=3 b=1 c=4 imm=3  # -> 12
+   9:  CTXGET   a=7 b=4 c=1 imm=13
+  10:  OR       a=5 b=2 c=7 imm=2
+  11:  CTXSET   a=5 b=5 c=5 imm=-4
+  12:  JMP      a=1 b=1 c=4 imm=21  # -> 34
+  13:  RDFAULT  a=0 b=4 c=7 imm=1
+  14:  BLT      a=5 b=0 c=7 imm=256  # -> 271
+  15:  JR       a=7 b=0 c=3 imm=-1
+  16:  BLT      a=6 b=6 c=7 imm=7  # -> 24
+  17:  MUL      a=4 b=2 c=6 imm=17
+  18:  RUNCTXI  a=5 b=6 c=3 imm=18
+  19:  SHL      a=3 b=3 c=0 imm=1
+  20:  MOVI     a=4 b=4 c=0 imm=-18
+  21:  SHL      a=5 b=2 c=0 imm=15
+  22:  RDTIME   a=6 b=6 c=6 imm=110
+  23:  CTXGET   a=6 b=0 c=3 imm=32
+  24:  SUB      a=2 b=1 c=5 imm=48
+  25:  JMP      a=2 b=1 c=5 imm=-8  # -> 18
+  26:  MOV      a=6 b=2 c=4 imm=5
+  27:  JR       a=1 b=1 c=7 imm=16
+  28:  RDTIME   a=1 b=2 c=1 imm=11
+  29:  JAL      a=2 b=0 c=3 imm=16  # -> 46
+  30:  CTXGET   a=0 b=4 c=1 imm=26
+  31:  BEQ      a=5 b=3 c=5 imm=2  # -> 34
+  32:  HALT     a=0 b=0 c=0 imm=0
