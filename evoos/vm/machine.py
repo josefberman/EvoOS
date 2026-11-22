@@ -145,6 +145,8 @@ class Machine:
         self.last_run_steps = 0
         self.last_run_fault = 0
         self.last_run_ctx = 0
+        # Evaluator telemetry: values written by CTXGET / RDTIME / RDFAULT.
+        self.observed_consts: list[int] = []
 
     def snapshot(self) -> Snapshot:
         return Snapshot(
@@ -175,6 +177,7 @@ class Machine:
         self.last_run_steps = snap.last_run_steps
         self.last_run_fault = snap.last_run_fault
         self.last_run_ctx = snap.last_run_ctx
+        self.observed_consts = []
 
     def state_hash(self) -> tuple:
         ctx_part = []
@@ -473,7 +476,10 @@ class Machine:
         if op == Op.CTXGET:
             tid = regs[b]
             if 0 <= tid < self.config.n_contexts:
-                self._write_reg(ctx, a, self._ctx_field_get(self.contexts[tid], imm, cid))
+                val = self._ctx_field_get(self.contexts[tid], imm, cid)
+                self._write_reg(ctx, a, val)
+                if cid == 0:
+                    self.observed_consts.append(int(val))
             ctx.pc = next_pc
             return
         if op == Op.CTXSET:

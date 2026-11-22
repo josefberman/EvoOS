@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from evoos.agent.program import Candidate
+from evoos.evaluator.cases import case_vector, cases_solved, summarize_cases
 from evoos.evaluator.reward import RewardWeights, score
 from evoos.experiments.scheduling.analyze import classify_trace, opcode_stats
 from evoos.vm.sandbox import Sandbox, Workload
@@ -19,6 +20,9 @@ def evaluate_split(
     train_bd = score(train_res, novelty=0.0, weights=RewardWeights.correctness_only())
     held_bd = score(held_res, novelty=0.0, weights=RewardWeights.correctness_only())
     four = all(r.completed == r.n_guests and r.isolation_ok for r in train_res + held_res)
+    names, vec = case_vector(train_res + held_res, gated=True)
+    solved = cases_solved(names, vec)
+    summary = summarize_cases(names, vec)
     labels = {r.workload: classify_trace(r) for r in train_res + held_res}
     # Majority behavioral label on held-out, then train.
     held_labels = [classify_trace(r) for r in held_res]
@@ -42,6 +46,10 @@ def evaluate_split(
         "opcode_stats": opcode_stats(cand),
         "origin": cand.origin,
         "length": len(cand),
+        "case_names": names,
+        "case_vec": vec,
+        "cases_solved": solved,
+        "cases_summary": summary,
     }
 
 

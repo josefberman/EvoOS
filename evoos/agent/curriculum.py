@@ -35,6 +35,8 @@ class StageLog:
     completed_protected: list[int] = field(default_factory=list)
     history: list[dict] = field(default_factory=list)
     n_eval: int = 0
+    first_solved: dict[str, int] = field(default_factory=dict)
+    cases_solved: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -100,6 +102,10 @@ def run_curriculum(
             elite_fraction=search.elite_fraction,
             learned=search.learned,
             eval_workers=search.eval_workers,
+            selection=search.selection,
+            dataflow=search.dataflow,
+            representation=search.representation,
+            epsilon=search.epsilon,
         )
         state = run_search(
             sandbox,
@@ -153,6 +159,7 @@ def run_curriculum(
         gens_ran = len(state.history)
         promoted = train_done
         stalled = (not train_done) and (i < len(stages) - 1)
+        last_row = state.history[-1] if state.history else {}
         logs.append(
             StageLog(
                 name=str(stage["name"]),
@@ -173,6 +180,8 @@ def run_curriculum(
                     for row in state.history
                 ],
                 n_eval=sum(int(row.get("n_eval", 0)) for row in state.history),
+                first_solved=dict(state.first_solved),
+                cases_solved=dict(last_row.get("cases_solved") or {}),
             )
         )
         if stalled and stall is None:

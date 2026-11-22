@@ -7,8 +7,10 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from evoos.agent.learned_policy import LearnedEditPolicy, telemetry_vec
+from evoos.agent.lexicase import lexicase_select
 from evoos.agent.map_elites import MapElites
 from evoos.agent.mutations import OPERATOR_PACKS, GADGET_OPS, mutate, random_program
+from evoos.evaluator.cases import case_vector, summarize_cases
 from evoos.agent.policy import MutationPolicy, make_policy
 from evoos.agent.program import Candidate
 from evoos.agent.replay_buffer import ReplayBuffer, Transition
@@ -131,6 +133,10 @@ class SearchConfig:
     eval_workers: int = 1
     # If set, this object is used in-process (not pickled across job workers).
     learned: object | None = None
+    selection: str = "fitness"  # fitness | lexicase | epsilon_lexicase
+    dataflow: bool = False
+    representation: str = "linear"  # linear | cgp
+    epsilon: float | None = None  # None + epsilon_lexicase => auto MAD
 
 
 @dataclass
@@ -153,6 +159,8 @@ class SearchState:
     archive: MapElites = field(default_factory=MapElites)
     records: list[EvalRecord] = field(default_factory=list)
     population: list[Candidate] = field(default_factory=list)
+    first_solved: dict[str, int] = field(default_factory=dict)
+    case_names: list[str] = field(default_factory=list)
 
 
 def _weights(mode: str) -> RewardWeights:
@@ -263,19 +271,37 @@ def run_search(
     hall: list[Candidate] = []
     next_id = 1
 
+    cgp_genomes: dict[int, tuple] = {}
+    fw_pool = ()
+    if train:
+        from evoos.agent.dataflow import firmware_const_pool
+
+        fw_pool = firmware_const_pool(
+            n_guests=len(train[0].guests),
+            mem_words=sandbox.config.mem_words,
+            max_steps=sandbox.config.max_steps,
+        )
     pop: list[Candidate] = []
     for seed in extra_seeds or []:
         pop.append(Candidate(instrs=seed.instrs, origin="seed", id=next_id))
         next_id += 1
     while len(pop) < config.population:
-        length = rng.randint(max(4, config.init_len // 2), config.init_len * 2)
-        pop.append(
-            Candidate(
-                instrs=random_program(rng, length, pack=config.operator_pack),
-                origin="random",
-                id=next_id,
+        if config.representation == "cgp":
+            from evoos.agent import cgp as _cgp
+
+            cand, genome = _cgp.random_candidate(rng, config.init_len, fw_pool)
+            cand = Candidate(instrs=cand.instrs, origin="cgp", id=next_id)
+            cgp_genomes[cand.id] = genome
+            pop.append(cand)
+        else:
+            length = rng.randint(max(4, config.init_len // 2), config.init_len * 2)
+            pop.append(
+                Candidate(
+                    instrs=random_program(rng, length, pack=config.operator_pack),
+                    origin="random",
+                    id=next_id,
+                )
             )
-        )
         next_id += 1
 
     def finish_eval(
@@ -306,6 +332,17 @@ def run_search(
                 if len(hall) > 32:
                     del hall[: len(hall) - 32]
         rec.new_cell = new_cell  # type: ignore[attr-defined]
+        rec.isolation_ok = (not invalid) and (all(r.isolation_ok for r in tr) if tr else True)  # type: ignore[attr-defined]
+        if tr and not invalid:
+            names, vec = case_vector(tr, gated=config.gated)
+            rec.cases = vec  # type: ignore[attr-defined]
+            case_bank[cand.id] = vec
+            isol_ok[cand.id] = bool(rec.isolation_ok)
+            if not state.case_names:
+                state.case_names = names
+            for nm, v in zip(names, vec):
+                if v >= 1.0 and nm not in state.first_solved:
+                    state.first_solved[nm] = gen
         replay.add(
             Transition(
                 parent=cand.instrs,
@@ -389,6 +426,9 @@ def run_search(
 
     parent_r: dict[int, float] = {}
     parent_tele: dict[int, list[float]] = {}
+    parent_pool: dict[int, tuple[int, ...]] = {}
+    case_bank: dict[int, list[float]] = {}
+    isol_ok: dict[int, bool] = {}
     pool = _make_eval_pool(int(config.eval_workers))
     try:
         init_recs = eval_batch(pop, 0, ["init"] * len(pop), True)
@@ -397,6 +437,11 @@ def run_search(
             parent_tele[cand.id] = telemetry_vec(
                 rec0.train[0] if rec0.train else None, rec0.reward.total
             )
+            if rec0.train:
+                seen: list[int] = []
+                for r in rec0.train:
+                    seen.extend(r.observed_consts)
+                parent_pool[cand.id] = tuple(dict.fromkeys(list(fw_pool) + seen))
 
         for gen in range(1, config.generations + 1):
             compute_g = config.eval_heldout_every > 0 and (gen % config.eval_heldout_every == 0)
@@ -407,8 +452,33 @@ def run_search(
             max_len = min(config.max_len, sandbox.config.max_supervisor_len)
             pending: list[tuple] = []
             picks: list[tuple] = []
-            for _ in range(config.population):
-                if rng.random() < config.archive_mix:
+            use_lex = config.selection in ("lexicase", "epsilon_lexicase")
+            eligible_ids = [c.id for c in pop if isol_ok.get(c.id, True)]
+            if use_lex and eligible_ids:
+                n_pick = config.population
+                parent_ids = lexicase_select(
+                    [c.id for c in pop],
+                    {cid: case_bank[cid] for cid in eligible_ids if cid in case_bank},
+                    rng,
+                    n=n_pick,
+                    eligible_ids=eligible_ids,
+                    epsilon=config.epsilon,
+                    auto_epsilon=(config.selection == "epsilon_lexicase" and config.epsilon is None),
+                )
+                id_map = {c.id: c for c in pop}
+                lex_parents = [id_map[i] for i in parent_ids if i in id_map]
+            else:
+                lex_parents = []
+            for i in range(config.population):
+                if use_lex and lex_parents:
+                    parent = lex_parents[i % len(lex_parents)]
+                    if rng.random() < config.archive_mix:
+                        parent = (
+                            state.archive.sample_curious(rng)
+                            if config.curiosity
+                            else state.archive.sample(rng)
+                        ) or parent
+                elif rng.random() < config.archive_mix:
                     if config.curiosity:
                         parent = state.archive.sample_curious(rng) or rng.choice(pop)
                     else:
@@ -447,21 +517,45 @@ def run_search(
                     operator = policy.select_operator(rng)
                     if config.elite_crossover and rng.random() < 0.15:
                         operator = "crossover"
-                    child = mutate(
-                        parent,
-                        operator,
-                        rng,
-                        hall=hall or None,
-                        other=other,
-                        max_len=max_len,
-                        operators=operators,
-                    )
-                    child = Candidate(
-                        instrs=child.instrs,
-                        origin=child.origin,
-                        parent_id=parent.id,
-                        id=next_id,
-                    )
+                    if config.representation == "cgp":
+                        from evoos.agent import cgp as _cgp
+
+                        src = cgp_genomes.get(parent.id) or _cgp.genome_from_instrs(parent.instrs)
+                        genome = _cgp.mutate_genome(src, rng, const_pool=fw_pool)
+                        child_p = _cgp.decode(genome)
+                        child = Candidate(
+                            instrs=child_p.instrs,
+                            origin="cgp",
+                            parent_id=parent.id,
+                            id=next_id,
+                        )
+                        cgp_genomes[child.id] = genome
+                        operator = "cgp_mutate"
+                    else:
+                        eff = None
+                        consts = parent_pool.get(parent.id, fw_pool)
+                        if config.dataflow:
+                            from evoos.agent.dataflow import effective_indices
+
+                            eff = effective_indices(parent.instrs)
+                        child = mutate(
+                            parent,
+                            operator,
+                            rng,
+                            hall=hall or None,
+                            other=other,
+                            max_len=max_len,
+                            operators=operators,
+                            effective=eff,
+                            const_pool=consts,
+                            dataflow=config.dataflow,
+                        )
+                        child = Candidate(
+                            instrs=child.instrs,
+                            origin=child.origin,
+                            parent_id=parent.id,
+                            id=next_id,
+                        )
                     next_id += 1
                     pending.append((parent, child, None, operator))
             recs = eval_batch(
@@ -481,9 +575,18 @@ def run_search(
                 parent_tele[child.id] = telemetry_vec(
                     rec.train[0] if rec.train else None, rec.reward.total
                 )
+                if rec.train:
+                    seen: list[int] = []
+                    for r in rec.train:
+                        seen.extend(r.observed_consts)
+                    parent_pool[child.id] = tuple(dict.fromkeys(list(fw_pool) + seen))
                 gen_rewards.append(rec.reward.total)
                 if rec.invalid:
                     n_invalid += 1
+                elif config.selection in ("lexicase", "epsilon_lexicase") and not isol_ok.get(
+                    child.id, True
+                ):
+                    pass
                 else:
                     children.append(child)
             if learned is not None and hasattr(learned, "learn_batch") and batch_learn:
@@ -532,6 +635,14 @@ def run_search(
                 ),
                 "policy": policy.snapshot(),
                 "policy_loss": row_loss,
+                "cases_solved": (
+                    summarize_cases(
+                        state.case_names, getattr(state.best_record, "cases", [])
+                    )
+                    if state.best_record is not None and state.case_names
+                    else {}
+                ),
+                "first_solved": dict(state.first_solved),
             }
             state.history.append(row)
             if on_generation is not None and (

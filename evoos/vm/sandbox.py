@@ -76,6 +76,8 @@ class EvalResult:
     completed_protected: int = 0
     ran_protected: list[bool] = field(default_factory=list)
     protected_cycles: list[int] = field(default_factory=list)
+    # Evaluator telemetry: runtime values the supervisor observed (not an ISA CSR).
+    observed_consts: list[int] = field(default_factory=list)
 
     @property
     def isolation_ok(self) -> bool:
@@ -198,6 +200,7 @@ class Sandbox:
                 completed_protected=0,
                 ran_protected=[False] * len(workload.guests),
                 protected_cycles=[0] * len(workload.guests),
+                observed_consts=[],
             )
         machine, snap = self._prepare(workload)
         machine.restore(snap)
@@ -258,6 +261,7 @@ class Sandbox:
             completed_protected=completed_protected,
             ran_protected=ran_protected,
             protected_cycles=protected_cycles,
+            observed_consts=list(dict.fromkeys(machine.observed_consts))[:64],
         )
 
     def clear_cache(self) -> None:

@@ -240,36 +240,72 @@ def mutate(
     other: Candidate | None = None,
     max_len: int = 256,
     operators: tuple[str, ...] | None = None,
+    effective: frozenset[int] | None = None,
+    const_pool: tuple[int, ...] | None = None,
+    dataflow: bool = False,
 ) -> Candidate:
     seq = parent.instrs
     n = len(seq)
     origin = op
+    last = None
+    if dataflow:
+        from evoos.agent.dataflow import effective_indices, last_defs, pick_const, pick_defined_reg, pick_index
+
+        if effective is None:
+            effective = effective_indices(seq)
+        last = last_defs(seq)
+
+        def _idx() -> int:
+            return pick_index(n, rng, effective) if n else 0
+
+    else:
+
+        def _idx() -> int:
+            return rng.randrange(n) if n else 0
 
     if op == "insert" or n == 0:
-        i = rng.randrange(n + 1) if n else 0
-        seq = _splice(seq, i, i, (random_instr(rng),))
+        i = _idx() if n else 0
+        if n:
+            i = min(i + int(dataflow and rng.random() < 0.5), n)
+        ins = random_instr(rng)
+        if dataflow and const_pool and ins.op == int(Op.MOVI):
+            from evoos.agent.dataflow import pick_const as _pc
+
+            ins = Instr(ins.op, ins.a, ins.b, ins.c, _pc(const_pool, rng, ins.imm))
+        seq = _splice(seq, i, i, (ins,))
     elif op == "remove" and n > 1:
-        i = rng.randrange(n)
+        i = _idx()
         seq = _splice(seq, i, i + 1)
     elif op == "modify_op" and n:
-        i = rng.randrange(n)
+        i = _idx()
         ins = seq[i]
         seq = seq[:i] + (Instr(rng.choice(_OPS), ins.a, ins.b, ins.c, ins.imm),) + seq[i + 1 :]
     elif op == "modify_operand" and n:
-        i = rng.randrange(n)
+        i = _idx()
         ins = seq[i]
         which = rng.choice(("a", "b", "c"))
         val = rng.randrange(N_REGS)
+        if dataflow and last is not None:
+            from evoos.agent.dataflow import pick_defined_reg as _pdr
+
+            if which in ("b", "c"):
+                val = _pdr(last, i, rng, fallback=val)
         kwargs = {"a": ins.a, "b": ins.b, "c": ins.c}
         kwargs[which] = val
         seq = seq[:i] + (Instr(ins.op, kwargs["a"], kwargs["b"], kwargs["c"], ins.imm),) + seq[i + 1 :]
     elif op == "modify_imm" and n:
-        i = rng.randrange(n)
+        i = _idx()
         ins = seq[i]
-        delta = rng.choice([-16, -4, -1, 1, 4, 16, rng.randint(-32, 32)])
-        seq = seq[:i] + (Instr(ins.op, ins.a, ins.b, ins.c, ins.imm + delta),) + seq[i + 1 :]
+        if dataflow and const_pool:
+            from evoos.agent.dataflow import pick_const as _pc
+
+            new_imm = _pc(const_pool, rng, ins.imm + rng.choice([-1, 1, 4, -4]))
+        else:
+            delta = rng.choice([-16, -4, -1, 1, 4, 16, rng.randint(-32, 32)])
+            new_imm = ins.imm + delta
+        seq = seq[:i] + (Instr(ins.op, ins.a, ins.b, ins.c, new_imm),) + seq[i + 1 :]
     elif op == "duplicate_block" and n:
-        i = rng.randrange(n)
+        i = _idx()
         j = rng.randrange(i, min(n, i + 6) + 1)
         k = rng.randrange(n + 1)
         seq = seq[:k] + seq[i:j] + seq[k:]
@@ -304,7 +340,7 @@ def mutate(
             seq = other.instrs[:cut_b] + parent.instrs[cut_a:]
         origin = "crossover"
     elif op == "control_flow" and n:
-        i = rng.randrange(n)
+        i = _idx()
         ins = seq[i]
         cf = rng.choice([Op.JMP, Op.BEQ, Op.BNE, Op.BLT, Op.BGE, Op.JAL])
         rel = rng.randint(-n, n)
@@ -321,6 +357,9 @@ def mutate(
             other=other,
             max_len=max_len,
             operators=allowed,
+            effective=effective,
+            const_pool=const_pool,
+            dataflow=dataflow,
         )
     else:
         i = rng.randrange(n + 1) if n else 0
