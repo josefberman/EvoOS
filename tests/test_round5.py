@@ -33,10 +33,10 @@ COVER_RUN = """
 
 def test_isa_opcodes_still_frozen():
     names = [op.name for op in Op]
-    assert len(names) == 32
-    assert names[0] == "HALT" and names[-1] == "RDFAULT"
+    assert names[0] == "HALT" and names[31] == "RDFAULT"
     assert names[24] == "RUNCTX" and names[28] == "ADDPROT"
-    assert N_OP == 32
+    assert N_OP == 35
+    assert names[32] == "BLKRD" and names[34] == "SVC"
     assert "SCHEDULE" not in names
 
 

@@ -24,6 +24,7 @@ each context has its own instruction list; data lives in a shared word memory.
 
 from __future__ import annotations
 
+import re
 from enum import IntEnum
 from typing import Iterable, NamedTuple, Sequence
 
@@ -76,6 +77,10 @@ class Op(IntEnum):
     CLRPROT = 29  # clear protection ranges on context regs[a]
     RDTIME = 30  # rd = global cycle counter
     RDFAULT = 31  # rd = last fault code of current context
+    # Encoding version 2. Opcodes 0–31 are unchanged (boot-track / persist-blk).
+    BLKRD = 32  # rd = status; copy device block regs[b] into mem[regs[c]..]
+    BLKWR = 33  # write mem[regs[b]..] to device block regs[a]
+    SVC = 34  # unprivileged trap; request code in regs[a]; yield to supervisor
 
 
 PRIVILEGED = frozenset(
@@ -86,8 +91,24 @@ PRIVILEGED = frozenset(
         Op.CTXSET,
         Op.ADDPROT,
         Op.CLRPROT,
+        Op.BLKRD,
+        Op.BLKWR,
     }
 )
+
+
+class Svc(IntEnum):
+    """Guest trap codes. Not opcodes."""
+
+    NONE = 0
+    PUT = 1
+    GET = 2
+
+
+class BlkStatus(IntEnum):
+    OK = 0
+    BAD = 1
+    OOB = 2
 
 
 class CtxField(IntEnum):
@@ -103,6 +124,11 @@ class CtxField(IntEnum):
     LAST_RUN_STEPS = 8
     LAST_RUN_FAULT = 9
     LAST_RUN_CTX = 10
+    LAST_BLK_STATUS = 11
+    N_BLOCKS = 12
+    BLK_WORDS = 13
+    LAST_SVC = 14
+    LAST_SVC_CTX = 15
 
 
 class Fault(IntEnum):
@@ -214,7 +240,7 @@ def assemble(source: str) -> tuple[Instr, ...]:
 
         if op in (Op.HALT, Op.NOP):
             pass
-        elif op in (Op.RDTIME, Op.RDFAULT, Op.CLRPROT):
+        elif op in (Op.RDTIME, Op.RDFAULT, Op.CLRPROT, Op.SVC):
             a = _parse_reg(args[0])
         elif op == Op.MOV:
             a, b = _parse_reg(args[0]), _parse_reg(args[1])
@@ -231,9 +257,10 @@ def assemble(source: str) -> tuple[Instr, ...]:
             Op.SHR,
             Op.CMP,
             Op.ADDPROT,
+            Op.BLKRD,
         ):
             a, b, c = _parse_reg(args[0]), _parse_reg(args[1]), _parse_reg(args[2])
-        elif op in (Op.NOT, Op.RUNCTX):
+        elif op in (Op.NOT, Op.RUNCTX, Op.BLKWR):
             a, b = _parse_reg(args[0]), _parse_reg(args[1])
         elif op in (Op.ADDI, Op.LOAD, Op.STORE):
             a, b, imm = _parse_reg(args[0]), _parse_reg(args[1]), _parse_int(args[2], labels)
@@ -305,3 +332,32 @@ def instrs_to_jsonable(instrs: Sequence[Instr]) -> list[list[int]]:
 
 def instrs_from_jsonable(rows: Sequence[Sequence[int]]) -> tuple[Instr, ...]:
     return tuple(Instr(*row) for row in rows)
+
+
+_DISASM_LINE = re.compile(
+    r"^\s*\d+:\s+(\S+)\s+a=(-?\d+)\s+b=(-?\d+)\s+c=(-?\d+)\s+imm=(-?\d+)"
+)
+
+
+def parse_disassembly(text: str) -> tuple[Instr, ...]:
+    """Parse `disassemble()` / elite example text back into instructions."""
+    out: list[Instr] = []
+    for line in text.splitlines():
+        m = _DISASM_LINE.match(line)
+        if not m:
+            continue
+        name = m.group(1).upper()
+        if name not in _OP_ALIASES:
+            raise ValueError(f"unknown opcode in disassembly: {name}")
+        out.append(
+            Instr(
+                int(_OP_ALIASES[name]),
+                int(m.group(2)),
+                int(m.group(3)),
+                int(m.group(4)),
+                int(m.group(5)),
+            )
+        )
+    if not out:
+        raise ValueError("no instructions in disassembly")
+    return tuple(out)

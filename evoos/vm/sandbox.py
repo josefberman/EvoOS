@@ -27,6 +27,11 @@ class GuestImage:
     init: dict[int, int]  # absolute address -> value
     expected: dict[int, int]  # absolute address -> value
     needed_cycles: int = 64
+    home_block: int | None = None
+    expected_off: dict[int, int] = field(default_factory=dict)
+    role: str = "compute"
+    token: int = 0
+    pair: int | None = None
 
 
 @dataclass
@@ -34,6 +39,7 @@ class Workload:
     name: str
     guests: tuple[GuestImage, ...]
     split: str = "train"  # "train" | "heldout"
+    kind: str = "compute"  # compute | pressure | route
 
 
 @dataclass
@@ -78,6 +84,11 @@ class EvalResult:
     protected_cycles: list[int] = field(default_factory=list)
     # Evaluator telemetry: runtime values the supervisor observed (not an ISA CSR).
     observed_consts: list[int] = field(default_factory=list)
+    n_blk_read: int = 0
+    n_blk_write: int = 0
+    n_svc: int = 0
+    delivered: int = 0
+    n_resident: int = 0
 
     @property
     def isolation_ok(self) -> bool:
@@ -111,15 +122,26 @@ def load_firmware(machine: Machine, workload: Workload) -> None:
         ctx.data_bound = g.data_bound
         ctx.protected_cycles = 0
         ctx.ran_protected = False
+        ctx.svc = 0
         # Hardware reset: r1 = data_base, r2 = data_bound (not an OS ABI).
         ctx.regs[1] = g.data_base
         ctx.regs[2] = g.data_bound
-        machine.legal_store[ctx_id] = (g.data_base, g.data_bound)
-        for addr, val in g.init.items():
-            m[addr] = val
-            machine.last_writer[addr] = 0
+        machine.legal_store[ctx_id] = (g.data_base, g.data_bound) if g.data_bound > g.data_base else None
+        if g.home_block is not None and machine.disk is not None:
+            words = [0] * machine.config.block_words
+            for off, val in g.init.items():
+                if 0 <= off < len(words):
+                    words[off] = val
+            machine.disk.write(int(g.home_block), words)
+        else:
+            for addr, val in g.init.items():
+                m[addr] = val
+                machine.last_writer[addr] = 0
     for extra in range(len(workload.guests) + 1, cfg.n_contexts):
         machine.legal_store[extra] = None
+    if machine.disk is not None:
+        machine.disk.n_read = 0
+        machine.disk.n_write = 0
 
 
 def _fingerprint(mem: list[int]) -> int:
@@ -133,7 +155,23 @@ def _fingerprint(mem: list[int]) -> int:
 def _guest_outcome(machine: Machine, guest: GuestImage, cid: int) -> GuestOutcome:
     ctx = machine.contexts[cid]
     mismatches: list[tuple[int, int, int]] = []
-    for addr, exp in guest.expected.items():
+    expected = dict(guest.expected)
+    if guest.expected_off:
+        if ctx.data_base >= 256 and ctx.data_bound > ctx.data_base:
+            for off, exp in guest.expected_off.items():
+                expected[ctx.data_base + off] = exp
+        elif guest.home_block is not None and machine.disk is not None:
+            blk = int(guest.home_block)
+            if 0 <= blk < len(machine.disk.blocks):
+                words = machine.disk.blocks[blk]
+                for off, exp in guest.expected_off.items():
+                    actual = words[off] if 0 <= off < len(words) else 0
+                    if actual != exp:
+                        mismatches.append((-1000 - off, exp, actual))
+    for addr, exp in expected.items():
+        if addr < 0 or addr >= len(machine.mem):
+            mismatches.append((addr, exp, 0))
+            continue
         actual = machine.mem[addr]
         if actual != exp:
             mismatches.append((addr, exp, actual))
@@ -212,10 +250,19 @@ class Sandbox:
         isolation_hits = list(machine.isolation_hits)
         # Corruption: a guest wrote another guest's region, or an isolation hit fired.
         corruption = bool(isolation_hits)
+        nmem = len(machine.mem)
         if not corruption:
             for i, g in enumerate(workload.guests):
                 cid = i + 1
-                for addr in range(g.data_base, g.data_bound):
+                ctx = machine.contexts[cid]
+                lo, hi = ctx.data_base, ctx.data_bound
+                if hi <= lo:
+                    lo, hi = g.data_base, g.data_bound
+                lo = max(0, int(lo))
+                hi = min(nmem, int(hi))
+                if hi <= lo:
+                    continue
+                for addr in range(lo, hi):
                     w = machine.last_writer[addr]
                     if w not in (255, 0, cid):
                         corruption = True
@@ -223,10 +270,16 @@ class Sandbox:
         completed = sum(1 for o in outcomes if o.correct)
         progressed = sum(1 for o in outcomes if o.progressed)
         prot_cover = []
+        n_resident = 0
         for i, g in enumerate(workload.guests):
             ctx = machine.contexts[i + 1]
-            covered = any(lo <= g.data_base and hi >= g.data_bound for lo, hi, _ in ctx.prot)
+            lo, hi = ctx.data_base, ctx.data_bound
+            if hi <= lo:
+                lo, hi = g.data_base, g.data_bound
+            covered = hi > lo and any(plo <= lo and phi >= hi for plo, phi, _ in ctx.prot)
             prot_cover.append(bool(covered))
+            if ctx.data_bound > ctx.data_base:
+                n_resident += 1
         entered = sum(1 for o in outcomes if o.cycles > 0)
         ran_protected = [bool(machine.contexts[i + 1].ran_protected) for i in range(len(workload.guests))]
         protected_cycles = [int(machine.contexts[i + 1].protected_cycles) for i in range(len(workload.guests))]
@@ -262,6 +315,15 @@ class Sandbox:
             ran_protected=ran_protected,
             protected_cycles=protected_cycles,
             observed_consts=list(dict.fromkeys(machine.observed_consts))[:64],
+            n_blk_read=int(machine.disk.n_read) if machine.disk is not None else 0,
+            n_blk_write=int(machine.disk.n_write) if machine.disk is not None else 0,
+            n_svc=int(getattr(machine, "n_svc", 0)),
+            delivered=sum(
+                1
+                for g, o in zip(workload.guests, outcomes)
+                if g.role == "consumer" and o.correct
+            ),
+            n_resident=n_resident,
         )
 
     def clear_cache(self) -> None:

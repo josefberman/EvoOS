@@ -21,9 +21,9 @@ from evoos.vm.sandbox import Sandbox
 
 def test_isa_opcodes_still_frozen_round6():
     names = [op.name for op in Op]
-    assert len(names) == 32
-    assert names[0] == "HALT" and names[-1] == "RDFAULT"
+    assert names[0] == "HALT" and names[31] == "RDFAULT"
     assert names[24] == "RUNCTX" and names[28] == "ADDPROT"
+    assert names[32] == "BLKRD" and names[34] == "SVC"
     assert "SCHEDULE" not in names
     assert "LAST_RUN_STEPS" in {f.name for f in __import__("evoos.vm.instruction_set", fromlist=["CtxField"]).CtxField}
 

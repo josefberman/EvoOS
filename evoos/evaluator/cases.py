@@ -23,6 +23,10 @@ def case_vector(
         w = r.workload or "wl"
         names.append(f"{w}.isolation")
         vals.append(1.0 if r.isolation_ok else 0.0)
+        names.append(f"{w}.blk")
+        vals.append(1.0 if (r.n_blk_read or 0) > 0 else 0.0)
+        names.append(f"{w}.delivered")
+        vals.append(1.0 if (r.delivered or 0) > 0 else 0.0)
         n = r.n_guests
         for g in range(n):
             cover = 1.0 if (r.prot_cover and g < len(r.prot_cover) and r.prot_cover[g]) else 0.0

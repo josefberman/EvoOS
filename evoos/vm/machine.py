@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
+from evoos.vm.blockdev import DEFAULT_BLK_WORDS, DEFAULT_LATENCY, DEFAULT_N_BLOCKS, BlockDevice
 from evoos.vm.instruction_set import (
     N_REGS,
     CtxField,
@@ -52,6 +53,9 @@ class MachineConfig:
     supervisor_halt_on_mem: bool = True
     # runctx_posts_status: last RUNCTX step-count and guest fault are readable CSRs.
     runctx_posts_status: bool = False
+    n_blocks: int = DEFAULT_N_BLOCKS
+    block_words: int = DEFAULT_BLK_WORDS
+    blk_latency: int = DEFAULT_LATENCY
 
     def substrate_name(self) -> str:
         if self.sticky_guest_fault and self.supervisor_halt_on_mem and not self.runctx_posts_status:
@@ -89,6 +93,7 @@ class Context:
     # Evaluator telemetry only (not an ISA CSR). Host stubs may ignore these.
     protected_cycles: int = 0
     ran_protected: bool = False
+    svc: int = 0
 
     def clone(self) -> "Context":
         c = Context(
@@ -104,6 +109,7 @@ class Context:
             prot=list(self.prot),
             protected_cycles=self.protected_cycles,
             ran_protected=self.ran_protected,
+            svc=self.svc,
         )
         return c
 
@@ -122,6 +128,9 @@ class Snapshot:
     last_run_steps: int = 0
     last_run_fault: int = 0
     last_run_ctx: int = 0
+    last_svc: int = 0
+    last_svc_ctx: int = 0
+    disk: BlockDevice | None = None
 
 
 class Machine:
@@ -145,6 +154,14 @@ class Machine:
         self.last_run_steps = 0
         self.last_run_fault = 0
         self.last_run_ctx = 0
+        self.last_svc = 0
+        self.last_svc_ctx = 0
+        self.n_svc = 0
+        self.disk = BlockDevice(
+            n_blocks=self.config.n_blocks,
+            block_words=self.config.block_words,
+            latency=self.config.blk_latency,
+        )
         # Evaluator telemetry: values written by CTXGET / RDTIME / RDFAULT.
         self.observed_consts: list[int] = []
 
@@ -162,6 +179,9 @@ class Machine:
             last_run_steps=self.last_run_steps,
             last_run_fault=self.last_run_fault,
             last_run_ctx=self.last_run_ctx,
+            last_svc=self.last_svc,
+            last_svc_ctx=self.last_svc_ctx,
+            disk=self.disk.clone() if self.disk is not None else None,
         )
 
     def restore(self, snap: Snapshot) -> None:
@@ -177,6 +197,10 @@ class Machine:
         self.last_run_steps = snap.last_run_steps
         self.last_run_fault = snap.last_run_fault
         self.last_run_ctx = snap.last_run_ctx
+        self.last_svc = snap.last_svc
+        self.last_svc_ctx = snap.last_svc_ctx
+        self.disk = snap.disk.clone() if snap.disk is not None else None
+        self.n_svc = 0
         self.observed_consts = []
 
     def state_hash(self) -> tuple:
@@ -251,11 +275,17 @@ class Machine:
         if not self._prot_allows(cid, addr, Perm.W):
             self._fault(cid, Fault.PROT)
             return
-        legal = self.legal_store[cid]
-        if cid != 0 and legal is not None:
-            lo, hi = legal
-            if not (lo <= addr < hi):
+        if cid != 0:
+            gctx = self.contexts[cid]
+            lo, hi = gctx.data_base, gctx.data_bound
+            if hi > lo and not (lo <= addr < hi):
                 self.isolation_hits.append((cid, addr))
+            elif hi <= lo:
+                legal = self.legal_store[cid]
+                if legal is not None:
+                    lo, hi = legal
+                    if not (lo <= addr < hi):
+                        self.isolation_hits.append((cid, addr))
         self.mem[addr] = wrap32(val)
         self.last_writer[addr] = cid
 
@@ -282,6 +312,16 @@ class Machine:
             return self.last_run_fault if self.config.runctx_posts_status else 0
         if field == CtxField.LAST_RUN_CTX:
             return self.last_run_ctx if self.config.runctx_posts_status else 0
+        if field == CtxField.LAST_BLK_STATUS:
+            return int(self.disk.last_status) if self.disk is not None else 0
+        if field == CtxField.N_BLOCKS:
+            return int(self.config.n_blocks)
+        if field == CtxField.BLK_WORDS:
+            return int(self.config.block_words)
+        if field == CtxField.LAST_SVC:
+            return self.last_svc
+        if field == CtxField.LAST_SVC_CTX:
+            return self.last_svc_ctx
         return 0
 
     def _ctx_field_set(self, target: Context, field: int, val: int) -> None:
@@ -292,6 +332,30 @@ class Machine:
             target.halted = bool(val)
         elif field == CtxField.FAULT:
             target.fault = int(val)
+        elif field == CtxField.DATA_BASE:
+            target.data_base = int(val)
+            # Hardware reset ABI: r1 is the data window base.
+            if target.regs:
+                target.regs[1] = wrap32(val)
+            if target.data_bound > target.data_base:
+                for i, c in enumerate(self.contexts):
+                    if c is target:
+                        self.legal_store[i] = (target.data_base, target.data_bound)
+                        break
+        elif field == CtxField.DATA_BOUND:
+            target.data_bound = int(val)
+            if len(target.regs) > 2:
+                target.regs[2] = wrap32(val)
+            if target.data_bound > target.data_base:
+                for i, c in enumerate(self.contexts):
+                    if c is target:
+                        self.legal_store[i] = (target.data_base, target.data_bound)
+                        break
+        elif field == CtxField.LAST_SVC:
+            self.last_svc = int(val)
+            if val == 0:
+                for c in self.contexts:
+                    c.svc = 0
 
     def _run_context(self, cid: int, n_steps: int) -> int:
         if cid <= 0 or cid >= self.config.n_contexts:
@@ -316,6 +380,8 @@ class Machine:
             if covered:
                 guest.protected_cycles += 1
                 guest.ran_protected = True
+            if guest.svc:
+                break
         self.switch_count += 1
         self.last_run_steps = ran
         self.last_run_fault = guest.fault
@@ -510,6 +576,38 @@ class Machine:
             return
         if op == Op.RDFAULT:
             self._write_reg(ctx, a, ctx.fault)
+            ctx.pc = next_pc
+            return
+        if op == Op.BLKRD:
+            blk = int(regs[b])
+            dest = int(regs[c])
+            st, words = self.disk.read(blk)
+            self.cycles += self.disk.latency
+            for i, w in enumerate(words):
+                addr = dest + i
+                if 0 <= addr < self.config.mem_words:
+                    self.mem[addr] = w
+                    self.last_writer[addr] = cid
+            self._write_reg(ctx, a, st)
+            ctx.pc = next_pc
+            return
+        if op == Op.BLKWR:
+            blk = int(regs[a])
+            src = int(regs[b])
+            payload = []
+            for i in range(self.config.block_words):
+                addr = src + i
+                payload.append(self.mem[addr] if 0 <= addr < self.config.mem_words else 0)
+            self.disk.write(blk, payload)
+            self.cycles += self.disk.latency
+            ctx.pc = next_pc
+            return
+        if op == Op.SVC:
+            code = int(regs[a])
+            ctx.svc = wrap32(code)
+            self.last_svc = ctx.svc
+            self.last_svc_ctx = cid
+            self.n_svc += 1
             ctx.pc = next_pc
             return
 

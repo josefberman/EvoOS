@@ -18,6 +18,7 @@ from evoos.evaluator.novelty import (
     NoveltyArchive,
     behavioral_descriptor,
     elites_cell,
+    hw_cell,
     milestone_cell,
     opcode_histogram,
 )
@@ -63,6 +64,9 @@ def _machine_dict(cfg) -> dict:
         "sticky_guest_fault": cfg.sticky_guest_fault,
         "supervisor_halt_on_mem": cfg.supervisor_halt_on_mem,
         "runctx_posts_status": cfg.runctx_posts_status,
+        "n_blocks": getattr(cfg, "n_blocks", 32),
+        "block_words": getattr(cfg, "block_words", 16),
+        "blk_latency": getattr(cfg, "blk_latency", 4),
     }
 
 
@@ -137,6 +141,7 @@ class SearchConfig:
     dataflow: bool = False
     representation: str = "linear"  # linear | cgp
     epsilon: float | None = None  # None + epsilon_lexicase => auto MAD
+    hw_archive: bool = False
 
 
 @dataclass
@@ -320,7 +325,9 @@ def run_search(
             state.records.append(rec)
         new_cell = False
         if not invalid:
-            if config.milestone_archive and tr:
+            if config.hw_archive and tr:
+                cell = hw_cell(tr[0])
+            elif config.milestone_archive and tr:
                 cell = milestone_cell(tr[0])
             else:
                 cell = elites_cell(tr[0]) if tr else (0, 0)

@@ -46,6 +46,33 @@ def elites_cell(result: EvalResult) -> tuple[int, int]:
     return (x, y)
 
 
+def hw_cell(result: EvalResult) -> tuple[int, int, int, int, int]:
+    """C-hw MAP-Elites: completion × eviction × routing × switch rhythm × isolation."""
+    n_done = min(int(result.completed), 8)
+    n_blk = min(int(result.n_blk_write or 0), 7)
+    n_svc = min(int(result.n_svc or 0) + int(result.delivered or 0), 7)
+    sw = min(int(result.switch_count) // 16, 7)
+    isol = 1 if result.isolation_ok else 0
+    return (n_done, n_blk, n_svc, sw, isol)
+
+
+def org_label(result: EvalResult) -> str:
+    """Behavioral organization label for C-hw traces."""
+    if result.completed == 0 and result.switch_count == 0:
+        return "no-dispatch"
+    if (result.n_blk_write or 0) >= max(1, result.n_guests - 4) and result.completed > 0:
+        base = "fifo-swap-like"
+    elif (result.n_blk_read or 0) > 0:
+        base = "blk-user"
+    else:
+        base = "no-swap"
+    if (result.delivered or 0) > 0:
+        return base + "+router"
+    if result.switch_count > result.n_guests * 3:
+        return base + "+rr"
+    return base
+
+
 def milestone_cell(result: EvalResult) -> tuple[int, int, int, int, int]:
     """Stepping-stone grid: cover / entered / progressed / completed / n_guests.
 

@@ -29,11 +29,18 @@ GADGET_OPS = BARE_OPS + (
     "insert_runctx_gadget",
 )
 FULL_OPS = GADGET_OPS + ("insert_ctx_scan",)
+HW_OPS = FULL_OPS + (
+    "insert_blkrd_gadget",
+    "insert_blkwr_gadget",
+    "insert_remap_gadget",
+    "insert_svc_status_gadget",
+)
 
 OPERATOR_PACKS = {
     "bare": BARE_OPS,  # instruction edits only; no ISA-manual sequences
     "gadgets": GADGET_OPS,  # + MMU / RUNCTX calling-convention snippets
     "full": FULL_OPS,  # + loop that walks hardware context ids
+    "hw": HW_OPS,  # hardware-manual pack: gadgets + BLKRD/BLKWR calling convention
 }
 
 MUTATION_OPS = FULL_OPS
@@ -66,6 +73,23 @@ OPERATOR_DOCS = {
         "parent instruction — not skip-if-halted, not quantum, not until-idle. "
         "That extra control flow, if it appears, must still be discovered."
     ),
+    "insert_blkrd_gadget": (
+        "ISA calling convention for BLKRD: MOVI blk; MOVI dest; BLKRD status, blk, dest. "
+        "Not a pager. One block into one address."
+    ),
+    "insert_blkwr_gadget": (
+        "ISA calling convention for BLKWR: MOVI blk; MOVI src; BLKWR blk, src. "
+        "Not eviction policy."
+    ),
+    "insert_remap_gadget": (
+        "ISA calling convention for window CSRs: MOVI ctx; MOVI base; "
+        "CTXSET DATA_BASE; MOVI bound; CTXSET DATA_BOUND; ADDPROT. "
+        "Installs one window on one context. Not a frame allocator or pager."
+    ),
+    "insert_svc_status_gadget": (
+        "ISA calling convention for SVC status CSRs: CTXGET LAST_SVC; "
+        "CTXGET LAST_SVC_CTX. Not a pipe or mailbox."
+    ),
 }
 
 
@@ -91,7 +115,7 @@ def mmu_gadget(rng: random.Random) -> tuple[Instr, ...]:
     This is the calling convention of the MMU registers, not a scheduler.
     """
     ra, rb, rc = rng.sample(range(1, N_REGS), 3)
-    ctx = rng.randint(1, 4)
+    ctx = rng.randint(1, 8)
     return (
         Instr(int(Op.MOVI), ra, 0, 0, ctx),
         Instr(int(Op.CTXGET), rb, ra, 0, int(CtxField.DATA_BASE)),
@@ -102,11 +126,55 @@ def mmu_gadget(rng: random.Random) -> tuple[Instr, ...]:
 
 def runctx_gadget(rng: random.Random) -> tuple[Instr, ...]:
     ra = rng.randint(1, N_REGS - 1)
-    ctx = rng.randint(1, 4)
+    ctx = rng.randint(1, 8)
     steps = rng.choice([8, 16, 32, 64, 128, 256])
     return (
         Instr(int(Op.MOVI), ra, 0, 0, ctx),
         Instr(int(Op.RUNCTXI), ra, 0, 0, steps),
+    )
+
+
+def blkrd_gadget(rng: random.Random) -> tuple[Instr, ...]:
+    rb, rc = rng.sample(range(1, N_REGS), 2)
+    blk = rng.randrange(8)
+    dest = rng.choice([256, 288, 320, 352, 384])
+    return (
+        Instr(int(Op.MOVI), rb, 0, 0, blk),
+        Instr(int(Op.MOVI), rc, 0, 0, dest),
+        Instr(int(Op.BLKRD), 0, rb, rc, 0),
+    )
+
+
+def remap_gadget(rng: random.Random) -> tuple[Instr, ...]:
+    ra, rb, rc = rng.sample(range(1, N_REGS), 3)
+    ctx = rng.randint(1, 8)
+    frame = rng.choice([256, 288, 320, 352])
+    return (
+        Instr(int(Op.MOVI), ra, 0, 0, ctx),
+        Instr(int(Op.MOVI), rb, 0, 0, frame),
+        Instr(int(Op.CTXSET), ra, rb, 0, int(CtxField.DATA_BASE)),
+        Instr(int(Op.MOVI), rc, 0, 0, frame + 32),
+        Instr(int(Op.CTXSET), ra, rc, 0, int(CtxField.DATA_BOUND)),
+        Instr(int(Op.ADDPROT), ra, rb, rc, 0),
+    )
+
+
+def svc_status_gadget(rng: random.Random) -> tuple[Instr, ...]:
+    ra, rb = rng.sample(range(1, N_REGS), 2)
+    return (
+        Instr(int(Op.CTXGET), ra, 0, 0, int(CtxField.LAST_SVC)),
+        Instr(int(Op.CTXGET), rb, 0, 0, int(CtxField.LAST_SVC_CTX)),
+    )
+
+
+def blkwr_gadget(rng: random.Random) -> tuple[Instr, ...]:
+    ra, rb = rng.sample(range(1, N_REGS), 2)
+    blk = rng.randrange(8)
+    src = rng.choice([256, 288, 320, 352, 384])
+    return (
+        Instr(int(Op.MOVI), ra, 0, 0, blk),
+        Instr(int(Op.MOVI), rb, 0, 0, src),
+        Instr(int(Op.BLKWR), ra, rb, 0, 0),
     )
 
 
@@ -156,6 +224,14 @@ def random_program(
         body.extend(runctx_gadget(rng))
     if "insert_ctx_scan" in ops and rng.random() < 0.35:
         body.extend(ctx_scan_gadget(rng))
+    if "insert_blkrd_gadget" in ops and rng.random() < 0.35:
+        body.extend(blkrd_gadget(rng))
+    if "insert_blkwr_gadget" in ops and rng.random() < 0.25:
+        body.extend(blkwr_gadget(rng))
+    if "insert_remap_gadget" in ops and rng.random() < 0.45:
+        body.extend(remap_gadget(rng))
+    if "insert_svc_status_gadget" in ops and rng.random() < 0.25:
+        body.extend(svc_status_gadget(rng))
     body.extend(random_instr(rng) for _ in range(length))
     if rng.random() < 0.7:
         body.append(Instr(int(Op.HALT), 0, 0, 0, 0))
@@ -331,6 +407,22 @@ def mutate(
         i = rng.randrange(n + 1) if n else 0
         seq = _splice(seq, i, i, ctx_scan_gadget(rng, body))
         origin = "insert_ctx_scan"
+    elif op == "insert_blkrd_gadget":
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, blkrd_gadget(rng))
+        origin = "insert_blkrd_gadget"
+    elif op == "insert_blkwr_gadget":
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, blkwr_gadget(rng))
+        origin = "insert_blkwr_gadget"
+    elif op == "insert_remap_gadget":
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, remap_gadget(rng))
+        origin = "insert_remap_gadget"
+    elif op == "insert_svc_status_gadget":
+        i = rng.randrange(n + 1) if n else 0
+        seq = _splice(seq, i, i, svc_status_gadget(rng))
+        origin = "insert_svc_status_gadget"
     elif op == "crossover" and other is not None and other.instrs:
         cut_a = rng.randrange(n + 1) if n else 0
         cut_b = rng.randrange(len(other.instrs) + 1)

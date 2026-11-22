@@ -38,6 +38,7 @@ _DEST_A = {
     int(Op.CTXGET),
     int(Op.RDTIME),
     int(Op.RDFAULT),
+    int(Op.BLKRD),
 }
 
 # Hardware / memory side effects — the program "does something."
@@ -49,6 +50,9 @@ _SIDE = {
     int(Op.RUNCTXI),
     int(Op.CTXSET),
     int(Op.HALT),
+    int(Op.BLKRD),
+    int(Op.BLKWR),
+    int(Op.SVC),
 }
 
 
@@ -95,6 +99,10 @@ def use_regs(ins: Instr) -> tuple[int, ...]:
         used.extend((ins.a, ins.b, ins.c))
     elif op == int(Op.CLRPROT):
         used.append(ins.a)
+    elif op == int(Op.BLKRD):
+        used.extend((ins.b, ins.c))
+    elif op == int(Op.BLKWR):
+        used.extend((ins.a, ins.b))
     return tuple(r for r in used if 0 <= r < N_REGS)
 
 
@@ -188,6 +196,10 @@ def firmware_const_pool(*, n_guests: int, mem_words: int, max_steps: int) -> tup
         vals.add(lo)
         vals.add(hi)
         vals.add(hi - lo)
-    for f in range(11):  # CtxField 0..10
+    # C-hw RAM frames (4 × 32 words starting at 256). Hardware layout, not a pager.
+    for i in range(4):
+        vals.add(256 + 32 * i)
+        vals.add(256 + 32 * (i + 1))
+    for f in range(16):  # CtxField 0..15
         vals.add(f)
     return tuple(sorted(vals))

@@ -15,8 +15,10 @@ Allowed hardware:
 - `CTXGET` / `CTXSET` — read or poke context metadata (PC, halt, fault, data window, …)
 - `ADDPROT` / `CLRPROT` — range-based memory-protection registers (an MMU-like mechanism)
 - a cycle timer (`RDTIME`)
+- `BLKRD` / `BLKWR` — copy a fixed-size block to/from a dumb device (latency, not a pager)
+- `SVC` — unprivileged trap; supervisor reads `LAST_SVC` / `LAST_SVC_CTX` (not a pipe)
 
-**Forbidden in the ISA**, on purpose: `schedule_process`, `yield_to_next`, `allocate_page`, run queues, priority bands, wait queues, or any other traditional OS component as a primitive. If round-robin, priorities, or something stranger appear, they must appear as *patterns in bytecode*.
+**Forbidden in the ISA**, on purpose: `schedule_process`, `yield_to_next`, `allocate_page`, run queues, priority bands, wait queues, pipes, or any other traditional OS component as a primitive. If round-robin, swap, or routing appear, they must appear as *patterns in bytecode*.
 
 Three experimental conditions, same guests and reward:
 
@@ -35,6 +37,7 @@ Three experimental conditions, same guests and reward:
 | `bare` | none | raw ISA | how to call MMU/RUNCTX |
 | `gadgets` | `insert_mmu_gadget`, `insert_runctx_gadget` | `MOVI ctx; CTXGET DATA_*; ADDPROT` and `MOVI ctx; RUNCTXI n` for **one** random context id | round-robin, quanta, skip-halted, until-idle, run queues |
 | `full` | gadgets + `insert_ctx_scan` | “the machine reports `N_CONTEXTS`; you can walk ids 1..N-1” with a one-instruction body | skip-if-halted, time-slice policy, outer until-idle loop |
+| `hw` | full + `insert_blkrd/blkwr`, `insert_remap`, `insert_svc_status` | calling convention for BLK*, window CTXSET, SVC status CSRs — **the hardware manual** | eviction/swap policy, frame allocator, pipes, message queues |
 
 Invalid context ids are **nops** (a trap that halted the supervisor made search degenerate). That is a machine-semantics choice, not an OS.
 
@@ -72,6 +75,8 @@ python -m evoos.experiments.scheduling.sweep_round4 --out experiments/scheduling
 python -m evoos.experiments.scheduling.sweep_round5 --out experiments/scheduling/results/round5
 # Round 6: lexicase + dataflow GP vs blind UCB1 (equal evals, gated curriculum):
 python -m evoos.experiments.scheduling.sweep_round6 --out experiments/scheduling/results/round6
+# Round 7: close bare; Condition C-hw (hardware-manual pack, pressure+route):
+python -m evoos.experiments.scheduling.sweep_round7 --out experiments/scheduling/results/round7
 ```
 
 ## Scaled results (measured)
@@ -215,3 +220,39 @@ Epsilon-lexicase over per-guest milestones (`cover`, `entered_p`, `progress_p`, 
 | blind | 0.067 ± 0.149 (0.400) | **0/6** (seed 99: 1/4 protected complete) | 320000 |
 
 **0/12** 4/4. Cases solved first in every run (gen 0): `isolation` and `nofault`. Cover/entered_p/complete_p: **0/6** lexicase seeds, **1/6** blind (seed 99, `k4_hard` guest 0 cover at gen 229, entered_p/complete_p at 246). Lexicase never left `no-dispatch`. Blind seed 99 again labels `starving` (archive 4). k1 promotion 0/12. No 4/4 elite, so no disassembly of a 4/4 program. Covering a guest window from random 5-tuples is still the rare event; lexicase has no signal on that case when the whole population scores 0.
+
+## Why bare-bits discovery fails
+
+Cover = `ADDPROT` range contains a guest's `[DATA_BASE, DATA_BOUND)`. Rounds 3–6 used four search methods on the bare pack (UCB1, curriculum+shaping, learned GRU, lexicase+dataflow). Gated 4/4 counts: **1/42** then **0/24 + 0/12 + 0/12**. The one hit (round 3, ungated flat) did not replicate.
+
+The MMU calling-convention family is **840** length-4 programs (4 ctx ids × P(7,3) regs). Effective per-instruction alphabet ≈ `6.35e5` (31 ops × 8³ regs × 40 immediates). P(a uniform length-4 block is the gadget) ≈ `5.17e-21`. P(a length-24 random program contains that block) ≈ `1.09e-19`. Expected evals to first such block ≈ **9.21e18**. Four independent copies for 4/4: **7.2e75**.
+
+Empirical (this run): 0/20000 random length-24 on k1, 0/10000 on 4-guest train, 0/10000 single-lineage mutate. Restricted length-4 `MOVI|CTXGET|ADDPROT`: **1/20000** (p̂=`5e-5`). Round-6 sweep: **1** cover in **3.84e6** evals (blind seed 99, k4_hard gen 229, ≈270656 evals into that seed); lexicase cover 0; 4/4 0. Sweep p̂ = `2.6e-7`. If 4/4 were four independent covers at that p̂, 50% chance would take **1.51e26** evals — a lower bound, because 4/4 also needs a scan and RUNCTX after cover.
+
+Bare search has no gradient on cover: isolation and nofault are gen-0 for everyone. The line is closed. Numbers: [`experiments/scheduling/results/round7/why_bare_fails.md`](experiments/scheduling/results/round7/why_bare_fails.md).
+
+## Round 7 (Condition C-hw: hardware-manual pack, richer environment)
+
+Same machine, **198.2 min**, 6 seeds, pack `hw`, QD MAP-Elites + epsilon-lexicase + dataflow, seeded from round-2 gadget elites. Tables: [`experiments/scheduling/results/round7/summary.md`](experiments/scheduling/results/round7/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round7 \
+  --generations 4000 --population 64 --eval-workers 4
+```
+
+ISA: opcodes 0–31 unchanged; 32–34 = `BLKRD`/`BLKWR`/`SVC` from the persist-blk boot track. Condition **C-hw** gives the hardware manual (MMU/RUNCTX/BLK/window-CTXSET/SVC-status gadgets) and withholds paging/routing policy. Environment: **8 guests / 4 RAM frames** + block device (pressure); 4 producer/consumer pairs via `SVC` PUT/GET (communication). Reward: completion, isolation (hard), latency, fairness. MAP-Elites cell `(completed, blk_writes, svc+delivered, switch_bin, isolation)`. **256000** evals/seed.
+
+**Condition A-hw (hand-written):** `fifo_swap_rr` / `direct_copy_router` complete **8/8 + 8/8** train and **8/8 + 6/6** held (4/4, held R=1.000). `place_first_frames_rr` (no evict) **4/8 + 4/8**. `fifo_swap_deaf` (swap, ignore SVC) **8/8 + 4/8**.
+
+**Condition C-hw 4/4 on pressure+route train AND held-out:** **0/6**. Search R **0.530 ± 0.040** (best 0.596, seed 99).
+
+| seed | train completed | held | org (pressure) | blk_w | route delivered | isolation |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | [2, 5] | [2, 3] | fifo-swap-like+rr | 57 | 1/4 | pass |
+| 7 | [1, 5] | [1, 4] | fifo-swap-like+rr | 122 | 1/4 | **fail** |
+| 13 | [3, 5] | [3, 4] | fifo-swap-like+rr | 39 | 1/4 | pass |
+| 42 | [4, 4] | [4, 4] | blk-user | 2 | 1/4 | pass |
+| 99 | [4, 5] | [4, 4] | fifo-swap-like+rr | 7 | 1/4 | pass |
+| 2024 | [3, 4] | [3, 3] | fifo-swap-like+rr | 210 | 0/4 | pass |
+
+Organizations that emerged: **fifo-swap-like+rr** (5/6; BLKWR eviction + RR RUNCTXI) and **blk-user** (seed 42; BLKRD into frames, almost no evict — matches `place_first_frames_rr`). Routing is a single-pair copy (1/4 delivered) vs the hand-written direct-copy baseline (4/4). Seed 99 is the strongest elite (4/8 pressure, 5/8 route, 8/8 resident, no starved guests on train). Nobody reaches the FIFO baseline's 8/8 under pressure: search invents placement and some swap, not a complete victim-clock. Disassembly: [`round7/examples/`](experiments/scheduling/results/round7/examples/).

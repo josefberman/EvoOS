@@ -92,4 +92,6 @@ def test_isa_opcodes_unchanged():
     assert names[:5] == ["HALT", "NOP", "MOV", "MOVI", "ADD"]
     assert "RUNCTX" in names and "ADDPROT" in names
     assert "LAST_RUN_STEPS" not in names  # CSR field, not an opcode
-    assert len(list(Op)) == 32
+    assert names[31] == "RDFAULT"
+    assert names[32] == "BLKRD" and names[34] == "SVC"
+    assert len(list(Op)) == 35
