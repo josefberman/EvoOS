@@ -467,6 +467,30 @@ def write_reports(out: Path, a_rows, c_rows, elapsed, meta: dict) -> None:
         )
     lines.append(_md_table(["arm", "search R mean ± std (best)", "4/4 train+held", "mean n_eval"], table_rows))
     lines.append("")
+    lines.append("Per seed:")
+    lines.append("")
+    seed_rows = []
+    for r in sorted(c_rows, key=lambda x: (str(x.get("arm")), int(x.get("seed") or 0))):
+        seed_rows.append(
+            [
+                r.get("arm"),
+                r.get("seed"),
+                f"{float(r.get('search_reward') or 0):.3f}",
+                r.get("train_completed"),
+                r.get("held_completed"),
+                r.get("four_of_four"),
+                r.get("structural_label"),
+                r.get("stall_stage"),
+                r.get("archive_size"),
+            ]
+        )
+    lines.append(
+        _md_table(
+            ["arm", "seed", "R", "train completed", "held completed", "4/4", "label", "stall", "archive"],
+            seed_rows,
+        )
+    )
+    lines.append("")
     lines.append(
         f"**{n_four}/{len(c_rows)}** 4/4 "
         f"({sum(1 for x in c_rows if x.get('arm')=='lexicase_dataflow' and x.get('four_of_four'))} lexicase_dataflow, "
@@ -532,8 +556,37 @@ def write_reports(out: Path, a_rows, c_rows, elapsed, meta: dict) -> None:
     other_four = [lb for lb in labels_four if lb not in rr_rtc]
     four_rows = [r for r in c_rows if r.get("four_of_four")]
     lines.append("")
+    cover_lex = [
+        r
+        for r in c_rows
+        if r.get("arm") == "lexicase_dataflow"
+        and any("cover" in k for k in (r.get("first_solved") or {}))
+    ]
+    cover_blind = [
+        r
+        for r in c_rows
+        if r.get("arm") == "blind" and any("cover" in k for k in (r.get("first_solved") or {}))
+    ]
+    lines.append(
+        f"Cover case ever solved (any individual, any stage): "
+        f"lexicase_dataflow {len(cover_lex)}/{sum(1 for r in c_rows if r.get('arm')=='lexicase_dataflow')}, "
+        f"blind {len(cover_blind)}/{sum(1 for r in c_rows if r.get('arm')=='blind')}."
+    )
     if n_four == 0:
         lines.append("No 4/4 elites, so no non-RR/RTC discovery to report.")
+    lines.append("")
+    lines.append("## Findings")
+    lines.append("")
+    lines.append(
+        "Isolation and `nofault` are solved at generation 0 in every seed and stage "
+        "(idle programs do not fault guests they never run). Lexicase therefore has "
+        "no distinguishing cases until someone covers a window."
+    )
+    lines.append(
+        f"Cover solved: lexicase_dataflow {len(cover_lex)}/"
+        f"{sum(1 for r in c_rows if r.get('arm')=='lexicase_dataflow')}, "
+        f"blind {len(cover_blind)}/{sum(1 for r in c_rows if r.get('arm')=='blind')}."
+    )
     elif other_four:
         lines.append(f"4/4 labels that are not RR/RTC: {sorted(set(other_four))}.")
     else:

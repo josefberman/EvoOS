@@ -1,0 +1,42 @@
+# bare_curr_gated_lexicase_dataflow_s99 4/4=False stall=k1 R=0.0 label=no-dispatch arm=lexicase_dataflow
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=no-dispatch
+# n_eval=320000 archive=1
+# cases_solved: ['train_small.isolation', 'train_small.g0.nofault', 'train_small.g1.nofault', 'train_small.g2.nofault', 'train_small.g3.nofault', 'train_medium.isolation', 'train_medium.g0.nofault', 'train_medium.g1.nofault', 'train_medium.g2.nofault', 'train_medium.g3.nofault', 'heldout_mixed.isolation', 'heldout_mixed.g0.nofault', 'heldout_mixed.g1.nofault', 'heldout_mixed.g2.nofault', 'heldout_mixed.g3.nofault', 'heldout_longer.isolation', 'heldout_longer.g0.nofault', 'heldout_longer.g1.nofault', 'heldout_longer.g2.nofault', 'heldout_longer.g3.nofault']
+
+   0:  RUNCTXI  a=3 b=3 c=2 imm=3
+   1:  MUL      a=1 b=7 c=3 imm=16
+   2:  CTXSET   a=3 b=5 c=6 imm=64
+   3:  LOAD     a=5 b=1 c=1 imm=3
+   4:  RDFAULT  a=4 b=0 c=6 imm=-6
+   5:  LOAD     a=1 b=7 c=3 imm=26
+   6:  JMP      a=5 b=2 c=3 imm=-5  # -> 2
+   7:  SHR      a=2 b=2 c=0 imm=16
+   8:  OR       a=6 b=1 c=6 imm=22
+   9:  MUL      a=0 b=6 c=5 imm=31
+  10:  XOR      a=0 b=3 c=7 imm=4
+  11:  BEQ      a=5 b=7 c=0 imm=0  # -> 12
+  12:  XOR      a=2 b=6 c=1 imm=384
+  13:  AND      a=2 b=2 c=6 imm=10
+  14:  SHL      a=5 b=7 c=3 imm=79
+  15:  BEQ      a=2 b=1 c=4 imm=15  # -> 31
+  16:  NOP      a=5 b=3 c=6 imm=0
+  17:  CTXGET   a=6 b=6 c=5 imm=17
+  18:  ADDPROT  a=5 b=6 c=7 imm=-6
+  19:  STORE    a=4 b=1 c=5 imm=6
+  20:  LOAD     a=3 b=6 c=4 imm=384
+  21:  CLRPROT  a=7 b=6 c=4 imm=1
+  22:  SUB      a=7 b=2 c=4 imm=12
+  23:  ADDPROT  a=2 b=4 c=6 imm=40
+  24:  JMP      a=7 b=3 c=6 imm=94  # -> 119
+  25:  JAL      a=0 b=5 c=4 imm=24  # -> 50
+  26:  ADDI     a=2 b=4 c=6 imm=106
+  27:  STORE    a=6 b=0 c=1 imm=14
+  28:  ADDI     a=4 b=2 c=7 imm=-8
+  29:  LOAD     a=7 b=4 c=3 imm=18
+  30:  MOV      a=1 b=0 c=0 imm=14
+  31:  CTXSET   a=4 b=3 c=1 imm=27
+  32:  CTXGET   a=4 b=7 c=5 imm=3
+  33:  XOR      a=6 b=6 c=2 imm=50
+  34:  RUNCTX   a=7 b=6 c=2 imm=9
+  35:  RDFAULT  a=7 b=2 c=1 imm=256
+  36:  ADDPROT  a=0 b=1 c=5 imm=21

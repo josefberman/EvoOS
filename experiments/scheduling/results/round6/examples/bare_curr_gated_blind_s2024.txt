@@ -1,0 +1,48 @@
+# bare_curr_gated_blind_s2024 4/4=False stall=k1 R=0.0 label=no-dispatch arm=blind
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=no-dispatch
+# n_eval=320000 archive=1
+# cases_solved: ['train_small.isolation', 'train_small.g0.nofault', 'train_small.g1.nofault', 'train_small.g2.nofault', 'train_small.g3.nofault', 'train_medium.isolation', 'train_medium.g0.nofault', 'train_medium.g1.nofault', 'train_medium.g2.nofault', 'train_medium.g3.nofault', 'heldout_mixed.isolation', 'heldout_mixed.g0.nofault', 'heldout_mixed.g1.nofault', 'heldout_mixed.g2.nofault', 'heldout_mixed.g3.nofault', 'heldout_longer.isolation', 'heldout_longer.g0.nofault', 'heldout_longer.g1.nofault', 'heldout_longer.g2.nofault', 'heldout_longer.g3.nofault']
+
+   0:  NOT      a=3 b=6 c=4 imm=4
+   1:  ADDPROT  a=5 b=6 c=3 imm=23
+   2:  BGE      a=1 b=3 c=7 imm=13  # -> 16
+   3:  SHL      a=0 b=5 c=6 imm=18
+   4:  RDTIME   a=5 b=6 c=5 imm=0
+   5:  JR       a=6 b=6 c=5 imm=5
+   6:  RUNCTX   a=3 b=3 c=0 imm=18
+   7:  STORE    a=4 b=5 c=6 imm=640
+   8:  OR       a=3 b=3 c=7 imm=30
+   9:  RUNCTX   a=7 b=2 c=4 imm=15
+  10:  RUNCTXI  a=7 b=2 c=2 imm=5
+  11:  JAL      a=1 b=1 c=2 imm=84  # -> 96
+  12:  NOP      a=3 b=5 c=3 imm=48
+  13:  MUL      a=3 b=7 c=4 imm=10
+  14:  RDFAULT  a=6 b=3 c=1 imm=19
+  15:  BGE      a=4 b=1 c=7 imm=0  # -> 16
+  16:  LOAD     a=2 b=3 c=5 imm=35
+  17:  JR       a=0 b=6 c=1 imm=512
+  18:  OR       a=2 b=3 c=1 imm=25
+  19:  ADDI     a=2 b=2 c=1 imm=23
+  20:  XOR      a=0 b=1 c=2 imm=512
+  21:  ADDPROT  a=1 b=4 c=0 imm=0
+  22:  NOT      a=3 b=3 c=3 imm=32
+  23:  RDTIME   a=4 b=7 c=7 imm=12
+  24:  LOAD     a=6 b=2 c=3 imm=20
+  25:  SHR      a=2 b=5 c=7 imm=4
+  26:  NOP      a=3 b=6 c=0 imm=-8
+  27:  LOAD     a=7 b=0 c=6 imm=32
+  28:  JAL      a=4 b=2 c=3 imm=13  # -> 42
+  29:  JMP      a=1 b=2 c=2 imm=46  # -> 76
+  30:  MOV      a=4 b=7 c=2 imm=14
+  31:  RUNCTX   a=7 b=5 c=2 imm=47
+  32:  MOVI     a=5 b=6 c=2 imm=1
+  33:  ADDI     a=6 b=0 c=4 imm=0
+  34:  STORE    a=2 b=3 c=1 imm=26
+  35:  ADDPROT  a=4 b=6 c=2 imm=30
+  36:  STORE    a=1 b=3 c=6 imm=67
+  37:  ADDPROT  a=2 b=3 c=4 imm=16
+  38:  BNE      a=1 b=6 c=6 imm=16  # -> 55
+  39:  BLT      a=3 b=3 c=5 imm=25  # -> 65
+  40:  STORE    a=4 b=4 c=3 imm=21
+  41:  RDTIME   a=4 b=6 c=3 imm=0
+  42:  HALT     a=0 b=0 c=0 imm=0

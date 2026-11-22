@@ -70,6 +70,8 @@ python -m evoos.experiments.scheduling.sweep_round3 --out experiments/scheduling
 python -m evoos.experiments.scheduling.sweep_round4 --out experiments/scheduling/results/round4
 # Round 5: learned GRU edit policy vs blind UCB1 (equal evals, gated curriculum):
 python -m evoos.experiments.scheduling.sweep_round5 --out experiments/scheduling/results/round5
+# Round 6: lexicase + dataflow GP vs blind UCB1 (equal evals, gated curriculum):
+python -m evoos.experiments.scheduling.sweep_round6 --out experiments/scheduling/results/round6
 ```
 
 ## Scaled results (measured)
@@ -195,3 +197,21 @@ GRU (instruction tokens + 12-d telemetry) trained with REINFORCE/PPO-clip on chi
 | blind | 0.067 ± 0.149 (0.400) | **0/6** (seed 99: 1/4 protected complete) | 320000 |
 
 **0/12** 4/4. The net never left the idle cell (advantages 0; no reward gradient). Blind seed 99 again finds a k4 1/4 cover-then-run stone (archive 6, label `starving`); that is a 4-guest cell, so k1 promotion never fired (0/12). Preferred visit counts: `modify_imm`, `modify_operand`, `crossover`. Nothing non-RR/RTC at 4/4. Covering the guest window from random 5-tuples is still the gap, not the mutation policy.
+
+## Round 6 (lexicase + dataflow GP vs blind)
+
+Same machine, **43.4 min**, 6 seeds, bare pack, gated curriculum, **lenient** substrate. Tables: [`experiments/scheduling/results/round6/summary.md`](experiments/scheduling/results/round6/summary.md).
+
+```text
+python -m evoos.experiments.scheduling.sweep_round6 \
+  --gens-per-stage 1000 --population 64 --eval-workers 4
+```
+
+Epsilon-lexicase over per-guest milestones (`cover`, `entered_p`, `progress_p`, `complete_p`, `nofault`) plus isolation; isolation-fail individuals are excluded from the parent pool. Dataflow linear GP: mutate effective code (backward slice from STORE/ADDPROT/RUNCTX/…), use-def operand bias, immediates from a CTXGET/firmware constant pool. These are generic GP techniques, documented in `evoos/agent/dataflow.py`, not OS priors. Cartesian GP is implemented (`evoos/agent/cgp.py`) but was not given sweep budget. Equal evals vs round-5 blind: **320000**/seed. ISA frozen (32 opcodes). Wall time is lower than round 5 because unused novelty k-NN scoring is skipped when N=0; eval count is the same.
+
+| arm | search R mean ± std (best) | 4/4 train+held | mean n_eval |
+| --- | --- | --- | --- |
+| lexicase_dataflow | 0.000 ± 0.000 (0.000) | **0/6** | 320000 |
+| blind | 0.067 ± 0.149 (0.400) | **0/6** (seed 99: 1/4 protected complete) | 320000 |
+
+**0/12** 4/4. Cases solved first in every run (gen 0): `isolation` and `nofault`. Cover/entered_p/complete_p: **0/6** lexicase seeds, **1/6** blind (seed 99, `k4_hard` guest 0 cover at gen 229, entered_p/complete_p at 246). Lexicase never left `no-dispatch`. Blind seed 99 again labels `starving` (archive 4). k1 promotion 0/12. No 4/4 elite, so no disassembly of a 4/4 program. Covering a guest window from random 5-tuples is still the rare event; lexicase has no signal on that case when the whole population scores 0.

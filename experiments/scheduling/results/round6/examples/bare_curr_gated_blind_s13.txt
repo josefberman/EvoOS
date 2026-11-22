@@ -1,0 +1,34 @@
+# bare_curr_gated_blind_s13 4/4=False stall=k1 R=0.0 label=no-dispatch arm=blind
+# diagnose: train completed [0, 0] held [0, 0]; near-zero-cycle guests (train idx) [[0, 1, 2, 3], [0, 1, 2, 3]]; label=no-dispatch
+# n_eval=320000 archive=1
+# cases_solved: ['train_small.isolation', 'train_small.g0.nofault', 'train_small.g1.nofault', 'train_small.g2.nofault', 'train_small.g3.nofault', 'train_medium.isolation', 'train_medium.g0.nofault', 'train_medium.g1.nofault', 'train_medium.g2.nofault', 'train_medium.g3.nofault', 'heldout_mixed.isolation', 'heldout_mixed.g0.nofault', 'heldout_mixed.g1.nofault', 'heldout_mixed.g2.nofault', 'heldout_mixed.g3.nofault', 'heldout_longer.isolation', 'heldout_longer.g0.nofault', 'heldout_longer.g1.nofault', 'heldout_longer.g2.nofault', 'heldout_longer.g3.nofault']
+
+   0:  BLT      a=2 b=3 c=2 imm=256  # -> 257
+   1:  STORE    a=2 b=1 c=3 imm=2
+   2:  BLT      a=0 b=4 c=2 imm=0  # -> 3
+   3:  MUL      a=7 b=6 c=2 imm=3
+   4:  BEQ      a=7 b=6 c=5 imm=6  # -> 11
+   5:  ADDPROT  a=1 b=5 c=4 imm=256
+   6:  CLRPROT  a=2 b=7 c=7 imm=384
+   7:  ADDPROT  a=2 b=5 c=4 imm=4
+   8:  RUNCTX   a=4 b=6 c=2 imm=30
+   9:  RUNCTX   a=3 b=3 c=5 imm=7
+  10:  XOR      a=7 b=6 c=0 imm=32
+  11:  ADDPROT  a=3 b=2 c=7 imm=-53
+  12:  CLRPROT  a=6 b=4 c=5 imm=2
+  13:  ADDI     a=5 b=2 c=3 imm=256
+  14:  MOVI     a=0 b=0 c=5 imm=31
+  15:  BLT      a=2 b=4 c=3 imm=5  # -> 21
+  16:  SHR      a=1 b=3 c=2 imm=32
+  17:  SUB      a=0 b=7 c=5 imm=30
+  18:  MUL      a=4 b=1 c=6 imm=0
+  19:  BGE      a=1 b=7 c=5 imm=80  # -> 100
+  20:  MOVI     a=2 b=7 c=7 imm=13
+  21:  STORE    a=0 b=6 c=2 imm=4
+  22:  SHL      a=4 b=6 c=3 imm=5
+  23:  JR       a=4 b=6 c=3 imm=64
+  24:  JR       a=6 b=7 c=1 imm=12
+  25:  SUB      a=0 b=4 c=3 imm=64
+  26:  CLRPROT  a=6 b=5 c=0 imm=27
+  27:  BLT      a=2 b=0 c=1 imm=0  # -> 28
+  28:  HALT     a=0 b=0 c=0 imm=0
