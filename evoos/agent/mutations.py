@@ -166,6 +166,71 @@ def _splice(seq: tuple[Instr, ...], i: int, j: int, insert: tuple[Instr, ...] = 
     return seq[:i] + insert + seq[j:]
 
 
+def apply_edit(
+    parent: Candidate,
+    kind: str,
+    pos: int,
+    *,
+    new_instr: Instr | None = None,
+    other: Candidate | None = None,
+    hall: list[Candidate] | None = None,
+    rng: random.Random | None = None,
+    max_len: int = 256,
+    operators: tuple[str, ...] | None = None,
+) -> Candidate:
+    """Apply a structured edit. Used by the learned policy; falls back to mutate()."""
+    rng = rng or random.Random(0)
+    seq = parent.instrs
+    n = len(seq)
+    pos = int(pos)
+    if kind == "insert":
+        ins = new_instr or random_instr(rng)
+        i = max(0, min(pos, n))
+        seq = _splice(seq, i, i, (ins,))
+    elif kind == "remove" and n > 1:
+        i = max(0, min(pos, n - 1))
+        seq = _splice(seq, i, i + 1)
+    elif kind == "modify_op" and n:
+        i = max(0, min(pos, n - 1))
+        ins = seq[i]
+        op = new_instr.op if new_instr is not None else rng.choice(_OPS)
+        seq = seq[:i] + (Instr(int(op), ins.a, ins.b, ins.c, ins.imm),) + seq[i + 1 :]
+    elif kind == "modify_operand" and n:
+        i = max(0, min(pos, n - 1))
+        ins = seq[i]
+        if new_instr is not None:
+            seq = seq[:i] + (Instr(ins.op, new_instr.a, new_instr.b, new_instr.c, ins.imm),) + seq[i + 1 :]
+        else:
+            return mutate(parent, "modify_operand", rng, max_len=max_len, operators=operators)
+    elif kind == "modify_imm" and n:
+        i = max(0, min(pos, n - 1))
+        ins = seq[i]
+        imm = new_instr.imm if new_instr is not None else ins.imm
+        seq = seq[:i] + (Instr(ins.op, ins.a, ins.b, ins.c, int(imm)),) + seq[i + 1 :]
+    elif kind == "control_flow" and n:
+        i = max(0, min(pos, n - 1))
+        ins = seq[i]
+        if new_instr is not None:
+            seq = seq[:i] + (new_instr,) + seq[i + 1 :]
+        else:
+            return mutate(parent, "control_flow", rng, max_len=max_len, operators=operators)
+    else:
+        return mutate(
+            parent,
+            kind,
+            rng,
+            hall=hall,
+            other=other,
+            max_len=max_len,
+            operators=operators,
+        )
+    if len(seq) > max_len:
+        seq = seq[:max_len]
+    if not seq:
+        seq = (Instr(int(Op.HALT), 0, 0, 0, 0),)
+    return Candidate(instrs=seq, origin=kind, parent_id=parent.id)
+
+
 def mutate(
     parent: Candidate,
     op: str,

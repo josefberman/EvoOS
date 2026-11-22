@@ -120,6 +120,10 @@ class PPOMutationPolicy:
 
 
 def make_policy(name: str, operators: tuple[str, ...] = MUTATION_OPS) -> MutationPolicy:
-    if name in ("ppo", "ppo_lite"):
+    if name in ("reinforce", "gru", "learned", "ppo"):
+        from evoos.agent.learned_policy import LearnedEditPolicy
+
+        return LearnedEditPolicy(operators=operators)  # type: ignore[return-value]
+    if name in ("ppo_lite",):
         return PPOMutationPolicy(operators=operators)
     return UCB1Bandit(operators=operators)
