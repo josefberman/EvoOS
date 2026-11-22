@@ -232,8 +232,10 @@ def evaluate_candidate(
     beh = behavioral_descriptor(train_results[0]) if train_results else (0.0,)
     hist = opcode_histogram(candidate.instrs)
     vec = tuple(beh) + tuple(hist[:8])
-    n_score = novelty.score(vec)
-    novelty.add(vec)
+    n_score = 0.0
+    if weights.n:
+        n_score = novelty.score(vec)
+        novelty.add(vec)
 
     breakdown = score(
         train_results,
@@ -386,8 +388,10 @@ def run_search(
         beh = behavioral_descriptor(tr[0]) if tr else (0.0,)
         hist = opcode_histogram(cand.instrs)
         vec = tuple(beh) + tuple(hist[:8])
-        n_score = novelty.score(vec)
-        novelty.add(vec)
+        n_score = 0.0
+        if weights.n:
+            n_score = novelty.score(vec)
+            novelty.add(vec)
         bd = score(
             tr,
             heldout_results=ho or None,
