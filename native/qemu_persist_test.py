@@ -120,9 +120,12 @@ def main() -> int:
         q = QMP(qmp_path)
         wait_serial(serial, "EvoOS live", 20.0)
         wait_serial(serial, "device attached", 8.0)
-        time.sleep(0.4)
+        wait_serial(serial, "meta online", 8.0)
+        time.sleep(0.3)
+        q.sendkey("g")
+        wait_serial(serial, "evo off", 8.0)
         q.sendkey("w")
-        wait_serial(serial, "put=123", 12.0)
+        wait_serial(serial, "put=123", 16.0)
         time.sleep(0.3)
     finally:
         if proc.poll() is None:
@@ -139,10 +142,13 @@ def main() -> int:
     try:
         q = QMP(qmp_path)
         text = wait_serial(serial, "EvoOS live", 20.0)
-        mark = len(text)
-        time.sleep(0.4)
+        wait_serial(serial, "meta online", 8.0)
+        mark = len(serial.read_text(errors="replace"))
+        time.sleep(0.3)
+        q.sendkey("g")
+        wait_serial(serial, "evo off", 8.0, start=mark)
         q.sendkey("r")
-        wait_serial(serial, "recall=123", 12.0, start=mark)
+        wait_serial(serial, "recall=123", 16.0, start=mark)
         time.sleep(0.2)
         q.sendkey("q")
         try:

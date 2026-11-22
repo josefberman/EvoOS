@@ -5,9 +5,10 @@ The research VM in `evoos/vm/` is the specification. This document freezes the
 the Python `Instr` tuple already used.
 
 The OS is a supervisor program in this ISA. On the search VM a C/Python
-interpreter executes these words. On the bootable ISO the same words are
-**AOT-compiled to native x86_64** and run in ring 0; firmware is only boot
-plus a trap trampoline.
+interpreter executes these words. On the bootable ISO the same words run in
+ring 0: either AOT C or a firmware interpreter that calls the same trampolines.
+The default live ISO interprets a seed elite and may hot-swap bytecode. Firmware
+is boot, I/O, and the evolution meta-layer — not scheduling policy.
 
 ## Version
 

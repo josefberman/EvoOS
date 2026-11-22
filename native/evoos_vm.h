@@ -190,6 +190,8 @@ extern evoos_store_hook_fn evoos_store_hook;
 extern evoos_runctx_hook_fn evoos_runctx_hook;
 
 int evoos_load_image(EvoOSMachine *m, const uint8_t *data, size_t len);
+void evoos_reset_machine(EvoOSMachine *m, int32_t n_ctx, int32_t mem_words, int32_t max_steps);
+void evoos_install_supervisor(EvoOSMachine *m, const EvoOSInstr *code, int n_code);
 void evoos_run(EvoOSMachine *m, int32_t max_steps);
 void evoos_run_slice(EvoOSMachine *m, int32_t n_ops);
 void evoos_reenter_supervisor(EvoOSMachine *m);

@@ -258,6 +258,40 @@ def guest_mulacc(slot: int, n: int, m: int) -> GuestImage:
     )
 
 
+def guest_pressure(slot: int, k: int = 40) -> GuestImage:
+    """Memory-pressure fill: write a long prefix of the guest window."""
+    g = guest_fill(slot, k)
+    return GuestImage(
+        name=f"pressure_{k}",
+        code=g.code,
+        data_base=g.data_base,
+        data_bound=g.data_bound,
+        init=g.init,
+        expected=g.expected,
+        needed_cycles=g.needed_cycles,
+    )
+
+
+def guest_route(slot: int, dest_ctx: int = 2, payload: int = 77) -> GuestImage:
+    """Routing trap: SVC 3 with dest ctx in window[0] and payload in window[2]."""
+    lo, hi = GUEST_SLOTS[slot]
+    src = f"""
+        MOVI r1, {lo}
+        MOVI r2, 3
+        SVC r2
+        HALT
+    """
+    return GuestImage(
+        name=f"route_{dest_ctx}",
+        code=assemble(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: dest_ctx, lo + 2: payload},
+        expected={lo + 2: payload},
+        needed_cycles=8,
+    )
+
+
 def guest_malicious_store(slot: int, target_addr: int) -> GuestImage:
     """Writes outside its slot. Used to test isolation detection."""
     lo, hi = GUEST_SLOTS[slot]
