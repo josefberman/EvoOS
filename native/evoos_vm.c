@@ -491,6 +491,67 @@ static void execute(EvoOSMachine *m, int cid) {
     }
 }
 
+void evoos_reset_machine(EvoOSMachine *m, int32_t n_ctx, int32_t mem_words, int32_t max_steps) {
+    int32_t i;
+    e_memset(m, 0, sizeof(*m));
+    if (n_ctx < 2) {
+        n_ctx = 2;
+    }
+    if (n_ctx > EVOOS_MAX_CTX) {
+        n_ctx = EVOOS_MAX_CTX;
+    }
+    if (mem_words < 256) {
+        mem_words = 256;
+    }
+    if (mem_words > EVOOS_MAX_MEM) {
+        mem_words = EVOOS_MAX_MEM;
+    }
+    m->n_contexts = n_ctx;
+    m->mem_words = mem_words;
+    m->max_steps = max_steps > 0 ? max_steps : 8000;
+    m->wall_steps = m->max_steps;
+    m->max_prot_regions = EVOOS_MAX_PROT;
+    m->n_regs = EVOOS_N_REGS;
+    m->n_blocks = EVOOS_N_BLOCKS;
+    m->block_words = EVOOS_BLK_WORDS;
+    m->io_base = 1920;
+    m->io_bound = 1940;
+    for (i = 0; i < EVOOS_MAX_MEM; i++) {
+        m->last_writer[i] = 255;
+    }
+    for (i = 0; i < EVOOS_MAX_CTX; i++) {
+        m->contexts[i].halt_cycle = -1;
+    }
+    m->contexts[0].data_base = 0;
+    m->contexts[0].data_bound = mem_words;
+}
+
+void evoos_install_supervisor(EvoOSMachine *m, const EvoOSInstr *code, int n_code) {
+    EvoOSContext *s = &m->contexts[0];
+    int i;
+    if (n_code < 0) {
+        n_code = 0;
+    }
+    if (n_code > EVOOS_MAX_CODE) {
+        n_code = EVOOS_MAX_CODE;
+    }
+    s->n_code = n_code;
+    for (i = 0; i < n_code; i++) {
+        s->code[i] = code[i];
+    }
+    s->pc = 0;
+    s->halted = 0;
+    s->fault = 0;
+    s->cycles = 0;
+    s->halt_cycle = -1;
+    s->n_prot = 0;
+    e_memset(s->regs, 0, sizeof(s->regs));
+    s->data_base = 0;
+    s->data_bound = m->mem_words;
+    m->halted = 0;
+    m->supervisor_fault = 0;
+}
+
 void evoos_run(EvoOSMachine *m, int32_t max_steps) {
     int32_t limit = (max_steps < 0) ? m->max_steps : max_steps;
     while (!m->halted && m->cycles < limit) {

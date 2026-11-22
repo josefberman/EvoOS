@@ -5,26 +5,78 @@ EvoOS live
 EvoOS hw ring0-aot
 firmware is not a kernel; supervisor=evolved_open_arrival_gadgets_s99
 storage=evolved_persist_crossover
-device absent
-keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit
-loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines
+meta=online-evolve seed=s99
+device attached blocks=32
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage
+w put  r get  z pull-plug  i inspect  q quit
+loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
 loader: slot 0 ctx 1 sum sum_8
 loader: slot 1 ctx 2 fill fill_5
 loader: slot 2 ctx 3 xor xor_5
 loader: slot 3 ctx 4 spin spin
+archive empty; seed s99 id=1 challenger persist_rr id=2
+meta online evo=on incumbent=evolved_open_arrival_ga n=62
 guest 1 sum_8 halted cycles=8
 guest 3 xor_5 halted cycles=8
 guest 4 spin preempt vector=32
 guest 2 fill_5 halted cycles=8
-keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit
-loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage
+w put  r get  z pull-plug  i inspect  q quit
+loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
 loader: slot 0 ctx 1 malicious malicious_store
 guest 1 malicious_store fault=1 vector=14 cr2=6295560 #PF isolation_n=0
 loader: slot 1 ctx 2 sum sum_8
 guest 2 sum_8 halted cycles=8
-inspect isolation_n=0 switches=138 cycles=913 disk=0 last_svc=0
+inspect isolation_n=0 switches=141 cycles=929 disk=1 last_svc=0 evo gen=1 inc=1 swaps=0 evals=1
   ctx 1 malicious_store halt=0 fault=1 cyc=1 prot=4 vec=14
   ctx 2 sum_8 halt=1 fault=0 cyc=8 prot=1 vec=128
   ctx 3 xor_5 halt=1 fault=0 cyc=8 prot=1 vec=128
-  ctx 4 spin halt=0 fault=0 cyc=880 prot=4 vec=32
-EvoOS quit isolation_n=0 spawns=6
+  ctx 4 spin halt=0 fault=0 cyc=896 prot=4 vec=32
+loader: slot 2 ctx 3 put put
+guest 3 put halted cycles=16 put=123
+loader: slot 3 ctx 4 route route
+guest 4 route halted cycles=8
+evo gen=8 evals=8 cand=14 fit=0 inc=0 origin=modify_op
+evo noswap gen=8
+pressure workload
+loader: slot 0 ctx 1 pressure pressure
+loader: slot 1 ctx 2 pressure pressure
+loader: slot 2 ctx 3 pressure pressure
+loader: slot 3 ctx 4 spin spin
+guest 1 pressure preempt vector=32
+guest 4 spin preempt vector=32
+lineage n=1 inc=1 parent=0 origin=evolved_open_arrival_ga ids=1
+guest 2 pressure preempt vector=32
+guest 3 pressure preempt vector=32
+inspect isolation_n=0 switches=941 cycles=1257 disk=1 last_svc=0 evo gen=8 inc=1 swaps=0 evals=8
+  ctx 1 pressure halt=0 fault=0 cyc=32 prot=4 vec=32
+  ctx 2 pressure halt=0 fault=0 cyc=32 prot=2 vec=32
+  ctx 3 pressure halt=0 fault=0 cyc=32 prot=2 vec=32
+  ctx 4 spin halt=0 fault=0 cyc=64 prot=4 vec=32
+EvoOS quit isolation_n=0 spawns=12
+
+--- reboot ---
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01HBdsDxe: loading Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Secondary,Master,0x0)
+BdsDxe: starting Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Secondary,Master,0x0)
+[2J[01;01H[01;01H[2J[01;01H[01;01HEvoOS firmware starting
+EvoOS live
+EvoOS hw ring0-aot
+firmware is not a kernel; supervisor=evolved_open_arrival_gadgets_s99
+storage=evolved_persist_crossover
+meta=online-evolve seed=s99
+device attached blocks=32
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage
+w put  r get  z pull-plug  i inspect  q quit
+loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
+loader: slot 0 ctx 1 sum sum_8
+loader: slot 1 ctx 2 fill fill_5
+loader: slot 2 ctx 3 xor xor_5
+loader: slot 3 ctx 4 spin spin
+archive loaded gen=8 inc=1 lineage resume origin=evolved_open_arrival_ga
+meta online evo=on incumbent=evolved_open_arrival_ga n=62
+guest 1 sum_8 halted cycles=8
+guest 3 xor_5 halted cycles=8
+guest 4 spin preempt vector=32
+guest 2 fill_5 halted cycles=8
+lineage n=1 inc=1 parent=0 origin=evolved_open_arrival_ga ids=1
+EvoOS quit isolation_n=0 spawns=4

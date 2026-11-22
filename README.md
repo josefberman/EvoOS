@@ -133,13 +133,13 @@ The evolved supervisor *is* the OS. A tiny host stub (C interpreter of the froze
 
 ## Booting EvoOS
 
-The OS is AOT-compiled supervisor bytecode running in **ring 0**. Firmware is boot + a trap trampoline + a dashboard/keyboard. It does not schedule and does not decide protection windows. `ADDPROT` writes real page tables; `RUNCTX` is `iretq` into ring-3 x86-64 user code with the PIT armed; `#PF` / IRQ0 / `int $0x80` return to the supervisor.
+The OS is supervisor bytecode running in **ring 0**. Firmware is boot + trap trampoline + dashboard + the evolution meta-layer. It does not choose guests. `ADDPROT` writes real page tables; `RUNCTX` is `iretq` into ring-3 x86-64 user code with the PIT armed; `#PF` / IRQ0 / `int $0x80` return to the supervisor. The default ISO interprets a seed elite so the running OS can hot-swap its own supervisor.
 
 **Build the ISO** (needs `gcc`, `xorriso`, Python 3.11+):
 
 ```bash
 pip install -e ".[dev]"
-make iso                          # AOT of evolved open-arrival elite (default)
+make iso                          # self-evolving ISO, seeded with s99
 make iso LIVE_SUPERVISOR=rr_live  # handwritten never-HALT round-robin only
 ```
 
@@ -150,8 +150,13 @@ Outputs: `build/evoos.iso` and `artifacts/evoos.iso`. Docker: `docker build -t e
 | key | action |
 | --- | --- |
 | `1`–`4` | install next catalogue kind into that slot |
-| `s` `f` `x` `c` `m` `p` | sum / fill / xor / copyinc / **malicious** / **spin** |
+| `s` `f` `x` `c` `m` | sum / fill / xor / copyinc / **malicious** |
+| `p` | memory-pressure workload (window store storm) |
+| `u` | routing guest (SVC 3) |
+| `g` | toggle on-device evolution |
+| `l` | print supervisor lineage |
 | space | next kind into the next slot |
+| `w` `r` `z` | PUT / GET / pull-plug |
 | `i` | inspect contexts on serial |
 | `h` | help |
 | `q` | quit (isa-debug-exit; isolation_n==0 → QEMU status 1) |
@@ -170,16 +175,17 @@ Success: serial contains `EvoOS hw ring0-aot`, `preempt vector=32`, `#PF`, `insp
 
 ```bash
 qemu-system-x86_64 -cdrom artifacts/evoos.iso -m 128M -serial mon:stdio \
+  -drive file=build/persist.img,if=ide,format=raw \
   -device isa-debug-exit,iobase=0xf4,iosize=0x04
 ```
 
-**Live supervisor.** Default ISO AOT-compiles `evolved_open`: gadgets elite **s99** (no HALT). A HITL-ok persist elite is composed as `persist_storage_main` (SVC/`BLK*` oneshot), not as a prefix that would replace s99. Open-arrival scoring treats supervisor HALT before the horizon as failure. s99 is `other` on held-out / train_medium and `round-robin-like` on train_small. A search mutant labeled batched/priority-like matched on Python 4/4 but failed the live `#PF` keyboard test (never RUNCTX'd the new guest); it is kept in the QD set, not the ISO. `LIVE_SUPERVISOR=rr_live` is the human baseline only. One-shot s42 remains `--supervisor evolved` for `make test-diff`. HITL: `python -m evoos.evaluator.hitl --supervisor evolved_open --boot`. Search: `python -m evoos.experiments.scheduling.search_open_live`.
+**Live supervisor.** Default ISO is **on-device online evolution**, seeded with gadgets elite **s99**. Firmware interprets that bytecode through the ring-0 trampolines (guests stay native x86). A HITL-ok persist elite is still `persist_storage_main` for `w`/`r`. `g` toggles evolution, `p` memory-pressure, `u` route, `l` lineage. Shadow eval is the C interpreter on a private machine. Archive resumes from ATA LBA 64+. Notes: `experiments/scheduling/results/online_evolve.md`. `LIVE_SUPERVISOR=rr_live` is the human baseline only. One-shot s42 remains `--supervisor evolved` for `make test-diff`.
 
 **Still simulated:** PIT counts vs instruction retirement; QEMU; firmware framebuffer/keyboard; no SMP. Disk is a QEMU IDE image; firmware only copies ATA bytes. See `docs/isa.md` encoding v2 (BLKRD/BLKWR/SVC).
 
 **Persistence (stage 3).** Python models a 32-block device, power cuts, and bad blocks. Guests PUT/GET via `SVC` / `int $0x80` (`rax` 1/2). GET credit is gated: the payload must already be on the device after PUT, and GET must `BLKRD`. Curriculum A→D (one key; several keys + random cuts; bad blocks; two guests / isolation). MAP-Elites + curiosity, checkpointed: `python -m evoos.experiments.scheduling.search_persist --wall-seconds 3300`.
 
-**What handles storage on the default ISO today:** scheduling is **s99** (never `BLKRD`/`BLKWR`). After a HITL-ok persist elite, AOT also emits `persist_storage_main`: the elite’s PUT/GET + `BLK*` path with its own `RUNCTX` loop cut off. Firmware calls that oneshot after a guest `SVC` (`w`/`r`). Serial prints `storage=evolved_persist_crossover` (or `storage=none`). Prefixing the never-halting elite onto s99 would replace the scheduler, so that compose is not the default ISO. `make test-persist` packs the full elite as `evolved_persist`, then re-checks w/r/z on the restored s99 ISO. `LIVE_SUPERVISOR=persist_rr` is Condition A.
+**What handles storage on the default ISO today:** live scheduling starts as **s99** (interpreted). PUT/GET still go through `persist_storage_main` (crossover elite). If online evolution hot-swaps persist_rr (or a mutant) in, that bytecode becomes the scheduler; persist_rr is Condition A via `LIVE_SUPERVISOR=persist_rr`. Serial: `storage=evolved_persist_crossover`, `meta=online-evolve`.
 
 ```bash
 make test-persist
@@ -231,7 +237,8 @@ train.py
 | boot-1 | Frozen ISA + C interpreter + one-shot Limine ISO | `native/`, `docs/isa.md` |
 | boot-2 | Live ISO: open arrivals, PS/2+serial events, framebuffer dashboard | done |
 | boot-3 | AOT ring-0 supervisor, MMU ADDPROT, ring-3 RUNCTX, HITL | done |
-| boot-3b | Evolved never-HALT ISO (open-arrival elite, not rr_live) | this milestone |
+| boot-3b | Evolved never-HALT ISO (open-arrival elite, not rr_live) | done |
+| boot-4 | On-device online self-evolution (shadow, hot-swap, disk lineage) | this milestone |
 | 2 | Memory management from behavioral pressure (no `allocate_page` opcode) | `evoos/placeholders/memory.py` |
 | 3 | Persistence / a block device, not a VFS opcode | model + HITL (`BLKRD`/`BLKWR`/`SVC`); persist_rr is Condition A |
 | 4 | Linux syscall slice via differential tests against Linux | `evoos/placeholders/linux_syscalls.py` |

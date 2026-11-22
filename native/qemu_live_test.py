@@ -63,16 +63,16 @@ class QMP:
             raise SystemExit(f"send-key {keys}: {r}")
 
 
-def wait_serial(path: Path, needle: str, timeout: float) -> str:
+def wait_serial(path: Path, needle: str, timeout: float, start: int = 0) -> str:
     deadline = time.time() + timeout
     while time.time() < deadline:
         if path.exists():
             text = path.read_text(errors="replace")
-            if needle in text:
+            if needle in text[start:]:
                 return text
         time.sleep(0.05)
     text = path.read_text(errors="replace") if path.exists() else ""
-    raise SystemExit(f"timeout waiting for {needle!r}\n--- serial ---\n{text}")
+    raise SystemExit(f"timeout waiting for {needle!r}\n--- serial ---\n{text[-4000:]}")
 
 
 def ppm_to_png(ppm: Path, png: Path) -> None:
@@ -135,6 +135,8 @@ def main() -> int:
     ap.add_argument("--uefi", action="store_true")
     ap.add_argument("--ovmf-code", default="/usr/share/OVMF/OVMF_CODE_4M.fd")
     ap.add_argument("--ovmf-vars", default="/usr/share/OVMF/OVMF_VARS_4M.fd")
+    ap.add_argument("--disk", default="")
+    ap.add_argument("--evolve-gens", type=int, default=0)
     args = ap.parse_args()
 
     iso = Path(args.iso).resolve()
@@ -167,6 +169,9 @@ def main() -> int:
         "-cpu",
         "qemu64",
     ]
+    disk = Path(args.disk).resolve() if args.disk else None
+    if disk:
+        qemu[3:3] = ["-drive", f"file={disk},if=ide,format=raw,index=0,media=disk"]
     tmp_vars = None
     if args.uefi:
         tmp_vars = shot.parent / "ovmf_vars_live.fd"
@@ -194,6 +199,19 @@ def main() -> int:
         wait_serial(serial, "loader:", 8.0)
         q.sendkey("i")
         wait_serial(serial, "inspect isolation_n=", 8.0)
+        if args.evolve_gens > 0:
+            q.sendkey("w")
+            wait_serial(serial, "put=", 16.0)
+            q.sendkey("u")
+            q.sendkey("p")
+            wait_serial(serial, "pressure workload", 8.0)
+            needle = f"evo gen={args.evolve_gens}"
+            wait_serial(serial, "evo gen=", 20.0)
+            wait_serial(serial, needle, 45.0)
+            q.sendkey("l")
+            wait_serial(serial, "lineage n=", 8.0)
+            q.sendkey("i")
+            wait_serial(serial, "inspect isolation_n=0", 8.0)
         time.sleep(0.5)
         ppm = shot.with_suffix(".ppm")
         r = q.cmd("screendump", filename=str(ppm))
@@ -248,10 +266,66 @@ def main() -> int:
         return 1
     if "EvoOS quit" not in text:
         return 1
+    if args.evolve_gens > 0:
+        if "meta=online-evolve" not in text and "meta online" not in text:
+            print("missing online-evolve banner", file=sys.stderr)
+            return 1
+        if f"evo gen={args.evolve_gens}" not in text:
+            print("evolution did not reach requested generations", file=sys.stderr)
+            return 1
+        if "swap id=" in text:
+            print("hot-swap observed")
+        else:
+            print("honest: no candidate beat the incumbent by the margin")
+        if text.count("inspect isolation_n=0") < 1:
+            return 1
+        if "isolation_n=" in text:
+            # any inspect with nonzero isolation fails the session
+            import re
+
+            for m in re.finditer(r"isolation_n=(\d+)", text):
+                if int(m.group(1)) != 0:
+                    print("isolation_n was not 0 throughout", file=sys.stderr)
+                    return 1
     # QEMU debug-exit 0 -> status 1
     if proc.returncode not in (0, 1):
         print(f"unexpected qemu status {proc.returncode}", file=sys.stderr)
         return 1
+    if args.evolve_gens > 0 and disk:
+        first = text
+        serial.unlink(missing_ok=True)
+        try:
+            os.unlink(qmp_path)
+        except OSError:
+            pass
+        proc2 = subprocess.Popen(qemu, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        try:
+            q2 = QMP(qmp_path, timeout=20.0 if args.uefi else 12.0)
+            wait_serial(serial, "EvoOS live", 20.0)
+            wait_serial(serial, "archive loaded gen=", 12.0)
+            q2.sendkey("l")
+            wait_serial(serial, "lineage n=", 8.0)
+            q2.sendkey("q")
+            try:
+                proc2.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                proc2.kill()
+                proc2.wait()
+        finally:
+            if proc2.poll() is None:
+                proc2.kill()
+                proc2.wait()
+        text2 = serial.read_text(errors="replace") if serial.exists() else ""
+        print("--- reboot ---")
+        print(text2)
+        if "archive loaded gen=" not in text2 and "lineage resume" not in text2:
+            print("lineage did not resume from disk", file=sys.stderr)
+            return 1
+        if "archive empty" in text2:
+            print("reboot re-seeded instead of resuming", file=sys.stderr)
+            return 1
+        print("lineage resume OK")
+        serial.write_text(first + "\n--- reboot ---\n" + text2)
     print("live qemu test OK")
     return 0
 

@@ -15,6 +15,8 @@ from evoos.evaluator.workloads import (
     guest_fill,
     guest_malicious_store,
     guest_max,
+    guest_pressure,
+    guest_route,
     guest_sum,
     guest_xor,
 )
@@ -31,7 +33,73 @@ def _programs() -> list[tuple[str, int, GuestImage]]:
         out.append(("copyinc", slot, guest_copyinc(slot, (4, 8, 2, 6))))
         out.append(("max", slot, guest_max(slot, (4, 17, 2, 9, 9))))
         out.append(("malicious", slot, guest_malicious_store(slot, victim)))
+        out.append(("pressure", slot, guest_pressure(slot, 40)))
+        out.append(("route", slot, guest_route(slot, 2 if slot != 1 else 3, 77)))
+        out.append(("put", slot, _put(slot)))
+        out.append(("get", slot, _get(slot)))
+        out.append(("spin", slot, _spin(slot)))
     return out
+
+
+def _put(slot: int) -> GuestImage:
+    lo, hi = GUEST_SLOTS[slot]
+    src = f"""
+        MOVI r1, {lo}
+        MOVI r2, 1
+        SVC r2
+        HALT
+    """
+    from evoos.vm.instruction_set import assemble as _asm
+
+    return GuestImage(
+        name="put",
+        code=_asm(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 7, lo + 1: 1, lo + 2: 123},
+        expected={lo + 2: 123},
+        needed_cycles=8,
+    )
+
+
+def _get(slot: int) -> GuestImage:
+    lo, hi = GUEST_SLOTS[slot]
+    src = f"""
+        MOVI r1, {lo}
+        MOVI r2, 2
+        SVC r2
+        HALT
+    """
+    from evoos.vm.instruction_set import assemble as _asm
+
+    return GuestImage(
+        name="get",
+        code=_asm(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 7, lo + 1: 1, lo + 2: 0},
+        expected={},
+        needed_cycles=8,
+    )
+
+
+def _spin(slot: int) -> GuestImage:
+    lo, hi = GUEST_SLOTS[slot]
+    src = """
+    loop:
+        JMP loop
+    """
+    from evoos.vm.instruction_set import assemble as _asm
+
+    return GuestImage(
+        name="spin",
+        code=_asm(src),
+        data_base=lo,
+        data_bound=hi,
+        init={lo: 1},
+        expected={},
+        needed_cycles=1,
+    )
 
 
 def _emit_instrs(name: str, code) -> str:

@@ -1,3 +1,4 @@
+#include "evoos_meta.h"
 #include "hw.h"
 #include "limine.h"
 
@@ -37,6 +38,8 @@ extern const uint8_t guest_malicious[], guest_malicious_end[];
 extern const uint8_t guest_spin[], guest_spin_end[];
 extern const uint8_t guest_put[], guest_put_end[];
 extern const uint8_t guest_get[], guest_get_end[];
+extern const uint8_t guest_pressure[], guest_pressure_end[];
+extern const uint8_t guest_route[], guest_route_end[];
 
 static struct limine_framebuffer *fb;
 static uint32_t fb_white, fb_bg, fb_accent, fb_ok, fb_bad, fb_idle, fb_dim;
@@ -249,6 +252,8 @@ static void cons_puts(const char *s) {
     }
 }
 
+void evoos_firmware_log(const char *s) { cons_puts(s); }
+
 static void cons_i32(int32_t v) {
     char buf[16];
     char *p = buf + 15;
@@ -270,6 +275,8 @@ static void cons_i32(int32_t v) {
     }
     cons_puts(p);
 }
+
+void evoos_firmware_log_i32(int32_t v) { cons_i32(v); }
 
 static void qemu_exit(uint8_t code) {
     outb(0xF4, code);
@@ -384,7 +391,7 @@ static void dashboard(void) {
     draw_logo(24, 16);
     fb_puts_at(170, 16, "EVOOS LIVE", fb_accent);
     fb_puts_at(170, 36, supervisor_origin, fb_white);
-    fb_puts_at(24, 60, "FIRMWARE=I/O   POLICY=NATIVE AOT", fb_dim);
+    fb_puts_at(24, 60, "META=ONLINE EVOLVE  POLICY=BYTECODE", fb_dim);
 
     for (i = 1; i < hw.n_contexts && i <= 4; i++) {
         HwContext *g = &hw.ctx[i];
@@ -443,7 +450,22 @@ static void dashboard(void) {
     fb_i32_at(180, 336, spawn_count, fb_white);
     fb_puts_at(320, 336, "FAULTS", fb_dim);
     fb_i32_at(500, 336, fault_events, fault_events ? fb_bad : fb_white);
-    fb_puts_at(24, 368, "1-4 SLOT  S F X C M P KIND  W PUT  R GET  Z PLUG  I INSPECT  Q QUIT", fb_accent);
+    {
+        EvoOSMetaStats st = evoos_meta_stats();
+        fb_puts_at(24, 358, "GEN", fb_dim);
+        fb_i32_at(80, 358, st.generation, fb_white);
+        fb_puts_at(160, 358, "INC", fb_dim);
+        fb_i32_at(216, 358, st.incumbent_id, fb_accent);
+        fb_puts_at(280, 358, "FIT", fb_dim);
+        fb_i32_at(336, 358, st.shadow_fit, fb_white);
+        fb_puts_at(420, 358, "EVAL", fb_dim);
+        fb_i32_at(500, 358, st.evals, fb_white);
+        fb_puts_at(580, 358, "SWAP", st.swaps ? fb_ok : fb_dim);
+        fb_i32_at(660, 358, st.swaps, st.swaps ? fb_ok : fb_white);
+        fb_puts_at(720, 358, "RB", st.rollbacks ? fb_bad : fb_dim);
+        fb_i32_at(760, 358, st.rollbacks, st.rollbacks ? fb_bad : fb_dim);
+    }
+    fb_puts_at(24, 380, "1-4 SLOT  S/F/X/C/M KIND  P PRESS  U ROUTE  G EVO  L LINEAGE  W/R/Z  Q", fb_accent);
     if (hw.has_disk && want_redraw) {
         int b;
         fb_puts_at(24, 392, "DEVICE BLOCKS", fb_dim);
@@ -460,8 +482,9 @@ static void dashboard(void) {
 }
 
 static void print_help(void) {
-    cons_puts("keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit\n");
-    cons_puts("loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines\n");
+    cons_puts("keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage\n");
+    cons_puts("w put  r get  z pull-plug  i inspect  q quit\n");
+    cons_puts("loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM\n");
 }
 
 static void inspect(void) {
@@ -476,6 +499,17 @@ static void inspect(void) {
     cons_i32(hw.has_disk);
     cons_puts(" last_svc=");
     cons_i32(hw.last_svc);
+    {
+        EvoOSMetaStats st = evoos_meta_stats();
+        cons_puts(" evo gen=");
+        cons_i32(st.generation);
+        cons_puts(" inc=");
+        cons_i32(st.incumbent_id);
+        cons_puts(" swaps=");
+        cons_i32(st.swaps);
+        cons_puts(" evals=");
+        cons_i32(st.evals);
+    }
     cons_putc('\n');
     for (i = 1; i < hw.n_contexts; i++) {
         HwContext *g = &hw.ctx[i];
@@ -599,6 +633,19 @@ static void loader_spawn(int slot, const char *kind) {
         init_off[2] = 2;
         init_val[2] = 0;
         n_init = 3;
+    } else if (kind_eq(kind, "pressure")) {
+        code = guest_pressure;
+        end = guest_pressure_end;
+        name = "pressure";
+    } else if (kind_eq(kind, "route")) {
+        code = guest_route;
+        end = guest_route_end;
+        name = "route";
+        init_off[0] = 0;
+        init_val[0] = 2;
+        init_off[1] = 2;
+        init_val[1] = 77;
+        n_init = 2;
     } else {
         cons_puts("loader: unknown kind\n");
         return;
@@ -620,6 +667,7 @@ static void loader_spawn(int slot, const char *kind) {
     cons_puts(" ");
     cons_puts(name);
     cons_putc('\n');
+    evoos_meta_record_spawn(slot, kind);
     want_redraw = 1;
 }
 
@@ -653,6 +701,12 @@ static char scancode_to_ascii(uint8_t sc) {
         return 'm';
     case 0x19:
         return 'p';
+    case 0x22:
+        return 'g';
+    case 0x26:
+        return 'l';
+    case 0x16:
+        return 'u';
     case 0x17:
         return 'i';
     case 0x23:
@@ -684,8 +738,7 @@ static void handle_key(char ch, uint8_t scan) {
     case 'f':
     case 'x':
     case 'c':
-    case 'm':
-    case 'p': {
+    case 'm': {
         const char *kind = "sum";
         if (ch == 'f') {
             kind = "fill";
@@ -695,14 +748,32 @@ static void handle_key(char ch, uint8_t scan) {
             kind = "copyinc";
         } else if (ch == 'm') {
             kind = "malicious";
-        } else if (ch == 'p') {
-            kind = "spin";
         }
         slot = next_slot % 4;
         next_slot++;
         loader_spawn(slot, kind);
         break;
     }
+    case 'p': {
+        cons_puts("pressure workload\n");
+        loader_spawn(0, "pressure");
+        loader_spawn(1, "pressure");
+        loader_spawn(2, "pressure");
+        loader_spawn(3, "spin");
+        break;
+    }
+    case 'u':
+        slot = next_slot % 4;
+        next_slot++;
+        loader_spawn(slot, "route");
+        break;
+    case 'g':
+        evoos_meta_toggle();
+        want_redraw = 1;
+        break;
+    case 'l':
+        evoos_meta_show_lineage();
+        break;
     case ' ':
         loader_spawn(next_slot % 4, KINDS[rotating_kind % N_KINDS]);
         next_slot++;
@@ -768,11 +839,15 @@ void evoos_firmware_after_runctx(int32_t cid, int32_t ran, int32_t fault, int32_
     static int in_persist;
     note_runctx(cid, ran, fault, vector);
     /* Dispatch only. PUT/GET policy is the evolved persist blob. */
-    if ((hw.last_svc == 1 || hw.last_svc == 2) && !in_persist) {
-        in_persist = 1;
-        persist_storage_main();
-        in_persist = 0;
+    if ((hw.last_svc == 1 || hw.last_svc == 2 || hw.last_svc == 3) && !in_persist) {
+        if (hw.last_svc == 1 || hw.last_svc == 2) {
+            in_persist = 1;
+            persist_storage_main();
+            in_persist = 0;
+        }
+        evoos_meta_record_svc(hw.last_svc, hw.last_svc_ctx);
     }
+    evoos_meta_on_live_metrics(hw.isolation_n);
     poll_ps2();
     poll_serial();
     if (want_redraw || (hw.switch_count & 15) == 0) {
@@ -825,6 +900,7 @@ void kmain(void) {
     cons_puts("storage=");
     cons_puts(persist_storage_origin);
     cons_putc('\n');
+    cons_puts("meta=online-evolve seed=s99\n");
     if (hw.has_disk) {
         cons_puts("device attached blocks=");
         cons_i32(hw.n_blocks);
@@ -845,19 +921,23 @@ void kmain(void) {
     dashboard();
     drawn = 1;
 
-    /* Policy: the AOT supervisor. Firmware never chooses a guest. */
-    supervisor_main();
-
-    cons_puts("supervisor returned isolation_n=");
-    cons_i32(hw.isolation_n);
-    cons_puts(" switches=");
-    cons_i32(hw.switch_count);
-    cons_putc('\n');
+    evoos_meta_init();
+    /* Live policy is interpreted bytecode (seed s99). Firmware does not pick guests. */
     for (;;) {
+        if (!evoos_meta_live_burst(48)) {
+            cons_puts("supervisor halted isolation_n=");
+            cons_i32(hw.isolation_n);
+            cons_puts(" switches=");
+            cons_i32(hw.switch_count);
+            cons_putc('\n');
+            evoos_meta_on_live_metrics(hw.isolation_n);
+        }
+        evoos_meta_tick();
         poll_ps2();
         poll_serial();
-        dashboard();
+        if (want_redraw || (hw.switch_count & 31) == 0) {
+            dashboard();
+        }
         (void)z;
-        __asm__ volatile("hlt");
     }
 }

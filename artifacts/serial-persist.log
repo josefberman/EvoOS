@@ -2,18 +2,23 @@ EvoOS firmware starting
 EvoOS live
 EvoOS hw ring0-aot
 firmware is not a kernel; supervisor=evolved_persist_crossover
-storage=none
+storage=evolved_persist_crossover
+meta=online-evolve seed=s99
 device attached blocks=32
-keys: 1-4 spawn  s/f/x/c/m/p kind  w put  r get  z pull-plug  i inspect  q quit
-loader is firmware; ADDPROT/RUNCTX/BLK* are native AOT trampolines
+keys: 1-4 spawn  s/f/x/c/m kind  p pressure  u route  g evo  l lineage
+w put  r get  z pull-plug  i inspect  q quit
+loader is firmware; live supervisor is interpreted bytecode; shadow uses C VM
 loader: slot 0 ctx 1 sum sum_8
 loader: slot 1 ctx 2 fill fill_5
 loader: slot 2 ctx 3 xor xor_5
 loader: slot 3 ctx 4 spin spin
+archive loaded gen=0 inc=1 lineage resume origin=evolved_persist_crossov
+meta online evo=on incumbent=evolved_persist_crossov n=91
 guest 1 sum_8 halted cycles=8
 guest 2 fill_5 halted cycles=8
 guest 3 xor_5 halted cycles=8
 guest 4 spin preempt vector=32
+evo off
 loader: slot 0 ctx 1 get get
 guest 1 get halted cycles=16 recall=123
 EvoOS quit isolation_n=0 spawns=5

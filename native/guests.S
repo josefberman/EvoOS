@@ -128,3 +128,27 @@ guest_get:
     xorl %eax, %eax
     int $0x80
 guest_get_end:
+
+    /* Store across the data window, then loop. Memory-pressure workload. */
+    .global guest_pressure, guest_pressure_end
+guest_pressure:
+    xorl %edx, %edx
+1:
+    cmpl $120, %edx
+    jge 2f
+    movl %edx, (%rdi, %rdx, 4)
+    incl %edx
+    jmp 1b
+2:
+    xorl %edx, %edx
+    jmp 1b
+guest_pressure_end:
+
+    /* SVC 3 route: window[0]=dest ctx, window[2]=payload. */
+    .global guest_route, guest_route_end
+guest_route:
+    movl $3, %eax
+    int $0x80
+    xorl %eax, %eax
+    int $0x80
+guest_route_end:

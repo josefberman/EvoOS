@@ -476,19 +476,19 @@ static int ata_wait_drq(void) {
     return -1;
 }
 
-static int ata_xfer(int32_t blk, uint8_t *buf, int wr) {
+static int ata_xfer_lba(int32_t lba, uint8_t *buf, int wr, int32_t max_lba) {
     int i;
-    if (!hw.has_disk || blk < 0 || blk >= HW_N_BLOCKS) {
+    if (!hw.has_disk || lba < 0 || lba >= max_lba) {
         return 2;
     }
     if (ata_ready() < 0) {
         return 1;
     }
     outb(0x1F2, 1);
-    outb(0x1F3, (uint8_t)blk);
-    outb(0x1F4, 0);
-    outb(0x1F5, 0);
-    outb(0x1F6, 0xE0);
+    outb(0x1F3, (uint8_t)lba);
+    outb(0x1F4, (uint8_t)(lba >> 8));
+    outb(0x1F5, (uint8_t)(lba >> 16));
+    outb(0x1F6, (uint8_t)(0xE0 | ((lba >> 24) & 0x0F)));
     outb(0x1F7, wr ? 0x30 : 0x20);
     if (ata_wait_drq() < 0) {
         return 1;
@@ -509,6 +509,15 @@ static int ata_xfer(int32_t blk, uint8_t *buf, int wr) {
         }
     }
     return 0;
+}
+
+static int ata_xfer(int32_t blk, uint8_t *buf, int wr) {
+    return ata_xfer_lba(blk, buf, wr, HW_N_BLOCKS);
+}
+
+int evoos_hw_ata_lba(int32_t lba, uint8_t *buf, int wr) {
+    /* Firmware meta archive. Guest BLK* stays on LBAs 0..31. */
+    return ata_xfer_lba(lba, buf, wr, 2048);
 }
 
 int32_t evoos_hw_blkrd(int32_t blk, int32_t dest) {

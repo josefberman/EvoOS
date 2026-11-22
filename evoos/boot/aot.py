@@ -233,12 +233,12 @@ def main(argv: list[str] | None = None) -> int:
     persist_handler = None
     persist_origin = "none"
     kind = (args.supervisor or "").lower().replace("-", "_")
-    # Persist-only supervisors already handle LAST_SVC in-loop. Attach the
-    # oneshot handler only to s99-style live ISOs so w/r/z use evolved storage
-    # without replacing the scheduler.
+    # Firmware always dispatches PUT/GET through persist_storage_main so the
+    # live interpreter (s99 or persist elite) can keep scheduling. persist_rr
+    # still handles LAST_SVC in-loop as Condition A; double-write is the same cell.
     if (
         not args.from_file
-        and kind in ("evolved_open", "open", "live", "evolved_open_persist")
+        and kind not in ("rr", "baseline_rr")
         and persist_iso_kind() == "evolved_persist"
         and PERSIST_ELITE_PATH.exists()
     ):

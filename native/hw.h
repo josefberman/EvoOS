@@ -116,6 +116,7 @@ void evoos_hw_store(int32_t addr, int32_t val);
 int32_t evoos_hw_blkrd(int32_t blk, int32_t dest);
 void evoos_hw_blkwr(int32_t blk, int32_t src);
 void evoos_hw_svc(int32_t code);
+int evoos_hw_ata_lba(int32_t lba, uint8_t *buf, int wr);
 int evoos_hw_install_guest(int slot, const uint8_t *code, uint64_t n_code, const char *name,
                            const int32_t *init_off, const int32_t *init_val, int n_init);
 int32_t evoos_hw_word(int slot, int off);

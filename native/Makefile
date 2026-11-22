@@ -44,10 +44,13 @@ $(BUILD)/boot_live.img: | $(BUILD)
 
 $(BUILD)/supervisor.bin: $(BUILD)/boot.img
 
-catalogue: guest_catalogue.h
+catalogue: guest_catalogue.h supervisor_seed.h
 
 guest_catalogue.h: ../evoos/boot/catalogue.py ../evoos/evaluator/workloads.py
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.catalogue -o native/guest_catalogue.h
+
+supervisor_seed.h: ../evoos/boot/seed_c.py ../evoos/boot/pack.py
+	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.seed_c --supervisor $(LIVE_SUPERVISOR) -o native/supervisor_seed.h
 
 host: $(BUILD)/evoos_host
 
@@ -59,13 +62,15 @@ supervisor_aot.c: ../evoos/boot/aot.py ../evoos/boot/pack.py
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) -m evoos.boot.aot --supervisor $(LIVE_SUPERVISOR) -o native/supervisor_aot.c
 endif
 
-$(BUILD)/kernel.elf: evoos_boot.c hw.c hw.h hw_entry.S guests.S supervisor_aot.c linker.ld limine.h | $(BUILD)
+$(BUILD)/kernel.elf: evoos_boot.c hw.c hw.h hw_entry.S guests.S supervisor_aot.c evoos_vm.c evoos_meta.c evoos_vm.h evoos_meta.h guest_catalogue.h supervisor_seed.h linker.ld limine.h | $(BUILD)
 	$(CC) $(KERN_CFLAGS) -I. -c evoos_boot.c -o $(BUILD)/evoos_boot.o
 	$(CC) $(KERN_CFLAGS) -I. -c hw.c -o $(BUILD)/hw.o
 	$(CC) $(KERN_CFLAGS) -I. -c supervisor_aot.c -o $(BUILD)/supervisor_aot.o
+	$(CC) $(KERN_CFLAGS) -I. -c evoos_vm.c -o $(BUILD)/evoos_vm.o
+	$(CC) $(KERN_CFLAGS) -I. -c evoos_meta.c -o $(BUILD)/evoos_meta.o
 	$(CC) $(KERN_CFLAGS) -c hw_entry.S -o $(BUILD)/hw_entry.o
 	$(CC) $(KERN_CFLAGS) -c guests.S -o $(BUILD)/guests.o
-	$(CC) $(KERN_CFLAGS) $(KERN_LDFLAGS) -o $@ $(BUILD)/evoos_boot.o $(BUILD)/hw.o $(BUILD)/supervisor_aot.o $(BUILD)/hw_entry.o $(BUILD)/guests.o
+	$(CC) $(KERN_CFLAGS) $(KERN_LDFLAGS) -o $@ $(BUILD)/evoos_boot.o $(BUILD)/hw.o $(BUILD)/supervisor_aot.o $(BUILD)/evoos_vm.o $(BUILD)/evoos_meta.o $(BUILD)/hw_entry.o $(BUILD)/guests.o
 
 kernel: $(BUILD)/kernel.elf
 
@@ -113,20 +118,24 @@ OVMF_VARS ?= /usr/share/OVMF/OVMF_VARS_4M.fd
 
 test-qemu: test-live
 
-test-live: iso
+test-live: iso $(BUILD)/persist.img
 	mkdir -p $(ROOT)/artifacts
+	dd if=/dev/zero of=$(BUILD)/persist.img bs=512 count=2048 status=none
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_live_test.py \
 		--iso $(BUILD)/evoos.iso \
 		--serial $(BUILD)/serial.log \
-		--screenshot $(ROOT)/artifacts/dashboard.png
+		--screenshot $(ROOT)/artifacts/dashboard.png \
+		--disk $(BUILD)/persist.img --evolve-gens 8
 	cp $(BUILD)/serial.log $(ROOT)/artifacts/serial-bios.log
 	@echo "BIOS QEMU live test OK"
 	@if [ -f "$(OVMF_CODE)" ]; then \
+	  dd if=/dev/zero of=$(BUILD)/persist-uefi.img bs=512 count=2048 status=none; \
 	  cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_live_test.py \
 		--iso $(BUILD)/evoos.iso \
 		--serial $(BUILD)/serial-uefi.log \
 		--screenshot $(ROOT)/artifacts/dashboard-uefi.png \
 		--uefi --ovmf-code $(OVMF_CODE) --ovmf-vars $(OVMF_VARS) \
+		--disk $(BUILD)/persist-uefi.img --evolve-gens 8 \
 		&& cp $(BUILD)/serial-uefi.log $(ROOT)/artifacts/serial-uefi.log \
 		&& echo "UEFI QEMU live test OK" || echo "UEFI QEMU live test failed"; \
 	else echo "OVMF not found; UEFI test skipped"; fi
@@ -137,15 +146,16 @@ $(BUILD)/persist.img: | $(BUILD)
 # Storage HITL. PERSIST_SUPERVISOR is persist_rr (Condition A) unless an
 # evolved elite passed QEMU reboot. Default ISO restore uses LIVE_SUPERVISOR.
 test-persist: $(BUILD)/persist.img
-	rm -f supervisor_aot.c $(BUILD)/kernel.elf $(BUILD)/evoos.iso
+	rm -f supervisor_aot.c supervisor_seed.h $(BUILD)/kernel.elf $(BUILD)/evoos.iso
 	$(MAKE) iso LIVE_SUPERVISOR=$(PERSIST_SUPERVISOR)
 	mkdir -p $(ROOT)/artifacts
+	dd if=/dev/zero of=$(BUILD)/persist.img bs=512 count=2048 status=none
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_persist_test.py \
 		--iso $(BUILD)/evoos.iso \
 		--disk $(BUILD)/persist.img \
 		--serial $(BUILD)/serial-persist.log
 	cp $(BUILD)/serial-persist.log $(ROOT)/artifacts/serial-persist.log
-	rm -f supervisor_aot.c $(BUILD)/kernel.elf $(BUILD)/evoos.iso
+	rm -f supervisor_aot.c supervisor_seed.h $(BUILD)/kernel.elf $(BUILD)/evoos.iso
 	$(MAKE) iso LIVE_SUPERVISOR=$(LIVE_SUPERVISOR)
 	dd if=/dev/zero of=$(BUILD)/persist.img bs=512 count=2048 status=none
 	cd $(ROOT) && PYTHONPATH=$(ROOT) $(PYTHON) native/qemu_persist_test.py \
